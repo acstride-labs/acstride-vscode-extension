@@ -15,7 +15,9 @@ import { postLocale, t } from './localization';
 export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
   private changes = new vscode.EventEmitter<Problem | undefined>();
   readonly onDidChangeTreeData = this.changes.event;
-  private view?: vscode.WebviewView;
+  private view?: vscode.WebviewPanel;
+  private layoutMode?: 'contest' | 'local';
+  private opening: Promise<unknown> = Promise.resolve();
   private current?: Problem;
   private scopedStore?: FileWorkspaceStore;
   private abort?: AbortController;
@@ -53,6 +55,15 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       this.changes,
       this.output,
       tree,
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        const source =
+          this.current && this.store().sourcePath(this.current.id, this.current.language);
+        void vscode.commands.executeCommand(
+          'setContext',
+          'cfide.sourceActive',
+          !!source && editor?.document.uri.fsPath === source,
+        );
+      }),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (!event.affectsConfiguration('cfide.ui.language')) return;
         tree.title = t('Local Practice');
@@ -60,11 +71,6 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         postLocale(this.view?.webview);
         this.changes.fire(undefined);
       }),
-      vscode.window.registerWebviewViewProvider(
-        'cfide.tests',
-        { resolveWebviewView: (view) => this.initializeView(view) },
-        { webviewOptions: { retainContextWhenHidden: true } },
-      ),
     );
     const command = (name: string, fn: (...args: any[]) => unknown) =>
       this.disposables.push(
@@ -77,11 +83,15 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         }),
       );
     command('cfide.copySolution', async () => {
-      const { source } = await this.snapshot();
+      this.ensureIdle();
+      const { source, problem } = await this.snapshot();
       await vscode.env.clipboard.writeText(source);
-      void vscode.window.showInformationMessage(
-        t('Solution code copied. Submit it on the official website yourself.'),
-      );
+      if (problem.contestId)
+        await vscode.env.openExternal(
+          vscode.Uri.parse(
+            `https://codeforces.com/contest/${problem.contestId}/submit/${encodeURIComponent(problem.id)}`,
+          ),
+        );
     });
     command('cfide.createProblem', () => this.create());
     command('cfide.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
@@ -103,7 +113,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         if (
           this.current?.id !== resolved.problem.id ||
           this.current?.contestId !== resolved.problem.contestId ||
-          this.current?.language !== resolved.problem.language
+          this.current?.language !== resolved.problem.language ||
+          !this.view
         )
           await this.openInStore(resolved.store, resolved.problem);
       }
@@ -228,7 +239,13 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     if (this.busy) throw new Error('Stop the current test run before switching problems.');
     if (this.dirtyTests) throw new Error('Save test changes before switching problems.');
   }
-  async openInStore(store: FileWorkspaceStore, problem: Problem) {
+  openInStore(store: FileWorkspaceStore, problem: Problem): Promise<void> {
+    // Rapid problem-rail clicks must not interleave source, statement and test state.
+    const opening = this.opening.then(() => this.openProblemLayout(store, problem));
+    this.opening = opening.catch(() => {});
+    return opening;
+  }
+  private async openProblemLayout(store: FileWorkspaceStore, problem: Problem) {
     this.ensureIdle();
     await this.mutation;
     this.ensureIdle();
@@ -245,12 +262,39 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     }
     this.scopedStore = store;
     this.current = saved;
+    const mode = saved.contestId ? 'contest' : 'local';
+    if (
+      this.layoutMode !== mode ||
+      !this.view ||
+      vscode.window.tabGroups.all.length < (saved.contestId ? 3 : 2)
+    ) {
+      await vscode.commands.executeCommand(
+        'vscode.setEditorLayout',
+        saved.contestId
+          ? {
+              orientation: 0,
+              groups: [{ size: 0.47 }, { size: 0.53, groups: [{ size: 0.64 }, { size: 0.36 }] }],
+            }
+          : { orientation: 1, groups: [{ size: 0.64 }, { size: 0.36 }] },
+      );
+      this.layoutMode = mode;
+      await vscode.commands.executeCommand('workbench.action.closePanel');
+    }
+    await this.onProblemOpened?.(store, saved);
+    const testsColumn = saved.contestId ? vscode.ViewColumn.Three : vscode.ViewColumn.Two;
+    if (!this.view) {
+      const view = vscode.window.createWebviewPanel(
+        'cfide.tests',
+        t('Tests'),
+        { viewColumn: testsColumn, preserveFocus: true },
+        { enableScripts: true, retainContextWhenHidden: true },
+      );
+      this.initializeView(view);
+    } else this.view.reveal(testsColumn, true);
     await vscode.window.showTextDocument(
       vscode.Uri.file(store.sourcePath(saved.id, saved.language)),
-      { viewColumn: vscode.ViewColumn.One },
+      { viewColumn: saved.contestId ? vscode.ViewColumn.Two : vscode.ViewColumn.One },
     );
-    await this.onProblemOpened?.(store, saved);
-    await vscode.commands.executeCommand('cfide.tests.focus');
     await this.context.workspaceState.update('cfide.lastProblem', {
       root: store.root,
       id: saved.id,
@@ -291,7 +335,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     await this.openInStore(store, problem);
     this.changes.fire(undefined);
   }
-  private initializeView(view: vscode.WebviewView) {
+  private initializeView(view: vscode.WebviewPanel) {
     this.view = view;
     const assets = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview');
     view.webview.options = { enableScripts: true, localResourceRoots: [assets] };
@@ -389,7 +433,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     if (!this.current) throw new Error('Select a problem first.');
     this.busy = true;
     this.abort = new AbortController();
-    this.send({ type: 'running', running: true });
+    this.send({ type: 'running', running: true, testId });
     try {
       const { store, problem } = await this.snapshot();
       const config = vscode.workspace.getConfiguration('cfide'),
@@ -423,6 +467,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   }
   dispose() {
     this.abort?.abort();
+    this.view?.dispose();
     this.disposables.forEach((d) => d.dispose());
   }
 }

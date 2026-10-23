@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { HostMessage, WebviewRequest } from '../../src/shared/protocol';
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
-import { languages } from '../../src/domain/languages';
+import { completeResults, resultTone, retainResults } from './test-state';
 import { send } from './bridge';
 import { ContestApp } from './contest/ContestApp';
 import { StatementView } from './statement/StatementView';
@@ -19,6 +19,9 @@ function App() {
   const [notice, setNotice] = useState('');
   const [dirtyTests, setDirtyTests] = useState<Record<string, boolean>>({});
   const currentProblem = useRef('');
+  const previousTests = useRef<TestCase[]>([]);
+  const runIds = useRef<string[]>([]);
+  const [activeId, setActiveId] = useState('');
   const anyDirty = Object.values(dirtyTests).some(Boolean);
   const onDirty = useCallback(
     (id: string, dirty: boolean) =>
@@ -35,13 +38,26 @@ function App() {
         const key = `${m.problem.contestId ?? 'local'}/${m.problem.id}/${m.problem.language}`;
         if (currentProblem.current !== key) {
           setDirtyTests({});
+          setResults({});
+          previousTests.current = [];
+          setActiveId(m.tests[0]?.id ?? '');
           setNotice('');
           setError('');
           currentProblem.current = key;
         }
         setProblem(m.problem);
         setTests(m.tests);
-        setResults({});
+        const added = m.tests.find(
+          (test) => !previousTests.current.some((old) => old.id === test.id),
+        );
+        if (previousTests.current.length && added) setActiveId(added.id);
+        else
+          setActiveId((old) =>
+            m.tests.some((test) => test.id === old) ? old : (m.tests[0]?.id ?? ''),
+          );
+        const previous = previousTests.current;
+        setResults((old) => retainResults(previous, m.tests, old));
+        previousTests.current = m.tests;
         setDirtyTests((old) =>
           Object.fromEntries(
             Object.entries(old).filter(([id]) => m.tests.some((t) => t.id === id)),
@@ -50,22 +66,28 @@ function App() {
       }
       if (m.type === 'running') {
         setRunning(m.running);
+        if (!m.running) setNotice((old) => (old === 'Running tests…' ? '' : old));
         if (m.running) {
-          setResults({});
+          runIds.current = previousTests.current
+            .filter((test) => !m.testId || test.id === m.testId)
+            .map((test) => test.id);
+          setResults((old) =>
+            Object.fromEntries(Object.entries(old).filter(([id]) => !runIds.current.includes(id))),
+          );
           setError('');
           setNotice('Running tests…');
         }
       }
       if (m.type === 'progress') setResults((old) => ({ ...old, [m.result.testId]: m.result }));
       if (m.type === 'result') {
-        setResults(Object.fromEntries(m.result.results.map((r) => [r.testId, r])));
+        setResults((old) => completeResults(old, runIds.current, m.result));
         setError(m.result.compileError ?? '');
         setNotice(
           m.result.cancelled
             ? 'Run cancelled.'
             : m.result.compileError
               ? 'Compilation failed.'
-              : 'Run complete. Local test results are not an official verdict.',
+              : '',
         );
       }
       if (m.type === 'error') setError(m.message);
@@ -75,40 +97,62 @@ function App() {
     return () => window.removeEventListener('message', receive);
   }, []);
   return (
-    <main>
-      <header>
-        <span className="eyebrow">
-          CFIDE /{' '}
-          {problem?.contestId ? t('CONTEST {id}', { id: problem.contestId }) : t('LOCAL WORKBENCH')}
-        </span>
-        <h1>{problem ? `${problem.id} · ${problem.title}` : t('Tests')}</h1>
-        <p>
-          {problem ? languages[problem.language].label : 'C++ / Python 3'} ·{' '}
-          {t('Test locally. See what changed.')}
-        </p>
-      </header>
-      <nav>
-        <button
-          className="secondary"
-          disabled={running || anyDirty || !problem}
-          onClick={() => send({ type: 'switchLanguage' })}
-        >
-          {t('Switch language')}
-        </button>
-        {problem?.contestId && (
-          <button disabled={running || anyDirty} onClick={() => send({ type: 'copySource' })}>
-            {t('Copy solution code')}
-          </button>
-        )}
+    <main className="tests-pane">
+      <div className="test-toolbar">
         <button disabled={running || anyDirty || !problem} onClick={() => send({ type: 'run' })}>
           ▶ {t('Run all tests')}
         </button>
-        <button className="secondary" disabled={!running} onClick={() => send({ type: 'stop' })}>
-          ■ {t('Stop')}
-        </button>
+        {running && (
+          <button className="secondary" onClick={() => send({ type: 'stop' })}>
+            ■ {t('Stop')}
+          </button>
+        )}
+        <span role="status">{t(notice)}</span>
+      </div>
+      <div className="test-tabs" role="tablist" aria-label={t('Tests')}>
+        {tests.map((test, index) => (
+          <button
+            key={test.id}
+            id={`tab-${test.id}`}
+            role="tab"
+            aria-selected={activeId === test.id}
+            aria-controls={`case-${test.id}`}
+            className={`test-tab ${resultTone(results[test.id])}`}
+            title={results[test.id]?.verdict ?? test.id}
+            tabIndex={activeId === test.id ? 0 : -1}
+            onKeyDown={(event) => {
+              const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+              if (!step && event.key !== 'Home' && event.key !== 'End') return;
+              event.preventDefault();
+              const target =
+                tests[
+                  event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? tests.length - 1
+                      : (index + step + tests.length) % tests.length
+                ];
+              setActiveId(target.id);
+              document.getElementById(`tab-${target.id}`)?.focus();
+            }}
+            onClick={() => setActiveId(test.id)}
+          >
+            {results[test.id]
+              ? resultTone(results[test.id]) === 'pass'
+                ? '✓ '
+                : resultTone(results[test.id]) === 'fail'
+                  ? '✕ '
+                  : '— '
+              : ''}
+            {t('Case {number}', { number: index + 1 })}
+            {dirtyTests[test.id] ? ' •' : ''}
+          </button>
+        ))}
         <button
-          className="secondary"
+          className="secondary add-test"
           disabled={running || !problem}
+          aria-label={t('Add test')}
+          title={t('Add test')}
           onClick={() =>
             send({
               type: 'saveTest',
@@ -116,10 +160,9 @@ function App() {
             })
           }
         >
-          ＋ {t('Add test')}
+          ＋
         </button>
-      </nav>
-      <p aria-live="polite">{t(notice)}</p>
+      </div>
       {error && (
         <pre className="error" role="alert">
           {t(error)}
@@ -131,6 +174,7 @@ function App() {
       {tests.map((test) => (
         <TestCard
           key={`${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
+          active={activeId === test.id}
           test={test}
           result={results[test.id]}
           running={running}
@@ -138,22 +182,19 @@ function App() {
           onDirty={onDirty}
         />
       ))}
-      <footer>
-        {t(
-          'Token comparison ignores whitespace. Uncheck expected output for run-only mode. Changes must be saved before running.',
-        )}
-      </footer>
     </main>
   );
 }
 function TestCard({
   test,
+  active,
   result,
   running,
   anyDirty,
   onDirty,
 }: {
   test: TestCase;
+  active: boolean;
   result?: TestResult;
   running: boolean;
   anyDirty: boolean;
@@ -176,11 +217,17 @@ function TestCard({
     onDirty(test.id, dirty);
   }, [test.id, dirty, onDirty]);
   return (
-    <section className="card">
-      <div className="card-title">
-        <h2>{test.id}</h2>
+    <section
+      className="test-case"
+      id={`case-${test.id}`}
+      role="tabpanel"
+      aria-labelledby={`tab-${test.id}`}
+      hidden={!active}
+    >
+      <div className="case-status">
+        {test.readOnly && <small>{t('Official sample')}</small>}
         {result && (
-          <span className={`badge ${result.verdict === 'AC' ? 'pass' : ''}`}>
+          <span className={`badge ${resultTone(result)}`}>
             {result.verdict} · {result.durationMs} ms
           </span>
         )}
@@ -216,17 +263,19 @@ function TestCard({
         </label>
       </div>
       <div className="actions">
-        <button
-          disabled={running || test.readOnly || !dirty}
-          onClick={() =>
-            send({
-              type: 'saveTest',
-              test: { id: test.id, input, expected: check ? expected : undefined },
-            })
-          }
-        >
-          {test.readOnly ? t('Official sample') : dirty ? t('Save changes') : t('Saved')}
-        </button>
+        {!test.readOnly && (
+          <button
+            disabled={running || !dirty}
+            onClick={() =>
+              send({
+                type: 'saveTest',
+                test: { id: test.id, input, expected: check ? expected : undefined },
+              })
+            }
+          >
+            {dirty ? t('Save changes') : t('Saved')}
+          </button>
+        )}
         <button
           className="secondary"
           disabled={running || anyDirty}
@@ -234,13 +283,15 @@ function TestCard({
         >
           {t('Run test')}
         </button>
-        <button
-          className="secondary"
-          disabled={running || test.readOnly}
-          onClick={() => send({ type: 'deleteTest', testId: test.id })}
-        >
-          {t('Delete')}
-        </button>
+        {!test.readOnly && (
+          <button
+            className="secondary"
+            disabled={running}
+            onClick={() => send({ type: 'deleteTest', testId: test.id })}
+          >
+            {t('Delete')}
+          </button>
+        )}
         {dirty && <small>{t('Unsaved changes')}</small>}
       </div>
       {result && (

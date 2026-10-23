@@ -12,11 +12,21 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('addContest') }),
   z.object({ type: z.literal('openSettings') }),
-  z.object({
-    type: z.literal('importHtml'),
-    contestId: contestIdSchema,
-    index: problemIndexSchema,
-  }),
+  z
+    .object({
+      type: z.literal('saveContestSettings'),
+      contestId: contestIdSchema,
+      values: z
+        .object({
+          autoDownload: z.boolean(),
+          defaultLanguage: z.enum(['cpp', 'python']),
+          archived: z.boolean(),
+        })
+        .strict(),
+    })
+    .strict(),
+  z.object({ type: z.literal('switchLanguage') }),
+  z.object({ type: z.literal('copySource') }),
   z.object({ type: z.literal('selectContest'), contestId: contestIdSchema }),
   z.object({
     type: z.literal('syncContest'),
@@ -55,4 +65,11 @@ export interface ContestViewState {
 }
 export type ContestHostMessage =
   | { type: 'contestState'; state: ContestViewState }
-  | { type: 'statement'; contestId: number; index: string; statement: Statement };
+  | {
+      type: 'statement';
+      contestId: number;
+      index: string;
+      statement: Statement;
+      problems: { index: string; name: string }[];
+      language: Language;
+    };

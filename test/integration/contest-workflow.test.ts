@@ -78,7 +78,7 @@ describe('multiple contest workspace', () => {
     expect((await repo.submissions(1234, 'public-handle')).submissions[0].id).toBe(42);
     expect(session.page).not.toHaveBeenCalled();
   });
-  it('imports saved public HTML as a fallback while preserving code and custom tests', async () => {
+  it('retries a failed download while preserving code and custom tests', async () => {
     const { repo, service, session } = await fixture();
     await service.add(1234, 'python');
     session.page.mockRejectedValue(new Error('Anonymous download blocked'));
@@ -86,15 +86,16 @@ describe('multiple contest workspace', () => {
     const store = repo.problems(1234);
     await fs.writeFile(store.sourcePath('A', 'python'), 'print("keep solution")');
     await store.saveTest('A', { id: 'custom-1', input: '1', expected: '2' });
-    await service.importProblemHtml(1234, 'A', statementHtml('A. Sum'));
+    session.page.mockResolvedValue({
+      html: statementHtml('A. Sum'),
+      url: 'https://codeforces.com',
+    });
+    await service.sync(1234, 'A');
     expect((await repo.get(1234)).problems[0].ready).toBe(true);
     expect(await fs.readFile(store.sourcePath('A', 'python'), 'utf8')).toBe(
       'print("keep solution")',
     );
     expect((await store.listTests('A')).map((t) => t.id)).toEqual(['sample-1', 'custom-1']);
-    await expect(service.importProblemHtml(1234, 'A', statementHtml('B. Wrong'))).rejects.toThrow(
-      'does not match',
-    );
   });
   it('preserves the manifest when importing and switching languages concurrently', async () => {
     const { repo, service } = await fixture();

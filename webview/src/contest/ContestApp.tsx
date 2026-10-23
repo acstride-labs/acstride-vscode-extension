@@ -3,12 +3,14 @@ import type { ContestHostMessage, ContestViewState } from '../../../src/shared/c
 import { submissionLabel } from '../../../src/domain/contest';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
+import { ContestOptions } from './ContestOptions';
 
 export function ContestApp() {
   const { locale, t } = useI18n();
   const [state, setState] = useState<ContestViewState>();
-  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings'>('prepare');
+  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings' | 'options'>('prepare');
   const [search, setSearch] = useState('');
+  const [optionsDirty, setOptionsDirty] = useState(false);
   const [clock, setClock] = useState(Date.now()),
     [offset, setOffset] = useState(0);
   useEffect(() => {
@@ -45,9 +47,7 @@ export function ContestApp() {
     <main className="contest-center">
       <header className="center-header">
         <div>
-          <span className="eyebrow">CFIDE / {t('Contest Center')}</span>
           <h1>{t('Your contest workspace')}</h1>
-          <p>{t('Prepare contests. Read, code and test locally. No account sign-in.')}</p>
         </div>
         <button disabled={disabled} onClick={() => send({ type: 'addContest' })}>
           ＋ {t('Add contest')}
@@ -56,6 +56,7 @@ export function ContestApp() {
       <label className="contest-picker">
         {t('Current contest')}
         <select
+          disabled={disabled || optionsDirty}
           aria-label={t('Current contest')}
           value={id ?? ''}
           onChange={(e) => send({ type: 'selectContest', contestId: Number(e.target.value) })}
@@ -71,6 +72,14 @@ export function ContestApp() {
           ))}
         </select>
       </label>
+      {optionsDirty && tab !== 'options' && (
+        <div className="actions" role="status">
+          <small>{t('Unsaved changes')}</small>
+          <button className="secondary" onClick={() => setTab('options')}>
+            {t('Contest settings')}
+          </button>
+        </div>
+      )}
       {state?.error && (
         <pre className="error" role="alert">
           {t(state.error)}
@@ -113,7 +122,7 @@ export function ContestApp() {
             </div>
           </section>
           <nav className="tabs" aria-label={t('Contest sections')}>
-            {(['prepare', 'submissions', 'rankings'] as const).map((value) => (
+            {(['prepare', 'submissions', 'rankings', 'options'] as const).map((value) => (
               <button
                 className={tab === value ? '' : 'secondary'}
                 key={value}
@@ -124,6 +133,7 @@ export function ContestApp() {
                     prepare: 'Problems & preparation',
                     submissions: 'Public submissions',
                     rankings: 'Rankings',
+                    options: 'Contest settings',
                   }[value],
                 )}
               </button>
@@ -144,12 +154,7 @@ export function ContestApp() {
                   {t('{ready}/{total} problems ready.', {
                     ready: record.problems.filter((p) => p.ready).length,
                     total: record.problems.length || '?',
-                  })}{' '}
-                  {t(
-                    record.archived
-                      ? 'Automatic background work is paused.'
-                      : 'Automatic downloads require VS Code to remain open; overdue imports resume after reopening.',
-                  )}
+                  })}
                 </p>
                 {record.error && <p className="error">{t(record.error)}</p>}
               </section>
@@ -164,17 +169,9 @@ export function ContestApp() {
                         <h2>
                           {problem.index} · {problem.name}
                         </h2>
-                        <span className="badge">
-                          {t(
-                            submission
-                              ? submissionLabel(submission)
-                              : !problem.ready
-                                ? 'Not downloaded'
-                                : state.watchHandle
-                                  ? 'No recent public submission'
-                                  : 'No handle tracked',
-                          )}
-                        </span>
+                        {submission && (
+                          <span className="badge">{t(submissionLabel(submission))}</span>
+                        )}
                       </div>
                       {problem.error && <p className="error">{t(problem.error)}</p>}
                       <div className="actions">
@@ -197,15 +194,6 @@ export function ContestApp() {
                         >
                           {t('Refresh statement / samples')}
                         </button>
-                        <button
-                          className="secondary"
-                          disabled={disabled}
-                          onClick={() =>
-                            send({ type: 'importHtml', contestId: id, index: problem.index })
-                          }
-                        >
-                          {t('Import saved HTML')}
-                        </button>
                       </div>
                     </section>
                   );
@@ -222,6 +210,14 @@ export function ContestApp() {
               )}
             </>
           )}
+          <div hidden={tab !== 'options'}>
+            <ContestOptions
+              key={id}
+              record={record}
+              disabled={disabled}
+              onDirty={setOptionsDirty}
+            />
+          </div>
           {tab === 'submissions' && (
             <>
               <div className="actions">
@@ -238,7 +234,6 @@ export function ContestApp() {
                   · {updated(state.submissionsUpdatedAt)}
                 </small>
               </div>
-              <h3>{t('Official Codeforces submissions')}</h3>
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -316,10 +311,7 @@ export function ContestApp() {
               </form>
               <p>
                 {updated(state.rankingsUpdatedAt)} ·{' '}
-                {t(
-                  '{count} participants. Showing at most 100 rows. Official scores are displayed without local re-scoring.',
-                  { count: state.rankTotal },
-                )}
+                {t('{count} participants', { count: state.rankTotal })}
               </p>
               <div className="table-scroll">
                 <table>
@@ -378,11 +370,6 @@ export function ContestApp() {
           )}
         </>
       )}
-      <footer>
-        {t(
-          'No login, cookies or managed browser. Submit/register on the official website yourself. Public API data may be delayed or unavailable; cached local work is preserved.',
-        )}
-      </footer>
     </main>
   );
 }

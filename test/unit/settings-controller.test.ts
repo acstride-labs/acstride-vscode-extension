@@ -54,7 +54,6 @@ function fixture() {
   const controller = new SettingsController(
     {} as VSCode.ExtensionContext,
     workspace as unknown as WorkspaceController,
-    contests as unknown as ContestController,
   );
   return {
     contests,
@@ -125,8 +124,10 @@ describe('settings persistence adapter', () => {
   it('routes contest preferences only to the selected contest and rejects arbitrary extra properties', async () => {
     const f = fixture(),
       options = { autoDownload: false, defaultLanguage: 'python', archived: true };
-    await f.receive({ type: 'saveContestSettings', contestId: 1234, values: options });
-    expect(f.contests.saveContestOptions).toHaveBeenCalledWith(1234, options);
+    await expect(
+      f.receive({ type: 'saveContestSettings', contestId: 1234, values: options }),
+    ).rejects.toThrow('Invalid settings');
+    expect(f.contests.saveContestOptions).not.toHaveBeenCalled();
     await expect(
       f.receive({
         type: 'saveContestSettings',

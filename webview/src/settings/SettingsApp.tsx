@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
 import type { SettingsState, SettingsValues } from '../../../src/shared/settings-protocol';
-import type { ContestRecord } from '../../../src/domain/contest';
 import type { LocalePreference } from '../../../src/shared/i18n';
 
 export function SettingsApp() {
@@ -13,8 +12,6 @@ export function SettingsApp() {
     [pythonArgs, setPythonArgs] = useState('[]');
   const [dirty, setDirty] = useState(false),
     [error, setError] = useState('');
-  const [contestId, setContestId] = useState<number>();
-  const [contestDirty, setContestDirty] = useState(false);
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       if (event.data?.type !== 'settingsState') return;
@@ -31,12 +28,6 @@ export function SettingsApp() {
     setCppArgs(JSON.stringify(state.values.cppArgs));
     setPythonArgs(JSON.stringify(state.values.pythonArgs));
   }, [state, dirty]);
-  useEffect(() => {
-    if (state && !state.contests.some((record) => record.contest.id === contestId)) {
-      setContestId(state.selectedId ?? state.contests[0]?.contest.id);
-      setContestDirty(false);
-    }
-  }, [state, contestId]);
   const reset = () => {
     setDirty(false);
     setError('');
@@ -47,18 +38,12 @@ export function SettingsApp() {
     setError('');
   };
   const disabled = !state || state.busy;
-  const record = state?.contests.find((c) => c.contest.id === contestId);
   return (
     <main className="settings-page">
       <header className="center-header">
         <div>
-          <span className="eyebrow">CFIDE / {t('Settings')}</span>
           <h1>{t('Settings')}</h1>
-          <p>{t('Language, public tracking, local tools and contest preferences.')}</p>
         </div>
-        <button className="secondary" onClick={() => send({ type: 'openContestCenter' })}>
-          {t('Open Contest Center')}
-        </button>
       </header>
       <section className="card settings-section">
         <h2>{t('Interface language')}</h2>
@@ -268,144 +253,6 @@ export function SettingsApp() {
           )}
         </form>
       )}
-      <section className="card settings-section">
-        <h2>{t('Contest settings')}</h2>
-        {!state?.contests.length ? (
-          <p>{t('Add a contest to configure its preferences.')}</p>
-        ) : (
-          <>
-            <label>
-              {t('Contest')}
-              <select
-                disabled={disabled || contestDirty}
-                value={contestId ?? ''}
-                onChange={(e) => setContestId(Number(e.target.value))}
-              >
-                {state.contests.map((c) => (
-                  <option key={c.contest.id} value={c.contest.id}>
-                    {c.contest.id} · {c.contest.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {record && (
-              <ContestOptions
-                key={record.contest.id}
-                record={record}
-                disabled={disabled || !state.trusted}
-                saved={state.notice === 'Contest settings saved.' && !state.busy}
-                onDirty={setContestDirty}
-              />
-            )}
-          </>
-        )}
-      </section>
-      <section className="card settings-section">
-        <h2>{t('Public downloader')}</h2>
-        <p>
-          {t(
-            state?.downloaderReady
-              ? 'Built-in public downloads ready. No Python installation or extra downloads needed.'
-              : 'Built-in downloader unavailable. Install the CFIDE package for this system/CPU architecture, or import saved problem HTML.',
-          )}
-        </p>
-      </section>
     </main>
-  );
-}
-function ContestOptions({
-  record,
-  disabled,
-  saved,
-  onDirty,
-}: {
-  record: ContestRecord;
-  disabled: boolean;
-  saved: boolean;
-  onDirty: (dirty: boolean) => void;
-}) {
-  const { t } = useI18n();
-  const [options, setOptions] = useState({
-    autoDownload: record.autoDownload,
-    defaultLanguage: record.defaultLanguage,
-    archived: record.archived,
-  });
-  const [dirty, setDirty] = useState(false);
-  useEffect(() => {
-    onDirty(dirty);
-  }, [dirty, onDirty]);
-  useEffect(() => {
-    if (!dirty || saved) {
-      setOptions({
-        autoDownload: record.autoDownload,
-        defaultLanguage: record.defaultLanguage,
-        archived: record.archived,
-      });
-      setDirty(false);
-    }
-  }, [record, saved]);
-  return (
-    <fieldset disabled={disabled} className="settings-section">
-      <label>
-        {t('Default solution language')}
-        <select
-          value={options.defaultLanguage}
-          onChange={(e) => {
-            setDirty(true);
-            setOptions({ ...options, defaultLanguage: e.target.value as 'cpp' | 'python' });
-          }}
-        >
-          <option value="cpp">C++</option>
-          <option value="python">Python 3</option>
-        </select>
-      </label>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={options.autoDownload}
-          onChange={(e) => {
-            setDirty(true);
-            setOptions({ ...options, autoDownload: e.target.checked });
-          }}
-        />
-        {t('Automatically download problems at start')}
-      </label>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={options.archived}
-          onChange={(e) => {
-            setDirty(true);
-            setOptions({ ...options, archived: e.target.checked });
-          }}
-        />
-        {t('Archive this contest')}
-      </label>
-      <p>{t('Archiving pauses automatic background work and preserves all code and tests.')}</p>
-      <div className="actions">
-        <button
-          disabled={!dirty}
-          onClick={() =>
-            send({ type: 'saveContestSettings', contestId: record.contest.id, values: options })
-          }
-        >
-          {t('Save contest settings')}
-        </button>
-        <button
-          className="secondary"
-          disabled={!dirty}
-          onClick={() => {
-            setDirty(false);
-            setOptions({
-              autoDownload: record.autoDownload,
-              defaultLanguage: record.defaultLanguage,
-              archived: record.archived,
-            });
-          }}
-        >
-          {t('Discard changes')}
-        </button>
-      </div>
-    </fieldset>
   );
 }

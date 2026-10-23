@@ -21,7 +21,7 @@ export const requestSchema = z.discriminatedUnion('type', [
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =
   | { type: 'state'; problem: Problem; tests: TestCase[] }
-  | { type: 'running'; running: boolean }
+  | { type: 'running'; running: boolean; testId?: string }
   | { type: 'progress'; result: TestResult }
   | { type: 'result'; result: RunResult }
   | { type: 'error'; message: string };

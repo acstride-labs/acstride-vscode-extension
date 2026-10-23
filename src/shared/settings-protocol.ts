@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { contestIdSchema, type ContestRecord } from '../domain/contest';
 import { locales, type Locale, type LocalePreference } from './i18n';
 const args = z.array(z.string().max(10000)).max(100);
 export const settingsValuesSchema = z
@@ -36,21 +35,7 @@ export const settingsRequestSchema = z.discriminatedUnion('type', [
       values: settingsValuesSchema,
     })
     .strict(),
-  z
-    .object({
-      type: z.literal('saveContestSettings'),
-      contestId: contestIdSchema,
-      values: z
-        .object({
-          autoDownload: z.boolean(),
-          defaultLanguage: z.enum(['cpp', 'python']),
-          archived: z.boolean(),
-        })
-        .strict(),
-    })
-    .strict(),
   z.object({ type: z.literal('checkEnvironment'), language: z.enum(['cpp', 'python']) }),
-  z.object({ type: z.literal('openContestCenter') }),
 ]);
 export interface SettingsState {
   locale: Locale;
@@ -59,10 +44,7 @@ export interface SettingsState {
   workspaceAvailable: boolean;
   trusted: boolean;
   values: SettingsValues;
-  contests: ContestRecord[];
-  selectedId?: number;
   busy: boolean;
-  downloaderReady: boolean;
   notice?: string;
   error?: string;
 }

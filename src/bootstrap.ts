@@ -9,7 +9,7 @@ export function bootstrap(context: vscode.ExtensionContext) {
   const contests = new ContestController(context, controller);
   context.subscriptions.push(contests);
   contests.register();
-  const settings = new SettingsController(context, controller, contests);
+  const settings = new SettingsController(context, controller);
   context.subscriptions.push(settings);
   settings.register();
 }

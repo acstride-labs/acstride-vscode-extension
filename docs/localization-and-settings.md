@@ -1,10 +1,10 @@
-# Localization and settings architecture (0.7)
+# Localization and settings architecture (0.8)
 
 ## Interaction and ownership
 
 The contest sidebar has three ordered actions: add (`+`), contest center (trophy), settings (gear). `cfide.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice has a settings shortcut too.
 
-Contest Center is an operational view: contest selection/countdown, statements, downloads/retries, HTML import, public submissions and rankings. It no longer contains handle inputs, environment checks, default-language controls, auto-download switches or archive controls. Initial contest creation still asks for its default solution language; subsequent preferences are edited in Settings.
+Contest info contains problem downloads/retries, submissions, rankings and a per-contest settings tab. Default language, automatic downloads and archive apply only to that contest; they no longer appear in global Settings. Saved-HTML import has been removed.
 
 Settings contains:
 
@@ -12,8 +12,7 @@ Settings contains:
 | --------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Display language: follow VS Code, English, 简体中文, Русский, 日本語  | Application-level `cfide.ui.language`, user preference          |
 | Public handle, C++/Python tools/arguments/templates, local time limit | Explicit user or current-workspace VS Code configuration target |
-| Per-contest default solution language, auto-download, archive         | That contest's existing `.cfide/contest.json`                   |
-| Environment checks, bundled downloader status                         | Diagnostics, not another installer                              |
+| Environment checks                                                    | Diagnostics, not another installer                              |
 
 The selected scope loads the values for that scope: user values inherit defaults; workspace values inherit user/defaults. The effective execution configuration still follows VS Code's precedence. UI language cannot be overridden by a contest/workspace. Machine-specific compiler/interpreter/template keys use `machine-overridable` so explicit workspace overrides are supported. Environment checks test the **active** saved configuration, which may include workspace overrides.
 
@@ -29,9 +28,9 @@ VS Code's **static native** command palette/menu labels, welcome content and bui
 
 ## Data flow and safeguards
 
-`SettingsApp → validated settings-protocol → SettingsController → VS Code config / ContestRepository → configuration event → host views + locale message`.
+`SettingsApp → validated settings-protocol → SettingsController → VS Code config → configuration event → host views + locale message`.
 
-Settings requests have separate strict schemas and allowlists; Contest Center's protocol no longer accepts preference mutations. Validate the complete payload before writing. Language can change without a trusted workspace; execution and contest writes require trust. Writes are serialized within the settings controller, and partial configuration failures restore already-written values; failed restoration has an explicit error. Changing scope/contest is disabled while its form has unsaved edits. Busy and save acknowledgements are distinct from editable drafts. No credentials or downloader Python paths are introduced.
+Settings requests have separate strict schemas and allowlists; The contest protocol accepts a strict, contest-ID-scoped saveContestSettings request; global Settings rejects it. No arbitrary paths or preference keys are accepted. Validate the complete payload before writing. Language can change without a trusted workspace; execution and contest writes require trust. Writes are serialized within the settings controller, and partial configuration failures restore already-written values; failed restoration has an explicit error. Changing global scope or the selected contest is disabled while its respective form has unsaved edits. Contest-option drafts remain mounted when switching detail tabs. Busy and save acknowledgements are distinct from editable drafts. No credentials or downloader Python paths are introduced.
 
 Changing a default solution language or archiving never deletes existing solutions/custom tests. Archived contests stop future automatic background work; ongoing downloads are not forcibly cancelled. Language changes are presentation-only and do not touch contest directories or execute tools.
 

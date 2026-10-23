@@ -2,6 +2,7 @@
   color-scheme: light dark;
 }
 body {
+  margin: 0;
   padding: 0;
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
@@ -294,4 +295,232 @@ th {
 select:focus-visible,
 input:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
+}
+
+/* The statement and the native editor/test groups have independent scroll areas. */
+[hidden] {
+  display: none !important;
+}
+body[data-mode='statement'] {
+  overflow: hidden;
+}
+.answer-pane {
+  display: flex;
+  height: 100vh;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+.problem-rail {
+  flex: 0 0 54px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 10px 5px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--vscode-panel-border);
+}
+.problem-rail button {
+  flex: 0 0 36px;
+  width: 38px;
+  padding: 0;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+.problem-rail button[aria-current='page'] {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  outline: 1px solid var(--vscode-focusBorder);
+}
+.problem-rail button {
+  border: 1px solid var(--vscode-panel-border);
+}
+.statement-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.answer-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.answer-toolbar span {
+  margin-right: auto;
+  font-size: 12px;
+}
+.answer-toolbar button {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.statement-scroll {
+  overflow: auto;
+  padding: 10px 18px 24px;
+  flex: 1;
+  min-height: 0;
+}
+.statement .title {
+  font-size: 19px;
+}
+.statement .header {
+  margin-bottom: 16px;
+}
+.statement .time-limit,
+.statement .memory-limit {
+  display: inline-block;
+  font-size: 12px;
+  margin-right: 14px;
+  color: var(--vscode-descriptionForeground);
+}
+.statement .property-title {
+  display: inline;
+}
+.statement .property-title::after {
+  content: ': ';
+}
+.statement .input-standard,
+.statement .output-standard {
+  display: none;
+}
+.tests-pane {
+  max-width: none;
+  padding: 8px 12px;
+  margin: 0;
+}
+.test-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+.test-toolbar button {
+  padding: 5px 10px;
+}
+.test-toolbar [role='status'] {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+.test-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  margin: 8px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.test-tab {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 5px 9px;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 2px solid transparent;
+}
+.test-tab[aria-selected='true'] {
+  background: var(--vscode-list-inactiveSelectionBackground);
+  border-bottom-color: var(--vscode-focusBorder);
+}
+.test-tab.pass,
+.badge.pass {
+  color: var(--vscode-testing-iconPassed, #388a34);
+}
+.test-tab.fail,
+.badge.fail {
+  color: var(--vscode-testing-iconFailed, #f14c4c);
+}
+.test-tab.pass {
+  border-bottom-color: var(--vscode-testing-iconPassed, #388a34);
+}
+.test-tab.fail {
+  border-bottom-color: var(--vscode-testing-iconFailed, #f14c4c);
+}
+.test-tab[aria-selected='true'] {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.add-test {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+}
+.case-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.case-status:empty {
+  display: none;
+}
+.test-case {
+  padding: 0;
+}
+.test-case textarea {
+  min-height: 54px;
+  height: 64px;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.test-case label {
+  gap: 5px;
+  font-size: 12px;
+}
+.test-case .actions {
+  margin-top: 8px;
+}
+.test-case button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.test-case .result {
+  margin-top: 8px;
+}
+.test-case .result h3 {
+  margin: 8px 0 4px;
+}
+.test-case pre {
+  padding: 6px 8px;
+  margin: 4px 0;
+}
+.contest-center .center-header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+.contest-center .contest-picker {
+  margin: 16px 0;
+}
+.problem-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.problem-card {
+  padding: 12px;
+}
+.problem-card .card-title {
+  margin-bottom: 0;
+}
+.contest-options {
+  max-width: 560px;
+}
+.settings-section .checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.settings-page h1 {
+  font-size: 20px;
+  margin: 0;
+}
+button:focus-visible,
+[role='tab']:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }

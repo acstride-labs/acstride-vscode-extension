@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
-import { promises as fs } from 'node:fs';
 import * as cheerio from 'cheerio';
 import { parseContestId, type ContestRecord } from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
@@ -47,6 +46,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     contestId: number;
     index: string;
     statement: import('../domain/contest').Statement;
+    language: Language;
+    problems: { index: string; name: string }[];
   };
   private selectedId?: number;
   private rankMode: 'all' | 'nearby' | 'search' = 'all';
@@ -61,7 +62,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private lastStatus = new Map<number, number>();
   private lastBoard = 0;
   private pendingContests = new Set<number>();
-  onSettingsDataChanged?: () => void;
   private readonly status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
   constructor(
     private context: vscode.ExtensionContext,
@@ -164,6 +164,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         await this.openStatement(problem.contestId, problem.id);
       } else {
         this.statementPanel?.dispose();
+        this.statementTarget = undefined;
       }
     };
     this.timers.push(
@@ -221,7 +222,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     );
   }
   private async changed(id: number) {
-    this.onSettingsDataChanged?.();
     this.changes.fire(undefined);
     const target = this.statementTarget;
     if (target?.contestId === id && this.statementPanel) {
@@ -234,8 +234,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         target.statement = cached;
         void this.statementPanel?.webview.postMessage({
           type: 'statement',
-          contestId: id,
-          index: target.index,
+          ...target,
           statement: this.mapAssets(id, cached),
         } satisfies ContestHostMessage);
       }
@@ -387,11 +386,15 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return this.publish();
     }
     if (message.type === 'selectContest') return this.select(message.contestId);
+    if (message.type === 'switchLanguage')
+      return vscode.commands.executeCommand('cfide.switchLanguage');
+    if (message.type === 'copySource') return vscode.commands.executeCommand('cfide.copySolution');
     this.trust();
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
     if (message.type === 'openProblem') return this.openProblem(message.contestId, message.index);
-    if (message.type === 'importHtml') return this.importHtml(message.contestId, message.index);
+    if (message.type === 'saveContestSettings')
+      return this.saveContestOptions(message.contestId, message.values);
     if (message.type === 'syncContest')
       return this.task(t('Downloading available problems…'), () =>
         service.sync(message.contestId, message.index),
@@ -402,16 +405,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return this.task(t('Refreshing official rankings…'), () =>
         service.refreshBoard(message.contestId),
       );
-  }
-  async settingsData() {
-    await this.initialized;
-    let contests: ContestRecord[] = [];
-    try {
-      contests = await this.runtime().repo.list();
-    } catch {
-      /* Settings also work without a folder. */
-    }
-    return { contests, selectedId: this.selectedId, downloaderReady: this.downloaderReady };
   }
   async saveContestOptions(
     id: number,
@@ -432,6 +425,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private async openStatement(id: number, index: string, reveal = true) {
     const repo = this.runtime().repo;
+    const record = await repo.get(id);
     const cached = await repo.statement(id, index);
     const item = (await repo.get(id)).problems.find((p) => p.index === index);
     const escaped = (value: string) =>
@@ -441,17 +435,19 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       );
     const statement = cached || {
       title: t('Statement not downloaded'),
-      html: `<h2>${escaped(t('Statement not downloaded'))}</h2><p>${escaped(t('Local solutions can be edited and tested. Official samples are not available yet; this is not a successful download.'))}</p><p>${escaped(t(item?.error || 'No cached statement. Download the statement and samples from Contest Center.'))}</p><p>${escaped(t('If anonymous downloads are blocked, retry later or import saved problem HTML. No browser or login is required.'))}</p>`,
+      html: `<h2>${escaped(t('Statement not downloaded'))}</h2><p>${escaped(t('Local solutions can be edited and tested. Official samples are not available yet; this is not a successful download.'))}</p><p>${escaped(t(item?.error || 'No cached statement. Download the statement and samples from Contest Center.'))}</p>`,
       timeLimit: '',
       memoryLimit: '',
       fetchedAt: 0,
     };
-    this.statementTarget = { contestId: id, index, statement };
+    const language = this.workspace.active()?.problem.language ?? record.defaultLanguage;
+    const problems = record.problems.map(({ index, name }) => ({ index, name }));
+    this.statementTarget = { contestId: id, index, statement, language, problems };
     if (!this.statementPanel) {
       this.statementPanel = vscode.window.createWebviewPanel(
         'cfide.statement',
         t('CFIDE · Statement'),
-        { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
+        { viewColumn: vscode.ViewColumn.One, preserveFocus: true },
         {
           enableScripts: true,
           retainContextWhenHidden: true,
@@ -472,7 +468,14 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       );
       this.statementPanel.webview.onDidReceiveMessage(
         async (raw) => {
-          if (raw?.type === 'ready' && this.statementTarget) {
+          const parsed = contestRequestSchema.safeParse(raw);
+          if (!parsed.success) return;
+          if (parsed.data.type !== 'ready') {
+            if (['openProblem', 'copySource', 'switchLanguage'].includes(parsed.data.type))
+              await this.handleMessage(parsed.data).catch((e) => this.report(e));
+            return;
+          }
+          if (this.statementTarget) {
             postLocale(this.statementPanel?.webview);
             const target = this.statementTarget;
             if (this.statementPanel)
@@ -486,7 +489,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         null,
         this.disposables,
       );
-    } else if (reveal) this.statementPanel.reveal(vscode.ViewColumn.Two, true);
+    } else if (reveal) this.statementPanel.reveal(vscode.ViewColumn.One, true);
     this.statementPanel.webview.options = {
       enableScripts: true,
       localResourceRoots: [
@@ -500,6 +503,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       type: 'statement',
       contestId: id,
       index,
+      language,
+      problems,
       statement: this.mapAssets(id, statement),
     } satisfies ContestHostMessage);
   }
@@ -525,35 +530,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const handle = this.handle();
     if (!handle) throw new Error('Set a public read-only handle first.');
     await this.runtime().service.refreshSubmissions(id, handle);
-  }
-  private async importHtml(id: number, index: string) {
-    this.trust();
-    const files = await vscode.window.showOpenDialog({
-      title: t('Import saved public problem HTML for {id}/{index}', { id, index }),
-      canSelectMany: false,
-      filters: { HTML: ['html', 'htm'] },
-    });
-    if (!files?.length) return;
-    const info = await fs.stat(files[0].fsPath);
-    if (info.size > 8000000) throw new Error('Problem HTML exceeds 8 MB.');
-    if (
-      (await vscode.window.showWarningMessage(
-        t(
-          'Import this HTML as {id}/{index}? Verify that the saved page is this exact problem. Solutions and custom tests will be kept; official samples will be replaced.',
-          { id, index },
-        ),
-        { modal: true },
-        t('Import HTML'),
-      )) !== t('Import HTML')
-    )
-      return;
-    await this.task(t('Importing saved public problem…'), async () => {
-      await this.runtime().service.importProblemHtml(
-        id,
-        index,
-        await fs.readFile(files[0].fsPath, 'utf8'),
-      );
-    });
   }
   private async poll() {
     if (this.pollBusy || !vscode.workspace.isTrusted) return;

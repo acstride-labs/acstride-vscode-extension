@@ -8,7 +8,6 @@ import {
 import type { LocalePreference } from '../shared/i18n';
 import { currentLocale, postLocale, t } from './localization';
 import { webviewHtml } from './webview-html';
-import type { ContestController } from './contest-controller';
 import type { WorkspaceController } from './workspace-controller';
 
 export class SettingsController implements vscode.Disposable {
@@ -21,7 +20,6 @@ export class SettingsController implements vscode.Disposable {
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
-    private contests: ContestController,
   ) {}
   register() {
     this.disposables.push(
@@ -35,9 +33,6 @@ export class SettingsController implements vscode.Disposable {
         void this.publish();
       }),
     );
-    this.contests.onSettingsDataChanged = () => {
-      if (!this.busy) void this.publish();
-    };
   }
   private workspaceAvailable() {
     const folders = vscode.workspace.workspaceFolders;
@@ -88,8 +83,6 @@ export class SettingsController implements vscode.Disposable {
       );
     const message = parsed.data;
     if (message.type === 'ready') return this.publish();
-    if (message.type === 'openContestCenter')
-      return vscode.commands.executeCommand('cfide.openContestCenter');
     if (this.busy) throw new Error('Settings operation in progress.');
     this.error = undefined;
     this.notice = undefined;
@@ -138,9 +131,6 @@ export class SettingsController implements vscode.Disposable {
           throw error;
         }
         this.notice = 'Settings saved.';
-      } else if (message.type === 'saveContestSettings') {
-        await this.contests.saveContestOptions(message.contestId, message.values);
-        this.notice = 'Contest settings saved.';
       } else if (message.type === 'checkEnvironment') {
         await this.workspace.checkEnvironment(message.language);
         this.notice = 'Environment check passed.';
@@ -164,9 +154,7 @@ export class SettingsController implements vscode.Disposable {
         ];
       }),
     ) as SettingsValues;
-    const data = await this.contests.settingsData();
     const state: SettingsState = {
-      ...data,
       locale: currentLocale(),
       preference: config.get<LocalePreference>('ui.language', 'auto'),
       scope: this.scope,

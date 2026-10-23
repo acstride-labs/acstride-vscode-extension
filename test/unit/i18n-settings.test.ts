@@ -135,7 +135,7 @@ describe('settings page boundaries', () => {
       settingsRequestSchema.safeParse({ type: 'saveSettings', scope: 'machine', values }).success,
     ).toBe(false);
   });
-  it('moves all preference mutations out of the contest-center protocol', async () => {
+  it('keeps global preferences in Settings and scopes contest preferences to contest details', async () => {
     for (const type of [
       'watchHandle',
       'archive',
@@ -153,21 +153,31 @@ describe('settings page boundaries', () => {
         }).success,
       ).toBe(false);
     expect(
-      settingsRequestSchema.safeParse({
+      contestRequestSchema.safeParse({
         type: 'saveContestSettings',
         contestId: 1,
         values: { autoDownload: true, defaultLanguage: 'python', archived: false },
       }).success,
     ).toBe(true);
     const center = await fs.readFile('webview/src/contest/ContestApp.tsx', 'utf8');
-    expect(center).not.toContain('<select\n                  disabled={disabled}');
-    for (const type of [
-      'setLocale',
-      'watchHandle',
-      'checkEnvironment',
-      'saveSettings',
-      'saveContestSettings',
-    ])
+    expect(center).toContain('ContestOptions');
+    for (const type of ['setLocale', 'watchHandle', 'checkEnvironment', 'saveSettings'])
       expect(center).not.toContain(`type: '${type}'`);
+    const request = {
+      type: 'saveContestSettings',
+      contestId: 1,
+      values: { autoDownload: true, defaultLanguage: 'python', archived: false },
+    };
+    expect(settingsRequestSchema.safeParse(request).success).toBe(false);
+    expect(
+      contestRequestSchema.safeParse({ ...request, values: { ...request.values, root: '/tmp' } })
+        .success,
+    ).toBe(false);
+    expect(
+      contestRequestSchema.safeParse({ type: 'importHtml', contestId: 1, index: 'A' }).success,
+    ).toBe(false);
+    const settings = await fs.readFile('webview/src/settings/SettingsApp.tsx', 'utf8');
+    for (const text of ['ContestOptions', 'Public downloader', 'openContestCenter'])
+      expect(settings).not.toContain(text);
   });
 });

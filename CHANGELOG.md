@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+- Reorganize answering into a square problem rail, left-hand statement and native VS Code editor with tests beneath it; keep existing language extensions and user source files.
+- Replace stacked case cards with keyboard-accessible tabs. New cases become active; drafts survive tab switching, single-case runs preserve unrelated results, and compilation/cancellation errors mark affected tabs red.
+- Move language switching and copy/submission-page navigation to the top toolbar; never automatically submit code.
+- Move per-contest preferences back into that contest's detail page. Keep language, handle and execution tools in global Settings.
+- Remove saved-HTML import and redundant downloader/status/header/footer text. Simplify English, Chinese, Russian and Japanese wording.
+- Preserve all existing code, tests and cached problem data; no workspace schema migration is needed.
+
 ## 0.7.0
 
 - Add configurable English, simplified Chinese, Russian and Japanese JSON catalogs shared by the extension host and webviews, with English fallback and parameter/key parity checks.

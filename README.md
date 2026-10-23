@@ -1,6 +1,6 @@
 # CFIDE
 
-An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.7 adds English, 简体中文, Русский and 日本語 interfaces plus a dedicated Settings page. The public downloader, private Python runtime, curl_cffi and CA certificates remain bundled directly in the platform-specific VSIX: no user-side Python/pip setup, extra downloads or browser connection.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.8 introduces a compact problem rail, left-hand statement, native code editor on the right and tabbed tests directly beneath the editor. The public downloader, private Python runtime, curl_cffi and CA certificates are bundled in the platform-specific VSIX: no user-side Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -9,8 +9,8 @@ An anonymous Codeforces workbench for desktop VS Code, with C++ and Python suppo
 - Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
-- Copy solution code for manual submission on the official website. The extension does not send solutions anywhere.
-- Saved problem HTML import as a fallback when public downloads are blocked.
+- Copy solution code and open the matching Codeforces submission page. Paste and submit there yourself; CFIDE does not send solutions.
+- Compact case tabs: verified passes are green, all abnormal verdicts are red; run-only results stay neutral. Single-case runs preserve other results and switching tabs preserves unsaved test drafts.
 - Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
 There are **no login, Cookie import, browser connection, automatic submission, registration or clarification controls**. Register and submit on the official website yourself. Adding a contest locally does not register your account. Public tracking does not authenticate ownership of a handle.
@@ -21,8 +21,8 @@ There are **no login, Cookie import, browser connection, automatic submission, r
 2. Open a trusted, single local workspace folder. A C++ compiler and/or Python 3 is only required to **run your own solutions**, not to download/read problems.
 3. Open **CFIDE: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
 4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
-5. Open a problem: solution on the left, cached statement on the right, **CFIDE Tests** below. Switch languages without discarding either solution. Official samples are read-only; add your own tests separately.
-6. Use **Copy solution code**, then submit on the official website yourself. Open the sidebar's **gear / CFIDE: Settings** and set **Codeforces handle** for public submission results/nearby rankings. Clear it to stop tracking.
+5. Open a problem: the square A/B/C… buttons switch problems, with statement on the left, native VS Code editor on the right and tests beneath the code. Resize the dividers as needed. Use the top language control to switch between C++ and Python without discarding either source. Official samples are read-only; **+** adds and selects a custom-case tab.
+6. **Copy & submit** (中文：**复制题目**) copies the current solution and opens that problem's submission page in your default browser. Paste and submit there yourself. Open **Settings** using the sidebar gear and set **My Codeforces handle** to show your submissions and rank. Clear it to disable tracking.
 
 The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; CFIDE never silently downloads components or falls back to installing pip packages.
 
@@ -34,17 +34,17 @@ This runtime is exclusively for public downloads, not for executing solutions. T
 
 ### If a problem cannot be downloaded
 
-Use **Import saved HTML** on that problem's card and select an HTML file you saved from the correct public problem page. Confirm the contest/problem pairing. The parser sanitizes the statement and extracts official samples; it does not execute the imported scripts. Import/reimport updates only the statement and official samples, preserving solutions and custom tests. Standalone HTML without the original Codeforces statement structure, PDF files, and incomplete sample pairs are not supported. Some images may still require network access.
+Use **Download problems** or a problem's **Refresh problem** action to retry later. You can still open a local solution and add your own cases. Existing code, custom tests and cached statements are preserved. Saved-HTML import has been removed; no user files are deleted.
 
 ## Local practice
 
-**CFIDE: Create Local Problem** works independently of Codeforces. Choose C++ or Python and enter an ID/title. The default template sums two integers with a `2 3 → 5` test. Run using the bottom panel or `Cmd+Alt+R` on macOS / `Ctrl+Alt+R` elsewhere. Change expected output to `6` to inspect a WA difference.
+**CFIDE: Create Local Problem** works independently of Codeforces. Choose C++ or Python and enter an ID/title. The default template sums two integers with a `2 3 → 5` test. Run using the tests pane below the editor or `Cmd+Alt+R` on macOS / `Ctrl+Alt+R` elsewhere. **CFIDE: Switch Solution Language** also works for local practice. Change expected output to `6` to inspect a WA difference.
 
 Local AC is **not official acceptance**. The default checker compares tokens, ignoring whitespace but preserving case and numeric spelling. Uncheck expected output for run-only mode; blank expected output is a real expectation. Memory use is not measured, and wall-clock timings are not Codeforces timings. Local programs execute on your computer: this is **not a security sandbox**. Output is capped at 1 MB per process, compilation at 30 seconds, and each test has a configurable wall-clock limit.
 
 ## Settings
 
-Use the contest sidebar's **+ / trophy / gear** for add / center / settings. All preferences are on the independent Settings page, not inside Contest Center: interface language, public handle, C++/Python tool paths/argument arrays/templates, local time limit, environment checks, per-contest default language/automatic downloads/archive and downloader status. Language applies immediately without discarding open forms or test drafts. Problem statements/code and tool diagnostics stay in their original language.
+Use the contest sidebar's **+ / trophy / gear** for add / contest info / settings. Global Settings contains interface language, your handle, C++/Python tools/arguments/templates, local time limit and environment checks. Each contest's **Contest settings** tab contains only that contest's default language, automatic downloads and archive switch. No downloader-status panel or center-navigation button crowds Settings. Language applies immediately without discarding open forms or test drafts; statements, code and raw tool diagnostics stay in their original language.
 
 Choose **User settings** or **This workspace** before editing tool/tracking settings. Workspace settings override user settings; environment checks use the active saved configuration. Save/discard draft changes before switching scope or contest. Language is always an application-level user preference. Archive preserves all local code/tests.
 

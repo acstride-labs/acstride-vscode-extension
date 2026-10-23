@@ -126,28 +126,6 @@ export class ContestService {
     });
     this.changed(id);
   }
-  async importProblemHtml(id: number, index: string, html: string) {
-    if (this.syncing.has(id))
-      throw new Error('Wait for this contest download to finish before importing HTML.');
-    if (html.length > 8000000) throw new Error('Problem HTML exceeds the supported size.');
-    const parsed = parseStatement(html, `https://codeforces.com/contest/${id}/problem/${index}`);
-    if (!parsed.statement.title.toLowerCase().startsWith(index.toLowerCase() + '.'))
-      throw new Error('The HTML problem index does not match the selected problem.');
-    await this.ensureSolution(id, index);
-    await this.repository.problems(id).importSamples(index, parsed.samples);
-    await this.repository.saveStatement(id, index, await this.cacheStatement(id, parsed.statement));
-    await this.repository.update(id, (r) => {
-      const item = r.problems.find((p) => p.index === index)!;
-      item.ready = true;
-      delete item.error;
-      if (r.problems.every((p) => p.ready)) {
-        delete r.error;
-        r.nextRetryAt = 0;
-        r.retryCount = 0;
-      }
-    });
-    this.changed(id);
-  }
   async tick(now = Date.now()) {
     if (this.stopped || this.tickBusy) return;
     this.tickBusy = true;

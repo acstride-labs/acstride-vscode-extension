@@ -1,8 +1,8 @@
 {
   "name": "cfide",
-  "displayName": "CFIDE — Contest Workbench",
+  "displayName": "CFIDE — Codeforces IDE",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -57,7 +57,8 @@
       },
       {
         "command": "cfide.switchLanguage",
-        "title": "%command.cfide.switchLanguage%"
+        "title": "%command.cfide.switchLanguage%",
+        "icon": "$(code)"
       },
       {
         "command": "cfide.createProblem",
@@ -81,17 +82,11 @@
       },
       {
         "command": "cfide.copySolution",
-        "title": "%command.cfide.copySolution%"
+        "title": "%command.cfide.copySolution%",
+        "icon": "$(clippy)"
       }
     ],
     "viewsContainers": {
-      "panel": [
-        {
-          "id": "cfide-testing",
-          "title": "%view.testPanel%",
-          "icon": "resources/icons/cfide.svg"
-        }
-      ],
       "activitybar": [
         {
           "id": "cfide",
@@ -101,13 +96,6 @@
       ]
     },
     "views": {
-      "cfide-testing": [
-        {
-          "type": "webview",
-          "id": "cfide.tests",
-          "name": "%view.tests%"
-        }
-      ],
       "cfide": [
         {
           "id": "cfide.contests",
@@ -130,6 +118,18 @@
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "cfide.switchLanguage",
+          "when": "cfide.sourceActive",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cfide.copySolution",
+          "when": "cfide.sourceActive",
+          "group": "navigation@2"
+        }
+      ],
       "view/title": [
         {
           "command": "cfide.addContest",

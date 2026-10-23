@@ -10,7 +10,7 @@
     "cfide.runTests": "Run Tests",
     "cfide.stop": "Stop",
     "cfide.refresh": "Refresh Problems",
-    "cfide.copySolution": "Copy Solution Code"
+    "cfide.copySolution": "Copy and submit"
   },
   "settings": {
     "cfide.ui.language": "CFIDE interface language. Does not translate problem statements or code.",
