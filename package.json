@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jinsuichen/cfide.git"
+  },
   "engines": {
     "vscode": "^1.95.0"
   },
