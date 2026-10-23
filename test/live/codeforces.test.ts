@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CodeforcesApi } from '../../src/infrastructure/codeforces/api-client';
-import { PublicProblemClient } from '../../src/infrastructure/codeforces/public-problem-client';
+import {
+  PublicProblemClient,
+  downloaderExecutable,
+} from '../../src/infrastructure/codeforces/public-problem-client';
 import { ContestService } from '../../src/application/contest-service';
 import { ContestRepository } from '../../src/infrastructure/storage/contest-repository';
 import { promises as fs } from 'node:fs';
@@ -23,11 +26,7 @@ describe.skipIf(process.env.CFIDE_LIVE !== '1')('live read-only Codeforces smoke
   }, 60000);
   it('loads and parses a real public problem statement without authentication', async () => {
     const queue = new RequestQueue();
-    const client = new PublicProblemClient(
-      queue,
-      async () => process.env.CFIDE_CURL_PYTHON,
-      path.resolve('resources/helpers/public-fetch.py'),
-    );
+    const client = new PublicProblemClient(queue, downloaderExecutable(path.resolve('.')));
     try {
       const page = await client.page('/contest/1/problem/A');
       const result = parseStatement(page.html, page.url);
@@ -40,11 +39,7 @@ describe.skipIf(process.env.CFIDE_LIVE !== '1')('live read-only Codeforces smoke
   }, 30000);
   it('imports real public samples into an isolated contest workspace without authentication', async () => {
     const queue = new RequestQueue();
-    const client = new PublicProblemClient(
-      queue,
-      async () => process.env.CFIDE_CURL_PYTHON,
-      path.resolve('resources/helpers/public-fetch.py'),
-    );
+    const client = new PublicProblemClient(queue, downloaderExecutable(path.resolve('.')));
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-public-live-'));
     try {
       const repo = new ContestRepository(root);

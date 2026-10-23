@@ -51,13 +51,12 @@ export function ContestApp() {
         <button disabled={disabled} onClick={() => send({ type: 'watchHandle' })}>
           Track public handle{state?.watchHandle ? ': ' + state.watchHandle : ''}
         </button>
-        <button disabled={disabled} onClick={() => send({ type: 'setupDownloads' })}>
-          {state?.downloaderReady ? 'Repair download setup' : 'Set up public downloads'}
-        </button>
         <p>
-          {state?.downloaderReady
-            ? 'curl_cffi public downloader enabled.'
-            : 'Basic anonymous downloads are available. Set up curl_cffi for better compatibility; Python 3.10+ is required.'}
+          {!state
+            ? 'Checking bundled downloader…'
+            : state.downloaderReady
+              ? 'Built-in public downloads ready. No Python installation or extra downloads needed.'
+              : 'Built-in downloader unavailable. Install the CFIDE package for this system/CPU architecture, or import saved problem HTML.'}
         </p>
       </section>
       <label className="contest-picker">

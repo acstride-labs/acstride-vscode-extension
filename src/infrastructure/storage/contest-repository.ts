@@ -69,8 +69,10 @@ export class ContestRepository {
     // Old cached failures must not send users to removed account/browser controls.
     const currentError = (error?: string) =>
       error &&
-      /dedicated (?:browser|chrome)|browser\/site verification|cookie|sign[ -]?in/i.test(error)
-        ? 'Previous download failed. Set up public downloads and retry, or import saved problem HTML. No login/browser connection is needed.'
+      /dedicated (?:browser|chrome)|browser\/site verification|cookie|sign[ -]?in|set.?up public downloads|selected Python|configured Python path|public download helper|basic downloader/i.test(
+        error,
+      )
+        ? 'Previous download failed. Retry using the built-in downloader, or import saved problem HTML. No login/browser connection is needed.'
         : error;
     record.error = currentError(record.error);
     for (const problem of record.problems) problem.error = currentError(problem.error);

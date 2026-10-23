@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- Bundle the anonymous downloader, private Python runtime, curl_cffi/native libraries and CA data inside each platform-specific VSIX.
+- Remove public-download setup/repair commands, runtime pip installation, system Python discovery and download-Python settings.
+- Launch only the absolute bundled executable, isolate its environment, and keep solution Python/compiler configuration separate.
+- Add pinned developer-only builds, file-hash/health gates, collected package notices, four native CI targets and final-VSIX extraction/startup verification.
+- macOS arm64: real frozen startup with empty PATH/invalid Python settings and three anonymous Codeforces live checks passed.
+- Preserve existing solutions/tests and unused legacy download venvs; no user/system environment migration or automatic deletion.
+
 ## 0.5.0
 
 - Remove login/logout, Cookie import, dedicated browser/CDP integration and their dependencies.

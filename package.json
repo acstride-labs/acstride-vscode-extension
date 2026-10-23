@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -70,10 +70,6 @@
       {
         "command": "cfide.refresh",
         "title": "CFIDE: Refresh Problems"
-      },
-      {
-        "command": "cfide.setupPublicDownloads",
-        "title": "CFIDE: Set Up Public Downloads"
       },
       {
         "command": "cfide.copySolution",
@@ -214,31 +210,22 @@
           "default": "",
           "scope": "machine",
           "description": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
-        },
-        "cfide.codeforces.setupPython": {
-          "type": "string",
-          "default": "python3",
-          "scope": "machine",
-          "description": "Python 3.10+ executable for creating the isolated public download environment. On Windows use python if python3 is unavailable."
-        },
-        "cfide.codeforces.downloadPython": {
-          "type": "string",
-          "default": "",
-          "scope": "machine",
-          "description": "Optional absolute path to an existing Python interpreter with curl_cffi installed. Leave blank to use the isolated environment created by Set Up Public Downloads."
         }
       }
     }
   },
   "scripts": {
     "build": "node esbuild.mjs && vite build",
+    "build:downloader": "node scripts/build-downloader.mjs",
+    "verify:downloader": "node scripts/verify-downloader.mjs",
+    "verify:vsix": "node scripts/verify-vsix.mjs",
     "typecheck": "tsc --noEmit && tsc -p webview/tsconfig.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "check": "npm run typecheck && npm test && npm run build",
     "vscode:prepublish": "npm run build",
-    "package": "vsce package --no-dependencies"
+    "package": "node scripts/package.mjs"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
@@ -260,6 +247,7 @@
     "prettier": "^3.9.10",
     "typescript": "^5.7.0",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yauzl": "^3.4.0"
   }
 }

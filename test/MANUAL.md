@@ -1,4 +1,4 @@
-# CFIDE 0.5 anonymous-workflow acceptance checks
+# CFIDE 0.6 bundled anonymous-workflow acceptance checks
 
 ## Product scope
 
@@ -14,7 +14,7 @@ The extension has no login, Cookie import, browser connection, in-IDE submission
 ## Anonymous contest workflow
 
 1. Open Contest Center and verify only preparation, public submissions and rankings tabs. There must be no account credentials, browser-connect buttons, submit button or registration/messages tab.
-2. Use Set up public downloads with Python 3.10+. Confirm the dependency installation notice. Only an isolated CFIDE venv is created, with pinned curl_cffi; system Python is not changed.
+2. Install the platform-specific VSIX on a machine with no Python/pip on PATH. Open Contest Center: built-in downloads should be ready without a setup button, dependency prompt or component download. Invalid inherited PYTHONHOME/PYTHONPATH must not interfere. Compare the user's PATH, default Python and package environments before/after; none should change. Existing solution interpreter configuration must remain independent.
 3. Add two public regular contests, including one upcoming contest. Verify independent directories, countdown/default language/archive settings and incremental release downloads while VS Code remains open. Closing VS Code stops timers; overdue work resumes after reopening.
 4. Import a real released problem and compare the statement, formula rendering and official samples with the website. Open its C++/Python solutions, verify both sources remain separate and samples/custom tests are shared.
 5. Force a download failure; verify the actual anonymous-download error, preserved code/tests, local solution access and manual retry. Use Import saved HTML on the correct problem, confirm pairing, then verify that only statement/official samples change. Wrong-index/incomplete HTML must fail.
@@ -24,16 +24,18 @@ The extension has no login, Cookie import, browser connection, in-IDE submission
 
 ## Automated and live verification
 
-Default unit/integration tests cover local C++/Python execution, contest isolation, reimport preservation, read-only samples, release scheduling/retry/offline cache, saved-HTML import, public API tracking, downloader setup boundaries, GET-only anonymous transport, and rejection/removal of obsolete account commands/messages.
+Default unit/integration tests cover local C++/Python execution, contest isolation, reimport preservation, read-only samples, release scheduling/retry/offline cache, saved-HTML import, public API tracking, GET-only anonymous transport, isolated child environment and rejection/removal of obsolete setup/account commands/messages. When a generated bundle exists, tests run the actual binary offline with empty PATH/invalid Python settings and check that its temporary HOME remains empty. Source-only checks skip these two frozen-binary tests; CI builds the bundle first so they are required there. `npm run package` checks bundle hashes/health/target before packaging; `npm run verify:vsix` checks the final extracted archive with no system Python on PATH.
 
 Opt-in live command:
 
 ```sh
-CFIDE_LIVE=1 CFIDE_CURL_PYTHON=/absolute/path/to/isolated/python npm test -- test/live/codeforces.test.ts
+CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts
 ```
 
-On 2026-10-24 all three public live checks passed: contest metadata/standings, real Theatre Square parsing, and import into a temporary contest workspace with exact sample `6 6 4 → 4`, plus Spreadsheets and Primary Task statement/sample extraction. No login, browser or solution submission was used. Fixture tests do not guarantee availability of every contest or network.
+On 2026-10-24 all three public live checks passed using the **frozen macOS arm64 binary**, not a developer Python: contest metadata/standings, real Theatre Square parsing, and import into a temporary contest workspace with exact sample `6 6 4 → 4`, plus Spreadsheets and Primary Task statement/sample extraction. Its offline self-test also passed with an empty PATH and invalid Python settings. No login, browser or solution submission was used. Fixture tests do not guarantee availability of every contest or network.
 
-The same day, the actual macOS Extension Development Host passed the anonymous setup flow, imported all three problems in contest 1, displayed Theatre Square and its read-only official sample, and ran separate C++/Python solutions to local AC (`4`). Copy solution code showed the manual-website-submission confirmation. The center had only preparation/public submissions/rankings controls, without login or browser connection actions.
+The 0.5 macOS Extension Development Host previously imported all three problems in contest 1, displayed Theatre Square and its read-only official sample, and ran separate C++/Python solutions to local AC (`4`). Copy solution code showed the manual-website-submission confirmation. Its old setup step no longer applies to 0.6; the embedded flow must show no setup/install controls.
 
-Earlier versions' C++/Python AC/WA GUI checks remain relevant for the local runner, but their browser/login/submission acceptance steps no longer apply. Windows/Linux CI is configured; local live verification was performed on macOS.
+The 0.6 macOS arm64 Extension Development Host showed “Built-in public downloads ready” immediately after reload, with no setup/repair button. Refreshing contest 1/A completed and updated its statement cache timestamp. The final platform VSIX also passed extraction/file-hash/target/executable-permission/private-runtime startup verification with empty PATH.
+
+Earlier versions' C++/Python AC/WA GUI checks remain relevant for the local runner, but their browser/login/submission acceptance steps no longer apply. Four-platform CI is configured; only macOS arm64 live verification has been performed locally. Other targets require their CI build/startup/archive checks before distribution. Signing/notarization/Marketplace publication are not claimed.

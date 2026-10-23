@@ -1,6 +1,6 @@
 # CFIDE
 
-An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.5 removes account login, cookies, managed browsers and in-IDE submissions. Prepare contests, read public problems, test locally and track public verdicts/rankings without signing in.
+An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.6 bundles its public problem downloader, private Python runtime, curl_cffi and CA certificates directly in the platform-specific VSIX. Install CFIDE and use public downloads immediately: no Python/pip setup, extra component downloads or browser connection.
 
 ## What is included
 
@@ -16,14 +16,20 @@ There are **no login, Cookie import, browser connection, automatic submission, r
 
 ## Start here
 
-1. Install the generated VSIX using **Extensions: Install from VSIX…**, or build this repository and press F5.
-2. Open a trusted, single local workspace folder. Install a C++ compiler and/or Python 3 for local solutions.
-3. Open **CFIDE: Open Contest Center**. For better download compatibility, click **Set up public downloads**. This requires Python 3.10+ and installs pinned `curl_cffi==0.16.3` from PyPI into an isolated environment under VS Code extension global storage. It does not modify system Python packages or install/start a browser.
+1. Install the VSIX matching your operating system and CPU using **Extensions: Install from VSIX…**. Build targets are Windows x64, macOS Apple Silicon/Intel and Linux x64 (glibc, Ubuntu 22.04+ baseline); other architectures and Alpine/musl are not supported yet. Marketplace publishing is not configured.
+2. Open a trusted, single local workspace folder. A C++ compiler and/or Python 3 is only required to **run your own solutions**, not to download/read problems.
+3. Open **CFIDE: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
 4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
 5. Open a problem: solution on the left, cached statement on the right, **CFIDE Tests** below. Switch languages without discarding either solution. Official samples are read-only; add your own tests separately.
 6. Use **Copy solution code**, then submit on the official website yourself. Set **Track public handle** to see public submission results and nearby rankings. Clear the handle to stop tracking.
 
-Without the helper, the extension tries a basic anonymous GET downloader. Some networks/sites block it. Setting up `curl_cffi` improves compatibility but is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work.
+The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; CFIDE never silently downloads components or falls back to installing pip packages.
+
+### No system Python changes
+
+The private runtime lives only inside CFIDE's extension directory and is launched by absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
+
+This runtime is exclusively for public downloads, not for executing solutions. The solution Python interpreter/compiler remains user-configurable and separate.
 
 ### If a problem cannot be downloaded
 
@@ -38,8 +44,6 @@ Local AC is **not official acceptance**. The default checker compares tokens, ig
 ## Settings
 
 - `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
-- `cfide.codeforces.setupPython`: Python 3.10+ executable for download setup, default `python3`; use `python` on Windows if necessary.
-- `cfide.codeforces.downloadPython`: advanced override, an absolute existing interpreter path with `curl_cffi` installed. Leave blank to use the managed isolated environment. Clear this override before repairing the default setup.
 - `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
 - `cfide.cpp.args`: argument array, default `-std=c++20 -O2 -Wall -Wextra`.
 - `cfide.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
@@ -70,21 +74,25 @@ your-workspace/
   B/main.py
 ```
 
-Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Old account/submission snapshot files and dedicated browser profiles are **not automatically deleted**, but 0.5 no longer reads account cookies, uses those snapshots or launches/connects to a browser. No Chrome installation is removed. No backend service or telemetry is used.
+Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Old account/submission snapshot files, browser profiles and 0.5's download venv are **not automatically deleted**, but are no longer read, launched or used. The removed `codeforces.setupPython` / `downloadPython` settings are ignored. No Chrome installation is removed. No backend service or telemetry is used.
 
 ## Development and verification
 
-Node.js 24 LTS is required for development. A real C++ compiler and Python interpreter are used by integration tests; override `CXX` / `PYTHON` if needed.
+Node.js 24 LTS is required for development. **Developers/CI only** need Python 3.10+ to build the downloader. Its pinned build dependencies install into the git-ignored `.build/downloader/venv`; frozen output is generated under `resources/downloader/`, also git-ignored. No prebuilt native binaries are committed. A real C++ compiler and solution Python interpreter are used by integration tests; override `CXX` / `PYTHON` if needed.
 
 ```sh
 npm ci
+npm run build:downloader
 npm run check
 npm run package
-# Optional public live checks; use an existing isolated interpreter with curl_cffi:
-CFIDE_LIVE=1 CFIDE_CURL_PYTHON=/absolute/path/to/venv/bin/python npm test -- test/live/codeforces.test.ts
+npm run verify:vsix
+# Optional public live checks using the bundled binary, never a system Python:
+CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts
 ```
 
-The live check exercises the actual anonymous product transport, real contest import, official sample parsing and additional public problem pages. It never logs in, starts a browser, registers or submits code. On 2026-10-24 these checks passed, including Theatre Square's real `6 6 4 → 4` sample. This does not guarantee all future contests/network environments will work. See `test/MANUAL.md` for acceptance steps.
+Set `CFIDE_BUILD_PYTHON` to an absolute build interpreter path if needed. `npm run package` refuses to produce a VSIX without the matching, hash-verified working downloader. It always sets the VSIX platform target. CI builds all four targets independently, verifies frozen startup with empty PATH and invalid PYTHONHOME/PYTHONPATH, and extracts the final VSIX to check file hashes/executable permissions/startup. Package notices accompany the binary. See `packaging/README.md` for distribution details.
+
+On 2026-10-24 the macOS arm64 frozen downloader passed offline isolation checks and all three public live checks, including Theatre Square's real `6 6 4 → 4` sample and two additional statements. The other platform builds must pass their CI jobs before distribution; configuring CI does not establish that those jobs passed. No check logs in, starts a browser, registers or submits code. This does not guarantee all future contests/network environments will work. See `test/MANUAL.md` for acceptance steps.
 
 Architecture: `domain` contains models/checking; `application` handles contest scheduling/imports/public tracking; `infrastructure/codeforces` separates JSON API reads, anonymous problem downloads, sanitization and a serialized request queue; `infrastructure/storage` isolates contest files/caches; `vscode` adapts native views/commands; React `webview` renders the center, statements and tests. Public API calls and problem downloads are throttled with at least 2.1 seconds between queued request starts.
 

@@ -8,7 +8,7 @@ import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
 import {
   PublicProblemClient,
-  environmentPython,
+  downloaderExecutable,
 } from '../infrastructure/codeforces/public-problem-client';
 import { RequestQueue } from '../infrastructure/codeforces/request-queue';
 import { cacheStatementAssets } from '../infrastructure/codeforces/asset-cache';
@@ -67,23 +67,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   ) {
     this.reader = new PublicProblemClient(
       this.queue,
-      async () => {
-        const configured = vscode.workspace
-          .getConfiguration('cfide')
-          .get<string>('codeforces.downloadPython', '')
-          .trim();
-        if (configured) return configured;
-        const python = environmentPython(
-          path.join(context.globalStorageUri.fsPath, 'public-download-env'),
-        );
-        try {
-          await fs.access(python);
-          return python;
-        } catch {
-          return undefined;
-        }
-      },
-      vscode.Uri.joinPath(context.extensionUri, 'resources', 'helpers', 'public-fetch.py').fsPath,
+      downloaderExecutable(context.extensionUri.fsPath),
     );
     this.initialized = this.reader.ready().then((ready) => {
       this.downloaderReady = ready;
@@ -133,7 +117,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     command('cfide.openContestProblem', (node: Node) =>
       node?.kind === 'problem' ? this.openProblem(node.contestId, node.index) : undefined,
     );
-    command('cfide.setupPublicDownloads', () => this.setupDownloads());
     this.status.command = 'cfide.openContestCenter';
     this.disposables.push(
       this.changes,
@@ -368,7 +351,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     await this.initialized;
     if (message.type === 'ready') return this.publish();
     if (message.type === 'addContest') return this.add();
-    if (message.type === 'setupDownloads') return this.setupDownloads();
     if (message.type === 'watchHandle') {
       const handle = await vscode.window.showInputBox({
         title: 'Codeforces handle (read-only tracking)',
@@ -528,31 +510,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const handle = this.handle();
     if (!handle) throw new Error('Set a public read-only handle first.');
     await this.runtime().service.refreshSubmissions(id, handle);
-  }
-  private async setupDownloads() {
-    this.trust();
-    if (
-      (await vscode.window.showInformationMessage(
-        'Install curl_cffi 0.16.3 from PyPI into an isolated CFIDE download environment? Requires Python 3.10+. No login, browser, or system Python packages will be modified.',
-        { modal: true },
-        'Install public downloader',
-      )) !== 'Install public downloader'
-    )
-      return;
-    await this.task('Setting up anonymous problem downloads…', async () => {
-      const config = vscode.workspace.getConfiguration('cfide');
-      await this.reader.setup(
-        config.get<string>(
-          'codeforces.setupPython',
-          process.platform === 'win32' ? 'python' : 'python3',
-        ),
-        path.join(this.context.globalStorageUri.fsPath, 'public-download-env'),
-      );
-      this.downloaderReady = await this.reader.ready();
-      void vscode.window.showInformationMessage(
-        'Public downloader ready. Retry the contest download. No account sign-in is needed.',
-      );
-    });
   }
   private async importHtml(id: number, index: string) {
     this.trust();

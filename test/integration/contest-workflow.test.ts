@@ -58,7 +58,7 @@ describe('multiple contest workspace', () => {
       ];
     });
     const record = await repo.get(1234);
-    expect(record.error).toContain('Set up public downloads');
+    expect(record.error).toContain('built-in downloader');
     expect(record.problems[0].error).toContain('No login/browser connection is needed');
   });
   it('tracks public submissions without fetching any authenticated pages', async () => {

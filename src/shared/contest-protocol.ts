@@ -11,7 +11,6 @@ import type { Language } from '../domain/models';
 export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('addContest') }),
-  z.object({ type: z.literal('setupDownloads') }),
   z.object({ type: z.literal('watchHandle') }),
   z.object({
     type: z.literal('importHtml'),

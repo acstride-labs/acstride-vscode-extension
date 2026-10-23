@@ -14,3 +14,7 @@ test/**
 tsconfig.json
 package-lock.json
 dist/**/*.map
+scripts/**
+packaging/**
+.build/**
+resources/helpers/**

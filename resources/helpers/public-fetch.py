@@ -2,14 +2,39 @@
 import json
 import re
 import sys
+import os
 from urllib.parse import urljoin, urlparse
+
+sys.dont_write_bytecode = True
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+# Never read another application's curl_cffi account/config/fingerprint cache.
+os.environ["IMPERSONATE_CONFIG_DIR"] = os.path.join(
+    getattr(sys, "_MEIPASS", os.path.dirname(__file__)), "cfide-private-config")
 
 
 def main():
     try:
         from curl_cffi import requests
+        import curl_cffi
+        import certifi
     except ImportError:
         print(json.dumps({"error": "missing_dependency"}))
+        return
+    if sys.argv[1:] == ["--self-test"]:
+        from curl_cffi import Curl
+        curl = Curl()
+        try:
+            assert curl.version().startswith(b"libcurl/")
+        finally:
+            curl.close()
+        assert os.path.isfile(certifi.where())
+        print(json.dumps({"protocol": 1, "ready": True,
+                          "embedded": bool(getattr(sys, "frozen", False)),
+                          "curlCffi": curl_cffi.__version__, "caBundle": True}))
+        return
+    if sys.argv[1:]:
+        print(json.dumps({"error": "invalid_arguments"}))
         return
     request = json.loads(sys.stdin.read(4096))
     path = request.get("path", "")
@@ -17,7 +42,7 @@ def main():
         print(json.dumps({"error": "invalid_problem_path"}))
         return
     url = "https://codeforces.com" + path
-    with requests.Session(impersonate="chrome") as session:
+    with requests.Session(impersonate="chrome", verify=certifi.where()) as session:
         for _ in range(4):
             # Only anonymous, public GETs. Never persist or load any account session.
             response = session.get(url, timeout=20, allow_redirects=False, stream=True)
