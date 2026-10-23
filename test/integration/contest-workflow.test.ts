@@ -108,6 +108,26 @@ describe('multiple contest workspace', () => {
     expect(session.page).toHaveBeenCalledTimes(3);
     expect((await repo.get(1234)).error).toBeUndefined();
   });
+  it('allows coding and custom tests when all statement downloads fail, without pretending samples exist', async () => {
+    const { repo, service, session } = await fixture();
+    await service.add(1234, 'python');
+    session.page.mockRejectedValue(new Error('Website HTTP 403'));
+    await service.sync(1234);
+    expect((await repo.get(1234)).problems.every((p) => !p.ready && p.error?.includes('403'))).toBe(
+      true,
+    );
+    const problem = await service.ensureSolution(1234, 'A');
+    expect(problem.language).toBe('python');
+    const store = repo.problems(1234);
+    expect(await fs.readFile(store.sourcePath('A', 'python'), 'utf8')).toBe('print(5)');
+    expect(await store.listTests('A')).toEqual([]);
+    await store.saveTest('A', { id: 'custom-1', input: '2 3', expected: '5' });
+    await fs.writeFile(store.sourcePath('A', 'python'), 'print("keep me")');
+    await service.sync(1234);
+    expect(await fs.readFile(store.sourcePath('A', 'python'), 'utf8')).toBe('print("keep me")');
+    expect(await store.listTests('A')).toHaveLength(1);
+    await expect(service.ensureSolution(1234, 'Z')).rejects.toThrow('not been released');
+  });
   it('waits for release and respects archive/auto-download settings', async () => {
     const { repo, service, api, session } = await fixture();
     const future = {

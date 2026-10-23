@@ -41,7 +41,9 @@ export function StatementView() {
         </span>
         <p>
           {data
-            ? `Cached ${new Date(data.statement.fetchedAt).toLocaleString()}`
+            ? data.statement.fetchedAt
+              ? `Cached ${new Date(data.statement.fetchedAt).toLocaleString()}`
+              : '题面未缓存 · 官方样例未下载'
             : 'Open a downloaded contest problem to read its statement.'}
         </p>
         {data?.statement.imageWarning && <p>{data.statement.imageWarning}</p>}

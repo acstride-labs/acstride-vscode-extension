@@ -13,6 +13,8 @@ A Codeforces contest workbench inside desktop VS Code, with C++ and Python 3 sup
 
 ### Online integration is experimental
 
+Version 0.3.1 sends desktop Chrome-style navigation headers for website requests. A live read-only test still encountered website verification: these headers do not make Node.js a browser or guarantee downloads/login. Failed downloads no longer prevent opening a released problem's local solution and custom tests; missing statements and official samples remain explicitly marked as unavailable.
+
 The public Codeforces API is read-only. Login, statements, submission and simple registration use website adapters, which can break when Codeforces changes its forms or applies anti-bot verification. CAPTCHA, 2FA and browser challenges are **not** bypassed or completed inside the extension. An advanced command can import your own authenticated Cookie header into VS Code SecretStorage, but this does not guarantee a challenge will be resolved. A browser may still be necessary; this is not yet a guaranteed browser-free contest client.
 
 On 2026-10-24, live read-only contest metadata and standings checks passed; the live problem page was blocked by site verification. Authenticated login, registration and real submissions have **not** been verified against a real account. Their adapters are covered by synthetic form/session tests, not an end-to-end contest acceptance test.

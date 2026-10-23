@@ -44,7 +44,11 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private repo?: ContestRepository;
   private dashboard?: vscode.WebviewPanel;
   private statementPanel?: vscode.WebviewPanel;
-  private statementTarget?: { contestId: number; index: string };
+  private statementTarget?: {
+    contestId: number;
+    index: string;
+    statement: import('../domain/contest').Statement;
+  };
   private selectedId?: number;
   private rankMode: 'all' | 'nearby' | 'search' = 'all';
   private rankSearch = '';
@@ -461,21 +465,28 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       });
   }
   private async openProblem(id: number, index: string) {
+    this.trust();
     const { repo, service } = this.runtime();
-    const record = await repo.get(id);
-    const item = record.problems.find((p) => p.index === index);
-    if (!item?.ready) {
-      await this.task('Downloading problem…', () => service.sync(id, index));
-    }
-    const problem = (await repo.problems(id).listProblems()).find((p) => p.id === index);
-    if (!problem || !(await repo.statement(id, index)))
-      throw new Error('Problem is not ready. Check its download error and retry.');
+    const problem = await service.ensureSolution(id, index);
     await this.workspace.openInStore(repo.problems(id), problem);
   }
   private async openStatement(id: number, index: string) {
-    const statement = await this.runtime().repo.statement(id, index);
-    if (!statement) return;
-    this.statementTarget = { contestId: id, index };
+    const repo = this.runtime().repo;
+    const cached = await repo.statement(id, index);
+    const item = (await repo.get(id)).problems.find((p) => p.index === index);
+    const escaped = (value: string) =>
+      value.replace(
+        /[&<>"']/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+      );
+    const statement = cached || {
+      title: 'Statement not downloaded',
+      html: `<h2>题面尚未下载</h2><p>本地解答已可编辑、运行。官方样例尚不可用；这不代表下载成功。</p><p>${escaped(item?.error || '尚无已缓存的题面。请在比赛中心下载题面和样例。')}</p><p>如果提示浏览器验证，重复重试通常无效；需通过真实浏览器完成验证后再导入题面。</p>`,
+      timeLimit: '',
+      memoryLimit: '',
+      fetchedAt: 0,
+    };
+    this.statementTarget = { contestId: id, index, statement };
     if (!this.statementPanel) {
       this.statementPanel = vscode.window.createWebviewPanel(
         'cfide.statement',
@@ -502,13 +513,12 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.statementPanel.webview.onDidReceiveMessage(
         async (raw) => {
           if (raw?.type === 'ready' && this.statementTarget) {
-            const target = this.statementTarget,
-              data = await this.runtime().repo.statement(target.contestId, target.index);
-            if (data && this.statementTarget === target && this.statementPanel)
+            const target = this.statementTarget;
+            if (this.statementPanel)
               void this.statementPanel.webview.postMessage({
                 type: 'statement',
                 ...target,
-                statement: this.mapAssets(target.contestId, data),
+                statement: this.mapAssets(target.contestId, target.statement),
               } satisfies ContestHostMessage);
           }
         },

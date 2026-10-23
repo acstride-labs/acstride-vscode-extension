@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
   "description": "Codeforces contests inside VS Code: scheduled imports, C++/Python testing, submissions and rankings.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {

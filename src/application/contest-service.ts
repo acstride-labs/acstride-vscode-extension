@@ -36,6 +36,27 @@ export class ContestService {
     this.changed(id);
     return record;
   }
+  async ensureSolution(id: number, index: string) {
+    const record = await this.repository.get(id);
+    const item = record.problems.find((p) => p.index === index);
+    if (!item || record.contest.phase === 'BEFORE')
+      throw new Error('This problem has not been released by Codeforces.');
+    const store = this.repository.problems(id);
+    const existing = (await store.listProblems()).find((p) => p.id === index);
+    if (existing) return existing;
+    try {
+      return await store.createProblem(
+        index,
+        item.name,
+        await this.template(record.defaultLanguage, index),
+        record.defaultLanguage,
+      );
+    } catch (error) {
+      const concurrent = (await store.listProblems()).find((p) => p.id === index);
+      if (concurrent) return concurrent;
+      throw error;
+    }
+  }
   async sync(id: number, onlyIndex?: string) {
     if (this.syncing.has(id) || this.stopped) return;
     this.syncing.add(id);
@@ -61,17 +82,12 @@ export class ContestService {
         if (this.stopped) return;
         if (onlyIndex ? problem.index !== onlyIndex : problem.ready) continue;
         try {
+          // Source creation must not depend on website access. Download failure must not block coding.
+          await this.ensureSolution(id, problem.index);
           const url = `/contest/${id}/problem/${encodeURIComponent(problem.index)}`;
           const page = await this.session.page(url);
           const parsed = parseStatement(page.html, `https://codeforces.com${url}`);
           const store = this.repository.problems(id);
-          if (!(await store.listProblems()).some((p) => p.id === problem.index))
-            await store.createProblem(
-              problem.index,
-              problem.name,
-              await this.template(record.defaultLanguage, problem.index),
-              record.defaultLanguage,
-            );
           await store.importSamples(problem.index, parsed.samples);
           await this.repository.saveStatement(
             id,

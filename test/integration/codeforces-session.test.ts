@@ -39,6 +39,16 @@ describe('authenticated Codeforces session', () => {
     const session = new CodeforcesSession(secrets, queue, fetcher);
     expect(await session.login('tester', 'private-password')).toBe('tester');
     const request = fetcher.mock.calls[1];
+    const getHeaders = new Headers(fetcher.mock.calls[0][1]?.headers);
+    expect(getHeaders.get('user-agent')).toContain('Chrome/130.0.0.0');
+    expect(getHeaders.get('accept')).toContain('application/xhtml+xml');
+    expect(getHeaders.get('accept-language')).toBe('en-US,en;q=0.9');
+    expect(getHeaders.get('sec-fetch-mode')).toBe('navigate');
+    expect(getHeaders.get('sec-fetch-site')).toBe('none');
+    expect(getHeaders.has('origin')).toBe(false);
+    const postHeaders = new Headers(request[1]?.headers);
+    expect(postHeaders.get('sec-fetch-site')).toBe('same-origin');
+    expect(postHeaders.get('origin')).toBe('https://codeforces.com');
     expect(String(request[0])).toBe('https://codeforces.com/enter');
     const fields = new URLSearchParams(String(request[1]?.body));
     expect(fields.get('password')).toBe('private-password');
@@ -76,6 +86,10 @@ describe('authenticated Codeforces session', () => {
     expect(data.get('programTypeId')).toBe('998');
     expect(data.get('source')).toBe('print(42)\n');
     expect(data.get('submittedProblemIndex')).toBe('A');
+    const redirectedHeaders = new Headers(fetcher.mock.calls[3][1]?.headers);
+    expect(fetcher.mock.calls[3][1]?.method).toBe('GET');
+    expect(redirectedHeaders.has('content-type')).toBe(false);
+    expect(redirectedHeaders.has('origin')).toBe(false);
     queue.dispose();
   });
   it('does not infer a receipt from unrelated status table links', () => {

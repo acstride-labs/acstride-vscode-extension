@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- Add a pinned desktop Chrome-style navigation header profile for website requests.
+- Drop POST-only headers after redirects change the request to GET.
+- Allow released problems to open local solutions even when statement downloads fail; show the actual download error and missing-sample state.
+- Preserve solutions and custom tests across blocked download retries.
+- Live check: added headers did not resolve the Codeforces website verification block. Login and statement download are not claimed fixed.
+
 ## 0.3.0
 
 - Multi-contest workspace, scheduled incremental imports, countdown and restart recovery.

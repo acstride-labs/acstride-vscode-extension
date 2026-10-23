@@ -3,6 +3,7 @@ import { CookieJar } from 'tough-cookie';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { RequestQueue } from './request-queue';
+import { browserNavigationHeaders } from './browser-headers';
 
 export interface SecretStore {
   get(key: string): PromiseLike<string | undefined>;
@@ -132,15 +133,11 @@ export class CodeforcesSession {
             redirect: 'manual',
             signal: AbortSignal.timeout(20000),
             headers: {
+              ...browserNavigationHeaders(
+                method,
+                body || redirect > 0 ? new URL(pathname, 'https://codeforces.com').href : undefined,
+              ),
               Cookie: cookie,
-              Accept: 'text/html',
-              ...(body
-                ? {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    Origin: 'https://codeforces.com',
-                    Referer: new URL(pathname, 'https://codeforces.com').href,
-                  }
-                : {}),
             },
           });
           for (const value of response.headers.getSetCookie())

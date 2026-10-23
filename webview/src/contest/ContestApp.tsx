@@ -245,12 +245,12 @@ export function ContestApp() {
                       {problem.error && <p className="error">{problem.error}</p>}
                       <div className="actions">
                         <button
-                          disabled={disabled || !problem.ready}
+                          disabled={disabled}
                           onClick={() =>
                             send({ type: 'openProblem', contestId: id, index: problem.index })
                           }
                         >
-                          Open solution
+                          {problem.ready ? 'Open solution' : 'Open local solution (no statement)'}
                         </button>
                         <button
                           className="secondary"
