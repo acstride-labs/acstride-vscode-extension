@@ -11,6 +11,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-vsix-test-'));
 try {
   let platformManifest = '';
   const names = [];
+  const nativeCatalogs = new Map();
   await new Promise((resolve, reject) => {
     yauzl.open(archive, { lazyEntries: true }, (error, zip) => {
       if (error) return reject(error);
@@ -22,6 +23,7 @@ try {
           names.push(name);
           if (
             (!name.startsWith('extension/resources/downloader/') &&
+              !/^extension\/package\.nls(?:\.(?:zh-cn|ru|ja))?\.json$/.test(name) &&
               name !== 'extension.vsixmanifest') ||
             name.endsWith('/')
           )
@@ -33,6 +35,8 @@ try {
           for await (const chunk of stream) chunks.push(chunk);
           const data = Buffer.concat(chunks);
           if (name === 'extension.vsixmanifest') platformManifest = data.toString('utf8');
+          else if (name.startsWith('extension/package.nls'))
+            nativeCatalogs.set(name, JSON.parse(data.toString('utf8')));
           else {
             const destination = path.resolve(temp, name);
             if (!destination.startsWith(temp + path.sep)) throw new Error('Unsafe ZIP path');
@@ -52,6 +56,14 @@ try {
   });
   if (!platformManifest.includes(`TargetPlatform="${hostTarget()}"`))
     throw new Error('VSIX is not targeted to the bundled platform');
+  const nlsTokens = [...JSON.stringify(manifest).matchAll(/%([A-Za-z0-9_.-]+)%/g)].map(
+    (match) => match[1],
+  );
+  for (const suffix of ['', '.zh-cn', '.ru', '.ja']) {
+    const catalog = nativeCatalogs.get(`extension/package.nls${suffix}.json`);
+    if (!catalog || nlsTokens.some((token) => !catalog[token]))
+      throw new Error(`VSIX is missing native localization resources: ${suffix || 'en'}`);
+  }
   if (
     names.some(
       (name) =>
@@ -94,7 +106,7 @@ try {
   if (!health.embedded || !health.ready || !health.caBundle)
     throw new Error('Extracted VSIX lacks a working embedded runtime/CA bundle');
   console.log(
-    `Verified final VSIX ${path.basename(archive)}: complete bundle + notices, platform target, executable permissions, and Python-free startup.`,
+    `Verified final VSIX ${path.basename(archive)}: four-language native resources, complete bundle + notices, platform target, executable permissions, and Python-free startup.`,
   );
 } finally {
   await fs.rm(temp, { recursive: true, force: true });

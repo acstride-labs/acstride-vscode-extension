@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- Add configurable English, simplified Chinese, Russian and Japanese JSON catalogs shared by the extension host and webviews, with English fallback and parameter/key parity checks.
+- Add live interface-language switching without resetting test/settings drafts, code, results or cached statements.
+- Add the sidebar gear action and an independent Settings page with explicit user/workspace scopes, tool/tracking configuration, environment checks and per-contest preferences.
+- Move handle/default-language/automatic-download/archive/environment controls out of Contest Center.
+- Generate native VS Code command/view/welcome/configuration localization resources from the same catalogs.
+- Validate settings through a separate allowlisted protocol; require workspace trust for execution/contest writes and restore prior values on partial configuration failure.
+
 ## 0.6.0
 
 - Bundle the anonymous downloader, private Python runtime, curl_cffi/native libraries and CA data inside each platform-specific VSIX.

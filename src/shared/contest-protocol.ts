@@ -11,13 +11,12 @@ import type { Language } from '../domain/models';
 export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('addContest') }),
-  z.object({ type: z.literal('watchHandle') }),
+  z.object({ type: z.literal('openSettings') }),
   z.object({
     type: z.literal('importHtml'),
     contestId: contestIdSchema,
     index: problemIndexSchema,
   }),
-  z.object({ type: z.literal('checkEnvironment'), language: z.enum(['cpp', 'python']) }),
   z.object({ type: z.literal('selectContest'), contestId: contestIdSchema }),
   z.object({
     type: z.literal('syncContest'),
@@ -30,13 +29,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
     type: z.literal('openProblem'),
     contestId: contestIdSchema,
     index: problemIndexSchema,
-  }),
-  z.object({ type: z.literal('archive'), contestId: contestIdSchema, archived: z.boolean() }),
-  z.object({ type: z.literal('autoDownload'), contestId: contestIdSchema, enabled: z.boolean() }),
-  z.object({
-    type: z.literal('defaultLanguage'),
-    contestId: contestIdSchema,
-    language: z.enum(['cpp', 'python']),
   }),
   z.object({
     type: z.literal('rankFilter'),

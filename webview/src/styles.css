@@ -270,3 +270,28 @@ th {
 .katex {
   color: inherit;
 }
+.settings-section {
+  display: grid;
+  gap: 14px;
+}
+.settings-page fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.settings-section p {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.6;
+}
+.settings-section .checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+select:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+}

@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -27,60 +27,68 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Reading problems is supported; compiling and running requires a trusted workspace."
+      "description": "%trust.description%"
     },
     "virtualWorkspaces": false
   },
   "contributes": {
     "commands": [
       {
+        "command": "cfide.openSettings",
+        "title": "%command.cfide.openSettings%",
+        "icon": "$(gear)"
+      },
+      {
         "command": "cfide.openContestCenter",
-        "title": "CFIDE: Open Contest Center",
-        "icon": "$(trophy)"
+        "title": "%command.cfide.openContestCenter%",
+        "icon": {
+          "light": "resources/icons/trophy-light.svg",
+          "dark": "resources/icons/trophy-dark.svg"
+        }
       },
       {
         "command": "cfide.addContest",
-        "title": "CFIDE: Add Codeforces Contest",
+        "title": "%command.cfide.addContest%",
         "icon": "$(add)"
       },
       {
         "command": "cfide.openContestProblem",
-        "title": "CFIDE: Open Contest Problem"
+        "title": "%command.cfide.openContestProblem%"
       },
       {
         "command": "cfide.switchLanguage",
-        "title": "CFIDE: Switch Solution Language"
+        "title": "%command.cfide.switchLanguage%"
       },
       {
         "command": "cfide.createProblem",
-        "title": "CFIDE: Create Local Problem"
+        "title": "%command.cfide.createProblem%"
       },
       {
         "command": "cfide.openProblem",
-        "title": "CFIDE: Open Problem"
+        "title": "%command.cfide.openProblem%"
       },
       {
         "command": "cfide.runTests",
-        "title": "CFIDE: Run Tests"
+        "title": "%command.cfide.runTests%"
       },
       {
         "command": "cfide.stop",
-        "title": "CFIDE: Stop"
+        "title": "%command.cfide.stop%"
       },
       {
         "command": "cfide.refresh",
-        "title": "CFIDE: Refresh Problems"
+        "title": "%command.cfide.refresh%"
       },
       {
         "command": "cfide.copySolution",
-        "title": "CFIDE: Copy Solution Code"
+        "title": "%command.cfide.copySolution%"
       }
     ],
     "viewsContainers": {
       "panel": [
         {
           "id": "cfide-testing",
-          "title": "CFIDE Tests",
+          "title": "%view.testPanel%",
           "icon": "resources/icons/cfide.svg"
         }
       ],
@@ -97,28 +105,28 @@
         {
           "type": "webview",
           "id": "cfide.tests",
-          "name": "Tests"
+          "name": "%view.tests%"
         }
       ],
       "cfide": [
         {
           "id": "cfide.contests",
-          "name": "Codeforces Contests"
+          "name": "%view.contests%"
         },
         {
           "id": "cfide.problems",
-          "name": "Local Practice"
+          "name": "%view.practice%"
         }
       ]
     },
     "viewsWelcome": [
       {
         "view": "cfide.contests",
-        "contents": "Prepare a contest before it starts.\n[Add Codeforces Contest](command:cfide.addContest)\n[Open Contest Center](command:cfide.openContestCenter)"
+        "contents": "%welcome.contests%"
       },
       {
         "view": "cfide.problems",
-        "contents": "Create a C++ or Python problem to get started.\n[Create Local Problem](command:cfide.createProblem)"
+        "contents": "%welcome.practice%"
       }
     ],
     "menus": {
@@ -126,12 +134,17 @@
         {
           "command": "cfide.addContest",
           "when": "view == cfide.contests",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "cfide.openContestCenter",
           "when": "view == cfide.contests",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "cfide.openSettings",
+          "when": "view == cfide.contests || view == cfide.problems",
+          "group": "navigation@3"
         },
         {
           "command": "cfide.createProblem",
@@ -155,16 +168,36 @@
     "configuration": {
       "title": "CFIDE",
       "properties": {
+        "cfide.ui.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "zh-CN",
+            "ru",
+            "ja"
+          ],
+          "enumDescriptions": [
+            "%language.auto%",
+            "English",
+            "简体中文",
+            "Русский",
+            "日本語"
+          ],
+          "default": "auto",
+          "scope": "application",
+          "description": "%setting.cfide.ui.language%"
+        },
         "cfide.codeforces.handle": {
           "type": "string",
           "default": "",
-          "description": "Optional public read-only Codeforces handle for submission results and nearby ranking. No account authentication is performed."
+          "description": "%setting.cfide.codeforces.handle%"
         },
         "cfide.python.interpreter": {
           "type": "string",
           "default": "python3",
-          "scope": "machine",
-          "description": "Python 3 executable or absolute path. On Windows you may need to set this to python. For virtual environments, use the interpreter's full path."
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.python.interpreter%"
         },
         "cfide.python.args": {
           "type": "array",
@@ -172,19 +205,19 @@
             "type": "string"
           },
           "default": [],
-          "description": "Additional Python interpreter arguments. CFIDE adds unbuffered UTF-8 execution flags."
+          "description": "%setting.cfide.python.args%"
         },
         "cfide.python.templatePath": {
           "type": "string",
           "default": "",
-          "scope": "machine",
-          "description": "Optional absolute path to a Python template; supports ${PROBLEM_ID}."
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.python.templatePath%"
         },
         "cfide.cpp.compiler": {
           "type": "string",
           "default": "g++",
-          "scope": "machine",
-          "description": "C++ compiler executable or absolute path."
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.cpp.compiler%"
         },
         "cfide.cpp.args": {
           "type": "array",
@@ -197,25 +230,26 @@
             "-Wall",
             "-Wextra"
           ],
-          "description": "Compiler arguments, passed without a shell."
+          "description": "%setting.cfide.cpp.args%"
         },
         "cfide.run.timeoutMs": {
           "type": "number",
           "default": 2000,
           "minimum": 100,
-          "maximum": 60000
+          "maximum": 60000,
+          "description": "%setting.cfide.run.timeoutMs%"
         },
         "cfide.cpp.templatePath": {
           "type": "string",
           "default": "",
-          "scope": "machine",
-          "description": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.cpp.templatePath%"
         }
       }
     }
   },
   "scripts": {
-    "build": "node esbuild.mjs && vite build",
+    "build": "node scripts/build-localization.mjs && node esbuild.mjs && vite build",
     "build:downloader": "node scripts/build-downloader.mjs",
     "verify:downloader": "node scripts/verify-downloader.mjs",
     "verify:vsix": "node scripts/verify-vsix.mjs",

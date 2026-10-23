@@ -10,6 +10,7 @@ import { PythonRunner } from '../infrastructure/execution/python-runner';
 import { RunTests } from '../application/run-tests';
 import { requestSchema, type HostMessage } from '../shared/protocol';
 import { webviewHtml } from './webview-html';
+import { postLocale, t } from './localization';
 
 export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
   private changes = new vscode.EventEmitter<Problem | undefined>();
@@ -46,10 +47,19 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       throw new Error('Trust this workspace before creating files, compiling or running code.');
   }
   register() {
+    const tree = vscode.window.createTreeView('cfide.problems', { treeDataProvider: this });
+    tree.title = t('Local Practice');
     this.disposables.push(
       this.changes,
       this.output,
-      vscode.window.registerTreeDataProvider('cfide.problems', this),
+      tree,
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (!event.affectsConfiguration('cfide.ui.language')) return;
+        tree.title = t('Local Practice');
+        if (this.view) this.view.title = t('Tests');
+        postLocale(this.view?.webview);
+        this.changes.fire(undefined);
+      }),
       vscode.window.registerWebviewViewProvider(
         'cfide.tests',
         { resolveWebviewView: (view) => this.initializeView(view) },
@@ -70,7 +80,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       const { source } = await this.snapshot();
       await vscode.env.clipboard.writeText(source);
       void vscode.window.showInformationMessage(
-        'Solution code copied. Submit it on the official website yourself.',
+        t('Solution code copied. Submit it on the official website yourself.'),
       );
     });
     command('cfide.createProblem', () => this.create());
@@ -122,7 +132,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const item = new vscode.TreeItem(p.id + ' · ' + p.title);
     item.description = languages[p.language].label;
     item.iconPath = new vscode.ThemeIcon('code');
-    item.command = { command: 'cfide.openProblem', title: 'Open', arguments: [p] };
+    item.command = { command: 'cfide.openProblem', title: t('Open'), arguments: [p] };
     return item;
   }
   async template(language: Language, id: string) {
@@ -167,10 +177,10 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       );
       if (result.compileError || result.results[0]?.verdict !== 'AC')
         throw new Error(
-          result.compileError || result.results[0]?.stderr || 'Environment check failed.',
+          result.compileError || result.results[0]?.stderr || t('Environment check failed.'),
         );
       void vscode.window.showInformationMessage(
-        `${languages[language].label} environment is ready.`,
+        t('{language} environment is ready.', { language: languages[language].label }),
       );
     } finally {
       await fs.rm(folder, { recursive: true, force: true });
@@ -185,23 +195,23 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       (Object.entries(languages) as [Language, (typeof languages)[Language]][]).map(
         ([language, value]) => ({ label: value.label, description: value.sourceFile, language }),
       ),
-      { title: 'Problem language' },
+      { title: t('Problem language') },
     );
     if (!selected) return;
     const id = await vscode.window.showInputBox({
-      title: 'Create local problem',
+      title: t('Create local problem'),
       value: 'A',
       validateInput: (s) =>
         /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(s)
           ? null
-          : 'Use 1–64 letters, digits, underscores or hyphens.',
+          : t('Use 1–64 letters, digits, underscores or hyphens.'),
     });
     if (!id) return;
     const title = await vscode.window.showInputBox({
-      title: 'Problem title',
-      value: 'Sum of two numbers',
+      title: t('Problem title'),
+      value: t('Sum of two numbers'),
       validateInput: (s) =>
-        s.trim() && s.length <= 200 ? null : 'Enter a title up to 200 characters.',
+        s.trim() && s.length <= 200 ? null : t('Enter a title up to 200 characters.'),
     });
     if (!title) return;
     const problem = await store.createProblem(
@@ -269,7 +279,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       (Object.entries(languages) as [Language, (typeof languages)[Language]][]).map(
         ([language, value]) => ({ label: value.label, language }),
       ),
-      { title: 'Solution language (existing source is preserved)' },
+      { title: t('Solution language (existing source is preserved)') },
     );
     if (!selected) return;
     const store = this.store();
@@ -323,6 +333,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         this.mutation = this.mutation
           .then(async () => {
             if (message.type === 'ready') {
+              postLocale(this.view?.webview);
               await this.state();
               return;
             }
@@ -358,7 +369,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const message = error instanceof Error ? error.message : String(error);
     this.output.appendLine(message);
     this.send({ type: 'error', message });
-    void vscode.window.showErrorMessage('CFIDE: ' + message);
+    void vscode.window.showErrorMessage('CFIDE: ' + t(message));
   }
   async snapshot() {
     this.trust();

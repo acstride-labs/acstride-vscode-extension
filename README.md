@@ -1,6 +1,6 @@
 # CFIDE
 
-An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.6 bundles its public problem downloader, private Python runtime, curl_cffi and CA certificates directly in the platform-specific VSIX. Install CFIDE and use public downloads immediately: no Python/pip setup, extra component downloads or browser connection.
+An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.7 adds English, 简体中文, Русский and 日本語 interfaces plus a dedicated Settings page. The public downloader, private Python runtime, curl_cffi and CA certificates remain bundled directly in the platform-specific VSIX: no user-side Python/pip setup, extra downloads or browser connection.
 
 ## What is included
 
@@ -11,6 +11,7 @@ An anonymous Codeforces workbench for desktop VS Code, with C++ and Python suppo
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
 - Copy solution code for manual submission on the official website. The extension does not send solutions anywhere.
 - Saved problem HTML import as a fallback when public downloads are blocked.
+- Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
 There are **no login, Cookie import, browser connection, automatic submission, registration or clarification controls**. Register and submit on the official website yourself. Adding a contest locally does not register your account. Public tracking does not authenticate ownership of a handle.
 
@@ -21,7 +22,7 @@ There are **no login, Cookie import, browser connection, automatic submission, r
 3. Open **CFIDE: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
 4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
 5. Open a problem: solution on the left, cached statement on the right, **CFIDE Tests** below. Switch languages without discarding either solution. Official samples are read-only; add your own tests separately.
-6. Use **Copy solution code**, then submit on the official website yourself. Set **Track public handle** to see public submission results and nearby rankings. Clear the handle to stop tracking.
+6. Use **Copy solution code**, then submit on the official website yourself. Open the sidebar's **gear / CFIDE: Settings** and set **Codeforces handle** for public submission results/nearby rankings. Clear it to stop tracking.
 
 The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; CFIDE never silently downloads components or falls back to installing pip packages.
 
@@ -43,6 +44,11 @@ Local AC is **not official acceptance**. The default checker compares tokens, ig
 
 ## Settings
 
+Use the contest sidebar's **+ / trophy / gear** for add / center / settings. All preferences are on the independent Settings page, not inside Contest Center: interface language, public handle, C++/Python tool paths/argument arrays/templates, local time limit, environment checks, per-contest default language/automatic downloads/archive and downloader status. Language applies immediately without discarding open forms or test drafts. Problem statements/code and tool diagnostics stay in their original language.
+
+Choose **User settings** or **This workspace** before editing tool/tracking settings. Workspace settings override user settings; environment checks use the active saved configuration. Save/discard draft changes before switching scope or contest. Language is always an application-level user preference. Archive preserves all local code/tests.
+
+- `cfide.ui.language`: `auto` (follow VS Code), `en`, `zh-CN`, `ru`, `ja`.
 - `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
 - `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
 - `cfide.cpp.args`: argument array, default `-std=c++20 -O2 -Wall -Wextra`.
@@ -52,6 +58,8 @@ Local AC is **not official acceptance**. The default checker compares tokens, ig
 - `cfide.cpp.templatePath` / `cfide.python.templatePath`: optional absolute templates with `${PROBLEM_ID}` substitution.
 
 C++ completion comes from your installed language extension, not CFIDE. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
+
+UI text is maintained in four JSON catalogs shared by React and the extension host, with key/parameter checks and English fallback. Native static VS Code command/menu/configuration labels use generated `package.nls*.json` resources and follow VS Code's own display language; CFIDE's live preference controls its pages, tree labels and dynamic notifications. See [the localization/settings design](docs/localization-and-settings.md) for architecture and adding translations.
 
 ## Workspace and migration
 

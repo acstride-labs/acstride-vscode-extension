@@ -1,0 +1,26 @@
+{
+  "commands": {
+    "cfide.openSettings": "Settings",
+    "cfide.openContestCenter": "Open Contest Center",
+    "cfide.addContest": "Add Codeforces contest",
+    "cfide.openContestProblem": "Open Contest Problem",
+    "cfide.switchLanguage": "Switch Solution Language",
+    "cfide.createProblem": "Create Local Problem",
+    "cfide.openProblem": "Open Problem",
+    "cfide.runTests": "Run Tests",
+    "cfide.stop": "Stop",
+    "cfide.refresh": "Refresh Problems",
+    "cfide.copySolution": "Copy Solution Code"
+  },
+  "settings": {
+    "cfide.ui.language": "CFIDE interface language. Does not translate problem statements or code.",
+    "cfide.codeforces.handle": "Optional public read-only Codeforces handle for submission results and nearby ranking. No account authentication is performed.",
+    "cfide.python.interpreter": "Python 3 executable or absolute path. On Windows you may need to set this to python. For virtual environments, use the interpreter's full path.",
+    "cfide.python.args": "Additional Python interpreter arguments. CFIDE adds unbuffered UTF-8 execution flags.",
+    "cfide.python.templatePath": "Optional absolute path to a Python template; supports ${PROBLEM_ID}.",
+    "cfide.cpp.compiler": "C++ compiler executable or absolute path.",
+    "cfide.cpp.args": "Compiler arguments, passed without a shell.",
+    "cfide.run.timeoutMs": "Time limit per test (ms)",
+    "cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+  }
+}

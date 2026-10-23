@@ -4,7 +4,9 @@ import 'katex/dist/katex.min.css';
 import type { ContestHostMessage } from '../../../src/shared/contest-protocol';
 import type { Statement } from '../../../src/domain/contest';
 import { send } from '../bridge';
+import { useI18n } from '../i18n';
 export function StatementView() {
+  const { locale, t } = useI18n();
   const [data, setData] = useState<{ contestId: number; index: string; statement: Statement }>();
   const content = useRef<HTMLDivElement>(null),
     key = useRef('');
@@ -37,16 +39,18 @@ export function StatementView() {
     <main className="statement-view">
       <header>
         <span className="eyebrow">
-          {data ? `CODEFORCES ${data.contestId} / ${data.index}` : 'CODEFORCES / STATEMENT'}
+          {data ? `CODEFORCES ${data.contestId} / ${data.index}` : `CODEFORCES / ${t('STATEMENT')}`}
         </span>
         <p>
           {data
             ? data.statement.fetchedAt
-              ? `Cached ${new Date(data.statement.fetchedAt).toLocaleString()}`
-              : '题面未缓存 · 官方样例未下载'
-            : 'Open a downloaded contest problem to read its statement.'}
+              ? t('Cached {time}', {
+                  time: new Date(data.statement.fetchedAt).toLocaleString(locale),
+                })
+              : t('Statement not cached · official samples unavailable')
+            : t('Open a downloaded contest problem to read its statement.')}
         </p>
-        {data?.statement.imageWarning && <p>{data.statement.imageWarning}</p>}
+        {data?.statement.imageWarning && <p>{t(data.statement.imageWarning)}</p>}
       </header>
       <div
         ref={content}

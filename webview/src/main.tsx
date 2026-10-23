@@ -6,8 +6,11 @@ import { languages } from '../../src/domain/languages';
 import { send } from './bridge';
 import { ContestApp } from './contest/ContestApp';
 import { StatementView } from './statement/StatementView';
+import { SettingsApp } from './settings/SettingsApp';
+import { useI18n } from './i18n';
 import './styles.css';
 function App() {
+  const { t } = useI18n();
   const [problem, setProblem] = useState<Problem>();
   const [tests, setTests] = useState<TestCase[]>([]);
   const [results, setResults] = useState<Record<string, TestResult>>({});
@@ -75,12 +78,13 @@ function App() {
     <main>
       <header>
         <span className="eyebrow">
-          CFIDE / {problem?.contestId ? `CONTEST ${problem.contestId}` : 'LOCAL WORKBENCH'}
+          CFIDE /{' '}
+          {problem?.contestId ? t('CONTEST {id}', { id: problem.contestId }) : t('LOCAL WORKBENCH')}
         </span>
-        <h1>{problem ? `${problem.id} · ${problem.title}` : 'Tests'}</h1>
+        <h1>{problem ? `${problem.id} · ${problem.title}` : t('Tests')}</h1>
         <p>
-          {problem ? languages[problem.language].label : 'C++ / Python 3'} · Test locally. See what
-          changed.
+          {problem ? languages[problem.language].label : 'C++ / Python 3'} ·{' '}
+          {t('Test locally. See what changed.')}
         </p>
       </header>
       <nav>
@@ -89,18 +93,18 @@ function App() {
           disabled={running || anyDirty || !problem}
           onClick={() => send({ type: 'switchLanguage' })}
         >
-          Switch language
+          {t('Switch language')}
         </button>
         {problem?.contestId && (
           <button disabled={running || anyDirty} onClick={() => send({ type: 'copySource' })}>
-            Copy solution code
+            {t('Copy solution code')}
           </button>
         )}
         <button disabled={running || anyDirty || !problem} onClick={() => send({ type: 'run' })}>
-          ▶ Run all tests
+          ▶ {t('Run all tests')}
         </button>
         <button className="secondary" disabled={!running} onClick={() => send({ type: 'stop' })}>
-          ■ Stop
+          ■ {t('Stop')}
         </button>
         <button
           className="secondary"
@@ -112,16 +116,18 @@ function App() {
             })
           }
         >
-          ＋ Add test
+          ＋ {t('Add test')}
         </button>
       </nav>
-      <p aria-live="polite">{notice}</p>
+      <p aria-live="polite">{t(notice)}</p>
       {error && (
         <pre className="error" role="alert">
-          {error}
+          {t(error)}
         </pre>
       )}
-      {tests.length === 0 && <p>No tests yet. Add an input and optionally an expected output.</p>}
+      {tests.length === 0 && (
+        <p>{t('No tests yet. Add an input and optionally an expected output.')}</p>
+      )}
       {tests.map((test) => (
         <TestCard
           key={`${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
@@ -133,8 +139,9 @@ function App() {
         />
       ))}
       <footer>
-        Token comparison ignores whitespace. Uncheck expected output for run-only mode. Changes must
-        be saved before running.
+        {t(
+          'Token comparison ignores whitespace. Uncheck expected output for run-only mode. Changes must be saved before running.',
+        )}
       </footer>
     </main>
   );
@@ -152,6 +159,7 @@ function TestCard({
   anyDirty: boolean;
   onDirty: (id: string, dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const [input, setInput] = useState(test.input),
     [expected, setExpected] = useState(test.expected ?? ''),
     [check, setCheck] = useState(test.expected !== undefined);
@@ -179,9 +187,9 @@ function TestCard({
       </div>
       <div className="columns">
         <label>
-          Input
+          {t('Input')}
           <textarea
-            aria-label={`${test.id} input`}
+            aria-label={t('{id} input', { id: test.id })}
             disabled={running || test.readOnly}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -196,10 +204,10 @@ function TestCard({
               checked={check}
               onChange={(e) => setCheck(e.target.checked)}
             />{' '}
-            Expected output
+            {t('Expected output')}
           </span>
           <textarea
-            aria-label={`${test.id} expected output`}
+            aria-label={t('{id} expected output', { id: test.id })}
             disabled={running || test.readOnly || !check}
             value={expected}
             onChange={(e) => setExpected(e.target.value)}
@@ -217,37 +225,39 @@ function TestCard({
             })
           }
         >
-          {test.readOnly ? 'Official sample' : dirty ? 'Save changes' : 'Saved'}
+          {test.readOnly ? t('Official sample') : dirty ? t('Save changes') : t('Saved')}
         </button>
         <button
           className="secondary"
           disabled={running || anyDirty}
           onClick={() => send({ type: 'run', testId: test.id })}
         >
-          Run test
+          {t('Run test')}
         </button>
         <button
           className="secondary"
           disabled={running || test.readOnly}
           onClick={() => send({ type: 'deleteTest', testId: test.id })}
         >
-          Delete
+          {t('Delete')}
         </button>
-        {dirty && <small>Unsaved changes</small>}
+        {dirty && <small>{t('Unsaved changes')}</small>}
       </div>
       {result && (
         <div className="result">
-          <h3>Actual output</h3>
-          <pre>{result.stdout || '(empty)'}</pre>
+          <h3>{t('Actual output')}</h3>
+          <pre>{result.stdout || t('(empty)')}</pre>
           {result.difference && (
             <div className="difference">
-              First difference at token {result.difference.token}
+              {t('First difference at token {token}', { token: result.difference.token })}
               <div className="columns">
                 <div>
-                  Expected<pre>{result.difference.expected ?? '(missing token)'}</pre>
+                  {t('Expected')}
+                  <pre>{result.difference.expected ?? t('(missing token)')}</pre>
                 </div>
                 <div>
-                  Actual<pre>{result.difference.actual ?? '(missing token)'}</pre>
+                  {t('Actual')}
+                  <pre>{result.difference.actual ?? t('(missing token)')}</pre>
                 </div>
               </div>
             </div>
@@ -265,5 +275,13 @@ function TestCard({
 }
 const mode = document.body.dataset.mode;
 createRoot(document.getElementById('root')!).render(
-  mode === 'contest' ? <ContestApp /> : mode === 'statement' ? <StatementView /> : <App />,
+  mode === 'settings' ? (
+    <SettingsApp />
+  ) : mode === 'contest' ? (
+    <ContestApp />
+  ) : mode === 'statement' ? (
+    <StatementView />
+  ) : (
+    <App />
+  ),
 );

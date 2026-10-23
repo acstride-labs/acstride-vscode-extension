@@ -1,4 +1,15 @@
-# CFIDE 0.6 bundled anonymous-workflow acceptance checks
+# CFIDE 0.7 multilingual/settings acceptance checks
+
+## Localization and settings
+
+1. Verify the contest sidebar exposes add / contest center / settings (gear). Open Settings through the gear; it is a separate retained tab. Contest Center must not contain handle, default-language, auto-download, archive or environment-check controls.
+2. Select English, 简体中文, Русский and 日本語; all CFIDE webviews, tree labels, dynamic notifications and status text should update without reload. Follow VS Code should resolve its display language, with English fallback for unsupported languages. Native static command/menu labels follow VS Code's own display language, not the independent runtime setting.
+3. Edit a compiler field without saving, change UI language, and verify the draft and unsaved-state guard remain. Discard restores saved values. Repeat with an unsaved custom-test input; language changes must not clear drafts, source, results, search or selected center tab. Problem statements remain original text.
+4. Save a nondefault timeout under This workspace; verify only that workspace's settings file changes. Switch to User settings and verify user/default values remain separate. Save/discard is required before scope changes. Runtime environment checks use effective saved VS Code configuration. Test invalid JSON arguments, malformed handles and out-of-range timeouts; no partial writes should remain.
+5. Change only one contest's auto-download/default language/archive settings. Other contests, existing source files and custom tests must remain intact. Unsaved per-contest edits block changing the contest selection. Archive pauses background work, not file access.
+6. Reload the window and verify interface language persists. Without a workspace/untrusted mode, interface language remains editable while execution/contest mutations are protected. Inspect the final VSIX for all four native NLS files and its still-working bundled downloader.
+
+On 2026-10-24 macOS GUI checks passed for English/Chinese/Russian/Japanese pages, immediate tree/tests/statement-label updates, preserved compiler drafts across Chinese → Russian, and workspace timeout save (2300 ms) with a Japanese success notice. The test profile's user settings held only the language preference; the execution change was in the disposable workspace. Contest Center showed no preference controls. Automated tests additionally cover catalog/placeholder parity, translation-call/NLS coverage, strict setting schemas, trust/scope isolation and rollback after partial write failure.
 
 ## Product scope
 
