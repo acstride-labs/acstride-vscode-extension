@@ -1,8 +1,8 @@
 {
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
-  "description": "Create C++ and Python problems, manage tests, run and compare outputs locally.",
-  "version": "0.2.0",
+  "description": "Codeforces contests inside VS Code: scheduled imports, C++/Python testing, submissions and rankings.",
+  "version": "0.3.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -21,7 +21,8 @@
     "workspace"
   ],
   "activationEvents": [
-    "workspaceContains:.cfide/workspace.json"
+    "workspaceContains:.cfide/workspace.json",
+    "workspaceContains:.cfide/contests.json"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -32,6 +33,40 @@
   },
   "contributes": {
     "commands": [
+      {
+        "command": "cfide.openContestCenter",
+        "title": "CFIDE: Open Contest Center",
+        "icon": "$(trophy)"
+      },
+      {
+        "command": "cfide.addContest",
+        "title": "CFIDE: Add Codeforces Contest",
+        "icon": "$(add)"
+      },
+      {
+        "command": "cfide.openContestProblem",
+        "title": "CFIDE: Open Contest Problem"
+      },
+      {
+        "command": "cfide.signIn",
+        "title": "CFIDE: Sign In to Codeforces"
+      },
+      {
+        "command": "cfide.connectCookie",
+        "title": "CFIDE: Connect Existing Codeforces Session (Advanced)"
+      },
+      {
+        "command": "cfide.signOut",
+        "title": "CFIDE: Sign Out of Codeforces"
+      },
+      {
+        "command": "cfide.submitSolution",
+        "title": "CFIDE: Submit Solution to Codeforces"
+      },
+      {
+        "command": "cfide.switchLanguage",
+        "title": "CFIDE: Switch Solution Language"
+      },
       {
         "command": "cfide.createProblem",
         "title": "CFIDE: Create Local Problem"
@@ -54,6 +89,13 @@
       }
     ],
     "viewsContainers": {
+      "panel": [
+        {
+          "id": "cfide-testing",
+          "title": "CFIDE Tests",
+          "icon": "resources/icons/cfide.svg"
+        }
+      ],
       "activitybar": [
         {
           "id": "cfide",
@@ -63,14 +105,29 @@
       ]
     },
     "views": {
+      "cfide-testing": [
+        {
+          "type": "webview",
+          "id": "cfide.tests",
+          "name": "Tests"
+        }
+      ],
       "cfide": [
         {
+          "id": "cfide.contests",
+          "name": "Codeforces Contests"
+        },
+        {
           "id": "cfide.problems",
-          "name": "Local Problems"
+          "name": "Local Practice"
         }
       ]
     },
     "viewsWelcome": [
+      {
+        "view": "cfide.contests",
+        "contents": "Prepare a contest before it starts.\n[Add Codeforces Contest](command:cfide.addContest)\n[Open Contest Center](command:cfide.openContestCenter)"
+      },
       {
         "view": "cfide.problems",
         "contents": "Create a C++ or Python problem to get started.\n[Create Local Problem](command:cfide.createProblem)"
@@ -78,6 +135,16 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "cfide.addContest",
+          "when": "view == cfide.contests",
+          "group": "navigation"
+        },
+        {
+          "command": "cfide.openContestCenter",
+          "when": "view == cfide.contests",
+          "group": "navigation"
+        },
         {
           "command": "cfide.createProblem",
           "when": "view == cfide.problems",
@@ -100,6 +167,11 @@
     "configuration": {
       "title": "CFIDE",
       "properties": {
+        "cfide.codeforces.handle": {
+          "type": "string",
+          "default": "",
+          "description": "Read-only Codeforces handle for submission tracking and rank highlighting. Signing in overrides this for your own submissions."
+        },
         "cfide.python.interpreter": {
           "type": "string",
           "default": "python3",
@@ -165,14 +237,20 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
+    "katex": "^0.19.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.24.0"
+    "sanitize-html": "^2.18.1",
+    "tough-cookie": "^6.0.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@types/katex": "^0.16.8",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/sanitize-html": "^2.16.2",
     "@types/vscode": "^1.95.0",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.28.2",

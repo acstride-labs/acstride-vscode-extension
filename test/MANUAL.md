@@ -15,6 +15,18 @@
 
 These are manual acceptance checks, not claims of automated GUI verification.
 
+## Contest acceptance checks (0.3)
+
+1. Add two regular contest IDs, including one upcoming contest; verify independent settings, countdowns, archive and default languages. Adding locally must not register remotely.
+2. Leave the host running through a release, or reopen with an overdue contest; verify incremental imports, partial failure reporting and retry without overwriting code/custom tests.
+3. Open A in each contest; verify separate sources, statement/math/assets and bottom tests. Switch C++/Python; run both and confirm shared samples/custom tests.
+4. Disconnect the network and reopen cached statements/rankings. Verify stale timestamps, preserved code, and actionable failures.
+5. With a test account and explicit permission, validate login/session expiry, exact official language selection, one real submission and official verdict tracking. This authenticated live step has NOT yet been performed.
+6. Simulate a lost receipt; verify no automatic POST retry or unverified ID association, duplicate blocking, read-only snapshot display and explicit resolution.
+7. Check top/nearby/search rankings, frozen contests and pretests-vs-final verdict wording. Verify complex registration consent is not silently accepted.
+
+Live checks on 2026-10-24: public contest metadata/standings passed; real problem HTML was blocked by Codeforces site verification. Synthetic adapter tests do not establish compatibility with all current live forms or challenges.
+
 ## Python acceptance checks
 
 1. Create B and choose Python 3. Verify `B/main.py`, Python 3 labels in the sidebar/panel, and the default sample returning AC.
@@ -25,6 +37,8 @@ These are manual acceptance checks, not claims of automated GUI verification.
 6. Set `cfide.python.templatePath` and an absolute virtual-environment interpreter path; verify both are used.
 
 ## Validation performed on 2026-10-24
+
+Version 0.3.0: in the real macOS Extension Development Host, added public contest 1 and verified its three problem names and explicit site-verification failures. Used an explicitly labelled synthetic contest fixture for offline UI checks: opened statement/source/bottom tests, verified KaTeX math, read-only official samples, C++ sample AC, preserved the C++ source when switching to Python, Python sample AC, and added/saved a custom test producing WA with token 1 expected `6`, actual `5`. This is not evidence of successful live statement import or authenticated submission. Automated default suite: 32 passing tests; 2 opt-in live checks skipped by default.
 
 Version 0.2.0: in the same VS Code development workspace, selected Python 3, created B alongside the legacy C++ problem A, opened `B/main.py`, ran the default sample to AC, and changed/saved the expectation to obtain WA with token 1 expected `6`, actual `5`. Automated Python integration tests cover persistence, mixed languages, legacy metadata, individual tests, runtime/syntax errors, time/output limits, cancellation, interpreter arguments, sibling imports, UTF-8 and missing interpreters.
 

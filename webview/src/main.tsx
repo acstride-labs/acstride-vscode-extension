@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client';
 import type { HostMessage, WebviewRequest } from '../../src/shared/protocol';
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
 import { languages } from '../../src/domain/languages';
+import { send } from './bridge';
+import { ContestApp } from './contest/ContestApp';
+import { StatementView } from './statement/StatementView';
 import './styles.css';
-declare function acquireVsCodeApi(): { postMessage(message: WebviewRequest): void };
-const api = acquireVsCodeApi();
-const send = (message: WebviewRequest) => api.postMessage(message);
 function App() {
   const [problem, setProblem] = useState<Problem>();
   const [tests, setTests] = useState<TestCase[]>([]);
@@ -29,11 +29,12 @@ function App() {
     const receive = (event: MessageEvent<HostMessage>) => {
       const m = event.data;
       if (m.type === 'state') {
-        if (currentProblem.current !== m.problem.id) {
+        const key = `${m.problem.contestId ?? 'local'}/${m.problem.id}/${m.problem.language}`;
+        if (currentProblem.current !== key) {
           setDirtyTests({});
           setNotice('');
           setError('');
-          currentProblem.current = m.problem.id;
+          currentProblem.current = key;
         }
         setProblem(m.problem);
         setTests(m.tests);
@@ -73,7 +74,9 @@ function App() {
   return (
     <main>
       <header>
-        <span className="eyebrow">CFIDE / LOCAL WORKBENCH</span>
+        <span className="eyebrow">
+          CFIDE / {problem?.contestId ? `CONTEST ${problem.contestId}` : 'LOCAL WORKBENCH'}
+        </span>
         <h1>{problem ? `${problem.id} · ${problem.title}` : 'Tests'}</h1>
         <p>
           {problem ? languages[problem.language].label : 'C++ / Python 3'} · Test locally. See what
@@ -81,7 +84,19 @@ function App() {
         </p>
       </header>
       <nav>
-        <button disabled={running || anyDirty} onClick={() => send({ type: 'run' })}>
+        <button
+          className="secondary"
+          disabled={running || anyDirty || !problem}
+          onClick={() => send({ type: 'switchLanguage' })}
+        >
+          Switch language
+        </button>
+        {problem?.contestId && (
+          <button disabled={running || anyDirty} onClick={() => send({ type: 'submit' })}>
+            Submit to Codeforces
+          </button>
+        )}
+        <button disabled={running || anyDirty || !problem} onClick={() => send({ type: 'run' })}>
           ▶ Run all tests
         </button>
         <button className="secondary" disabled={!running} onClick={() => send({ type: 'stop' })}>
@@ -89,7 +104,7 @@ function App() {
         </button>
         <button
           className="secondary"
-          disabled={running}
+          disabled={running || !problem}
           onClick={() =>
             send({
               type: 'saveTest',
@@ -109,7 +124,7 @@ function App() {
       {tests.length === 0 && <p>No tests yet. Add an input and optionally an expected output.</p>}
       {tests.map((test) => (
         <TestCard
-          key={`${problem?.id}/${test.id}`}
+          key={`${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
           test={test}
           result={results[test.id]}
           running={running}
@@ -167,7 +182,7 @@ function TestCard({
           Input
           <textarea
             aria-label={`${test.id} input`}
-            disabled={running}
+            disabled={running || test.readOnly}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             spellCheck={false}
@@ -177,7 +192,7 @@ function TestCard({
           <span>
             <input
               type="checkbox"
-              disabled={running}
+              disabled={running || test.readOnly}
               checked={check}
               onChange={(e) => setCheck(e.target.checked)}
             />{' '}
@@ -185,7 +200,7 @@ function TestCard({
           </span>
           <textarea
             aria-label={`${test.id} expected output`}
-            disabled={running || !check}
+            disabled={running || test.readOnly || !check}
             value={expected}
             onChange={(e) => setExpected(e.target.value)}
             spellCheck={false}
@@ -194,7 +209,7 @@ function TestCard({
       </div>
       <div className="actions">
         <button
-          disabled={running || !dirty}
+          disabled={running || test.readOnly || !dirty}
           onClick={() =>
             send({
               type: 'saveTest',
@@ -202,7 +217,7 @@ function TestCard({
             })
           }
         >
-          {dirty ? 'Save changes' : 'Saved'}
+          {test.readOnly ? 'Official sample' : dirty ? 'Save changes' : 'Saved'}
         </button>
         <button
           className="secondary"
@@ -213,7 +228,7 @@ function TestCard({
         </button>
         <button
           className="secondary"
-          disabled={running}
+          disabled={running || test.readOnly}
           onClick={() => send({ type: 'deleteTest', testId: test.id })}
         >
           Delete
@@ -248,4 +263,7 @@ function TestCard({
     </section>
   );
 }
-createRoot(document.getElementById('root')!).render(<App />);
+const mode = document.body.dataset.mode;
+createRoot(document.getElementById('root')!).render(
+  mode === 'contest' ? <ContestApp /> : mode === 'statement' ? <StatementView /> : <App />,
+);

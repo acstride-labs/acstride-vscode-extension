@@ -3,11 +3,13 @@ export interface Problem {
   id: string;
   title: string;
   language: Language;
+  contestId?: number;
 }
 export interface TestCase {
   id: string;
   input: string;
   expected?: string;
+  readOnly?: boolean;
 }
 export type Verdict = 'AC' | 'WA' | 'RE' | 'TLE' | 'OLE' | 'CE' | 'CANCELLED' | 'RAN';
 export interface Difference {

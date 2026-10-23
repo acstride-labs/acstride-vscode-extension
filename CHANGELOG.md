@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Multi-contest workspace, scheduled incremental imports, countdown and restart recovery.
+- Cached sanitized statements, local math rendering and supported image caching.
+- Per-problem C++/Python solutions, shared official/custom tests and bottom testing panel.
+- Experimental SecretStorage-backed Codeforces session, exact language selection and submission adapter.
+- Durable source snapshots, uncertain-receipt protection and source-verified reconciliation.
+- Official submission tracking, cached rankings, simple registration checks and best-effort announcements.
+- Fixture-based contest/session tests and opt-in read-only live checks. Live website verification remains a known limitation.
+
 ## 0.2.0
 
 - Choose C++ or Python 3 when creating a local problem.
