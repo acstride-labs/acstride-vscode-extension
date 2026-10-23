@@ -1,0 +1,16 @@
+node_modules/**
+src/**
+webview/**
+test/**
+.git/**
+.github/**
+.vscode/**
+*.ts
+*.mjs
+*.mts
+.prettier*
+.nvmrc
+.gitignore
+tsconfig.json
+package-lock.json
+dist/**/*.map

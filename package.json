@@ -1,0 +1,160 @@
+{
+  "name": "cfide",
+  "displayName": "CFIDE — Contest Workbench",
+  "description": "Create C++ problems, manage tests, compile, run and compare outputs locally.",
+  "version": "0.1.0",
+  "publisher": "cfide-dev",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other",
+    "Testing"
+  ],
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "workspaceContains:.cfide/workspace.json"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Reading problems is supported; compiling and running requires a trusted workspace."
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "cfide.createProblem",
+        "title": "CFIDE: Create Local Problem"
+      },
+      {
+        "command": "cfide.openProblem",
+        "title": "CFIDE: Open Problem"
+      },
+      {
+        "command": "cfide.runTests",
+        "title": "CFIDE: Run Tests"
+      },
+      {
+        "command": "cfide.stop",
+        "title": "CFIDE: Stop"
+      },
+      {
+        "command": "cfide.refresh",
+        "title": "CFIDE: Refresh Problems"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cfide",
+          "title": "CFIDE",
+          "icon": "resources/icons/cfide.svg"
+        }
+      ]
+    },
+    "views": {
+      "cfide": [
+        {
+          "id": "cfide.problems",
+          "name": "Local Problems"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "cfide.problems",
+        "contents": "Create a C++ problem to get started.\n[Create Local Problem](command:cfide.createProblem)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cfide.createProblem",
+          "when": "view == cfide.problems",
+          "group": "navigation"
+        },
+        {
+          "command": "cfide.refresh",
+          "when": "view == cfide.problems"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "cfide.runTests",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorLangId == cpp"
+      }
+    ],
+    "configuration": {
+      "title": "CFIDE",
+      "properties": {
+        "cfide.cpp.compiler": {
+          "type": "string",
+          "default": "g++",
+          "scope": "machine",
+          "description": "C++ compiler executable or absolute path."
+        },
+        "cfide.cpp.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "-std=c++20",
+            "-O2",
+            "-Wall",
+            "-Wextra"
+          ],
+          "description": "Compiler arguments, passed without a shell."
+        },
+        "cfide.run.timeoutMs": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 100,
+          "maximum": 60000
+        },
+        "cfide.cpp.templatePath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs && vite build",
+    "typecheck": "tsc --noEmit && tsc -p webview/tsconfig.json --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run build",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.7.0",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

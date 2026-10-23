@@ -1,0 +1,148 @@
+:root {
+  color-scheme: light dark;
+}
+body {
+  padding: 0;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+main {
+  max-width: 1000px;
+  margin: auto;
+  padding: 24px;
+}
+.eyebrow {
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 12px 0;
+}
+h2 {
+  font-size: 14px;
+  margin: 0;
+}
+h3 {
+  font-size: 12px;
+}
+header p,
+footer,
+small {
+  color: var(--vscode-descriptionForeground);
+}
+nav,
+.actions,
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+nav {
+  margin: 24px 0 12px;
+}
+button {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 7px 12px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+  font: inherit;
+}
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+button.secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button:focus-visible,
+textarea:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+.card {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  margin: 16px 0;
+  padding: 16px;
+}
+.card-title {
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+textarea {
+  min-height: 100px;
+  resize: vertical;
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  padding: 10px;
+  font-family: var(--vscode-editor-font-family);
+}
+input[type='checkbox'] {
+  margin: 0;
+  vertical-align: middle;
+}
+.actions {
+  margin-top: 12px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--vscode-textCodeBlock-background);
+  padding: 12px;
+  font-family: var(--vscode-editor-font-family);
+  border-radius: 4px;
+}
+.badge {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.pass {
+  color: var(--vscode-testing-iconPassed);
+}
+.error,
+.difference {
+  color: var(--vscode-errorForeground);
+}
+.result {
+  margin-top: 18px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+footer {
+  margin: 24px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+@media (max-width: 500px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  main {
+    padding: 16px;
+  }
+}
