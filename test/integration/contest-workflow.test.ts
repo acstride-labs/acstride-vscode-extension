@@ -4,7 +4,6 @@ import path from 'node:path';
 import os from 'node:os';
 import { ContestRepository } from '../../src/infrastructure/storage/contest-repository';
 import { ContestService } from '../../src/application/contest-service';
-import { SubmissionRejectedError } from '../../src/infrastructure/codeforces/session-client';
 import { fixtureContest, statementHtml } from '../fixtures/codeforces';
 import type { CFSubmission, Contest } from '../../src/domain/contest';
 
@@ -31,9 +30,7 @@ async function fixture() {
     submissions: vi.fn(async (): Promise<CFSubmission[]> => []),
   };
   const session = {
-    handle: 'tester',
     page: vi.fn(async () => ({ html: statementHtml(), url: 'https://codeforces.com' })),
-    submit: vi.fn(async () => ({ submissionId: 777 })),
   };
   const changed = vi.fn();
   const service = new ContestService(
@@ -46,6 +43,59 @@ async function fixture() {
   return { root, repo, api, session, service, changed };
 }
 describe('multiple contest workspace', () => {
+  it('replaces cached browser/login instructions when opening older contests', async () => {
+    const { repo, service } = await fixture();
+    await service.add(1234, 'cpp');
+    await repo.update(1234, (record) => {
+      record.error = 'Could not connect to the dedicated Chrome.';
+      record.problems = [
+        {
+          index: 'A',
+          name: 'Sum',
+          ready: false,
+          error: 'Dedicated browser is not connected. Open it and click Connect after signing in.',
+        },
+      ];
+    });
+    const record = await repo.get(1234);
+    expect(record.error).toContain('Set up public downloads');
+    expect(record.problems[0].error).toContain('No login/browser connection is needed');
+  });
+  it('tracks public submissions without fetching any authenticated pages', async () => {
+    const { repo, service, api, session } = await fixture();
+    await service.add(1234, 'cpp');
+    api.submissions.mockResolvedValue([
+      {
+        id: 42,
+        creationTimeSeconds: 1,
+        problem: { index: 'A' },
+        programmingLanguage: 'GNU C++20',
+        verdict: 'OK',
+        testset: 'TESTS',
+      },
+    ]);
+    await service.refreshSubmissions(1234, 'public-handle');
+    expect((await repo.submissions(1234, 'public-handle')).submissions[0].id).toBe(42);
+    expect(session.page).not.toHaveBeenCalled();
+  });
+  it('imports saved public HTML as a fallback while preserving code and custom tests', async () => {
+    const { repo, service, session } = await fixture();
+    await service.add(1234, 'python');
+    session.page.mockRejectedValue(new Error('Anonymous download blocked'));
+    await service.sync(1234);
+    const store = repo.problems(1234);
+    await fs.writeFile(store.sourcePath('A', 'python'), 'print("keep solution")');
+    await store.saveTest('A', { id: 'custom-1', input: '1', expected: '2' });
+    await service.importProblemHtml(1234, 'A', statementHtml('A. Sum'));
+    expect((await repo.get(1234)).problems[0].ready).toBe(true);
+    expect(await fs.readFile(store.sourcePath('A', 'python'), 'utf8')).toBe(
+      'print("keep solution")',
+    );
+    expect((await store.listTests('A')).map((t) => t.id)).toEqual(['sample-1', 'custom-1']);
+    await expect(service.importProblemHtml(1234, 'A', statementHtml('B. Wrong'))).rejects.toThrow(
+      'does not match',
+    );
+  });
   it('preserves the manifest when importing and switching languages concurrently', async () => {
     const { repo, service } = await fixture();
     await service.add(1234, 'cpp');
@@ -169,111 +219,5 @@ describe('multiple contest workspace', () => {
     await service.sync(1234, 'A');
     expect(await restored.statement(1234, 'A')).not.toBeNull();
     expect((await restored.get(1234)).error).toBe('Offline');
-  });
-});
-describe('submission receipts', () => {
-  it('saves an exact immutable snapshot and associates only a definite receipt ID', async () => {
-    const { repo, service, session } = await fixture();
-    await service.add(1234, 'python');
-    const attempt = await service.submit(
-      1234,
-      'A',
-      'python',
-      '998',
-      'PyPy 3 fixture',
-      'print(123)\n',
-      new URLSearchParams(),
-    );
-    expect(attempt).toMatchObject({
-      state: 'confirmed',
-      submissionId: 777,
-      handle: 'tester',
-      programTypeId: '998',
-    });
-    expect(await fs.readFile(repo.snapshotPath(attempt), 'utf8')).toBe('print(123)\n');
-    expect(session.submit).toHaveBeenCalledTimes(1);
-    expect((await repo.attempts(1234))[0].sourceHash).toHaveLength(64);
-  });
-  it('does not retry an uncertain POST or auto-link similar submissions; blocks a duplicate', async () => {
-    const { repo, service, session, api } = await fixture();
-    await service.add(1234, 'cpp');
-    session.submit.mockRejectedValue(new Error('Connection lost after send'));
-    const attempt = await service.submit(
-      1234,
-      'A',
-      'cpp',
-      '999',
-      'GNU fixture',
-      'int main(){}',
-      new URLSearchParams(),
-    );
-    expect(attempt.state).toBe('uncertain');
-    api.submissions.mockResolvedValue([
-      {
-        id: 888,
-        contestId: 1234,
-        creationTimeSeconds: Math.floor(Date.now() / 1000),
-        programmingLanguage: 'GNU fixture',
-        problem: { index: 'A' },
-        verdict: 'TESTING',
-      },
-    ]);
-    await service.refreshSubmissions(1234, 'tester');
-    const persisted = (await repo.attempts(1234))[0];
-    expect(persisted.state).toBe('uncertain');
-    expect(persisted.submissionId).toBeUndefined();
-    expect(persisted.message).toContain('888');
-    await expect(
-      service.submit(1234, 'A', 'cpp', '999', 'GNU fixture', 'new source', new URLSearchParams()),
-    ).rejects.toThrow('Resolve');
-    expect(session.submit).toHaveBeenCalledTimes(1);
-  });
-  it('serializes duplicate clicks and records definite form rejection', async () => {
-    const { repo, service, session } = await fixture();
-    await service.add(1234, 'cpp');
-    session.submit.mockRejectedValue(new SubmissionRejectedError('Same source already submitted'));
-    const first = service.submit(
-      1234,
-      'A',
-      'cpp',
-      '999',
-      'GNU fixture',
-      'source',
-      new URLSearchParams(),
-    );
-    await expect(
-      service.submit(1234, 'A', 'cpp', '999', 'GNU fixture', 'source', new URLSearchParams()),
-    ).rejects.toThrow('progress');
-    expect((await first).state).toBe('rejected');
-    expect(session.submit).toHaveBeenCalledTimes(1);
-  });
-  it('reconciles an uncertain receipt only after verifying the official source', async () => {
-    const { repo, service, session, api } = await fixture();
-    await service.add(1234, 'cpp');
-    session.submit.mockRejectedValue(new Error('Lost receipt'));
-    await service.submit(
-      1234,
-      'A',
-      'cpp',
-      '999',
-      'GNU fixture',
-      'int main(){}',
-      new URLSearchParams(),
-    );
-    api.submissions.mockResolvedValue([
-      {
-        id: 888,
-        creationTimeSeconds: Math.floor(Date.now() / 1000),
-        programmingLanguage: 'GNU fixture',
-        problem: { index: 'A' },
-      },
-    ]);
-    session.page.mockResolvedValue({
-      html: '<pre id="program-source-text">int main(){}</pre>',
-      url: 'https://codeforces.com',
-    });
-    await service.refreshSubmissions(1234, 'tester');
-    expect((await repo.attempts(1234))[0]).toMatchObject({ state: 'confirmed', submissionId: 888 });
-    expect(session.submit).toHaveBeenCalledTimes(1);
   });
 });

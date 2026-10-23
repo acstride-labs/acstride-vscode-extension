@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CodeforcesApi } from '../../src/infrastructure/codeforces/api-client';
-import { CodeforcesSession } from '../../src/infrastructure/codeforces/session-client';
+import { PublicProblemClient } from '../../src/infrastructure/codeforces/public-problem-client';
+import { ContestService } from '../../src/application/contest-service';
+import { ContestRepository } from '../../src/infrastructure/storage/contest-repository';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
 import { parseStatement } from '../../src/infrastructure/codeforces/statement-parser';
 
@@ -18,15 +23,59 @@ describe.skipIf(process.env.CFIDE_LIVE !== '1')('live read-only Codeforces smoke
   }, 60000);
   it('loads and parses a real public problem statement without authentication', async () => {
     const queue = new RequestQueue();
-    const secrets = { get: async () => undefined, store: async () => {}, delete: async () => {} };
+    const client = new PublicProblemClient(
+      queue,
+      async () => process.env.CFIDE_CURL_PYTHON,
+      path.resolve('resources/helpers/public-fetch.py'),
+    );
     try {
-      const session = new CodeforcesSession(secrets, queue);
-      const page = await session.page('/contest/1/problem/A');
+      const page = await client.page('/contest/1/problem/A');
       const result = parseStatement(page.html, page.url);
       expect(result.statement.title).toContain('Theatre Square');
       expect(result.samples.length).toBeGreaterThan(0);
     } finally {
+      client.dispose();
       queue.dispose();
     }
   }, 30000);
+  it('imports real public samples into an isolated contest workspace without authentication', async () => {
+    const queue = new RequestQueue();
+    const client = new PublicProblemClient(
+      queue,
+      async () => process.env.CFIDE_CURL_PYTHON,
+      path.resolve('resources/helpers/public-fetch.py'),
+    );
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-public-live-'));
+    try {
+      const repo = new ContestRepository(root);
+      const service = new ContestService(
+        repo,
+        new CodeforcesApi(queue),
+        client,
+        async () => 'print(0)',
+      );
+      await service.add(1, 'python');
+      await service.sync(1, 'A');
+      expect((await repo.get(1)).problems.find((p) => p.index === 'A')?.ready).toBe(true);
+      expect((await repo.problems(1).listTests('A'))[0]).toMatchObject({
+        input: '6 6 4\n',
+        expected: '4\n',
+        readOnly: true,
+      });
+      expect(await fs.readFile(repo.problems(1).sourcePath('A', 'python'), 'utf8')).toBe(
+        'print(0)',
+      );
+      for (const pathname of ['/contest/1/problem/B', '/contest/2000/problem/A']) {
+        const page = await client.page(pathname);
+        expect(parseStatement(page.html, page.url).samples.length).toBeGreaterThan(0);
+      }
+      console.info(
+        'Anonymous product transport: real contest import, Theatre Square sample 6 6 4 → 4, and two additional public statements passed.',
+      );
+    } finally {
+      client.dispose();
+      queue.dispose();
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  }, 90000);
 });

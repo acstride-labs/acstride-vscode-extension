@@ -68,21 +68,6 @@ export interface Standings {
   rows: RankRow[];
   fetchedAt: number;
 }
-export interface SubmissionAttempt {
-  id: string;
-  contestId: number;
-  problemIndex: string;
-  language: 'cpp' | 'python';
-  programTypeId: string;
-  programTypeName: string;
-  handle: string;
-  sourceHash: string;
-  createdAt: number;
-  state: 'prepared' | 'sending' | 'uncertain' | 'confirmed' | 'rejected';
-  submissionId?: number;
-  message?: string;
-  baselineId?: number;
-}
 
 export function parseContestId(input: string): number {
   const trimmed = input.trim();

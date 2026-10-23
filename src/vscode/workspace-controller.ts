@@ -43,9 +43,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   }
   private trust() {
     if (!vscode.workspace.isTrusted)
-      throw new Error(
-        'Trust this workspace before creating files, compiling, running or submitting code.',
-      );
+      throw new Error('Trust this workspace before creating files, compiling or running code.');
   }
   register() {
     this.disposables.push(
@@ -68,6 +66,13 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           }
         }),
       );
+    command('cfide.copySolution', async () => {
+      const { source } = await this.snapshot();
+      await vscode.env.clipboard.writeText(source);
+      void vscode.window.showInformationMessage(
+        'Solution code copied. Submit it on the official website yourself.',
+      );
+    });
     command('cfide.createProblem', () => this.create());
     command('cfide.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
     command('cfide.refresh', () => this.changes.fire(undefined));
@@ -310,8 +315,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           void this.switchLanguage().catch((e) => this.error(e));
           return;
         }
-        if (message.type === 'submit') {
-          void vscode.commands.executeCommand('cfide.submitSolution');
+        if (message.type === 'copySource') {
+          void vscode.commands.executeCommand('cfide.copySolution');
           return;
         }
         const captured = this.current;

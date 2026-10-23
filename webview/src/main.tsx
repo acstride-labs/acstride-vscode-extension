@@ -92,8 +92,8 @@ function App() {
           Switch language
         </button>
         {problem?.contestId && (
-          <button disabled={running || anyDirty} onClick={() => send({ type: 'submit' })}>
-            Submit to Codeforces
+          <button disabled={running || anyDirty} onClick={() => send({ type: 'copySource' })}>
+            Copy solution code
           </button>
         )}
         <button disabled={running || anyDirty || !problem} onClick={() => send({ type: 'run' })}>

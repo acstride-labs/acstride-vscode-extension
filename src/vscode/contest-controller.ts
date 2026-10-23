@@ -1,19 +1,15 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import { createHash } from 'node:crypto';
 import * as cheerio from 'cheerio';
-import {
-  parseContestId,
-  submissionLabel,
-  type ContestRecord,
-  type SubmissionAttempt,
-} from '../domain/contest';
+import { parseContestId, type ContestRecord } from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
 import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
-import { CodeforcesSession } from '../infrastructure/codeforces/session-client';
-import { BrowserSession } from '../infrastructure/codeforces/browser-session';
+import {
+  PublicProblemClient,
+  environmentPython,
+} from '../infrastructure/codeforces/public-problem-client';
 import { RequestQueue } from '../infrastructure/codeforces/request-queue';
 import { cacheStatementAssets } from '../infrastructure/codeforces/asset-cache';
 import { ContestRepository } from '../infrastructure/storage/contest-repository';
@@ -39,9 +35,8 @@ type Node =
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private queue = new RequestQueue();
   private api = new CodeforcesApi(this.queue);
-  private session: CodeforcesSession;
-  private browser?: BrowserSession;
-  private browserConnected = false;
+  private reader: PublicProblemClient;
+  private downloaderReady = false;
   private initialized: Promise<void>;
   private service?: ContestService;
   private repo?: ContestRepository;
@@ -57,8 +52,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private rankSearch = '';
   private busy?: string;
   private errorMessage?: string;
-  private registrationMessage?: string;
-  private announcementsMessage?: string;
   private changes = new vscode.EventEmitter<Node | undefined>();
   readonly onDidChangeTreeData = this.changes.event;
   private disposables: vscode.Disposable[] = [];
@@ -67,33 +60,39 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private lastStatus = new Map<number, number>();
   private lastBoard = 0;
   private pendingContests = new Set<number>();
-  private submitting = false;
-  private snapshots = new Map<string, string>();
   private readonly status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
   ) {
-    if (
-      vscode.workspace.getConfiguration('cfide').get('codeforces.connectionMode', 'browser') ===
-      'browser'
-    ) {
-      this.browser = new BrowserSession(
-        path.join(context.globalStorageUri.fsPath, 'codeforces-browser-profile'),
-        () =>
-          vscode.workspace.getConfiguration('cfide').get<string>('codeforces.browserExecutable') ||
-          undefined,
-      );
-    }
-    this.session = new CodeforcesSession(context.secrets, this.queue, fetch, this.browser);
-    this.initialized = this.session.restore();
+    this.reader = new PublicProblemClient(
+      this.queue,
+      async () => {
+        const configured = vscode.workspace
+          .getConfiguration('cfide')
+          .get<string>('codeforces.downloadPython', '')
+          .trim();
+        if (configured) return configured;
+        const python = environmentPython(
+          path.join(context.globalStorageUri.fsPath, 'public-download-env'),
+        );
+        try {
+          await fs.access(python);
+          return python;
+        } catch {
+          return undefined;
+        }
+      },
+      vscode.Uri.joinPath(context.extensionUri, 'resources', 'helpers', 'public-fetch.py').fsPath,
+    );
+    this.initialized = this.reader.ready().then((ready) => {
+      this.downloaderReady = ready;
+    });
     this.selectedId = context.workspaceState.get<number>('cfide.selectedContest');
   }
   private trust() {
     if (!vscode.workspace.isTrusted)
-      throw new Error(
-        'Trust this workspace before connecting, downloading, registering or submitting.',
-      );
+      throw new Error('Trust this workspace before downloading or changing local contest files.');
   }
   private runtime() {
     const root = this.workspace.localStore().root;
@@ -104,7 +103,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.service = new ContestService(
         repository,
         this.api,
-        this.session,
+        this.reader,
         (language, index) => this.workspace.template(language, index),
         (id) => this.changed(id),
         (id, statement) => cacheStatementAssets(statement, repository.assets(id), this.queue),
@@ -134,22 +133,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     command('cfide.openContestProblem', (node: Node) =>
       node?.kind === 'problem' ? this.openProblem(node.contestId, node.index) : undefined,
     );
-    command('cfide.signIn', () => this.login());
-    command('cfide.connectBrowser', () => this.connectBrowser());
-    command('cfide.connectCookie', () => this.connectCookie());
-    command('cfide.signOut', async () => {
-      this.trust();
-      if (this.submitting) throw new Error('Wait for the current submission before disconnecting.');
-      await this.session.logout();
-      this.browserConnected = false;
-      await this.publish();
-    });
-    command('cfide.submitSolution', () => this.submit());
+    command('cfide.setupPublicDownloads', () => this.setupDownloads());
     this.status.command = 'cfide.openContestCenter';
     this.disposables.push(
-      vscode.workspace.registerTextDocumentContentProvider('cfide-snapshot', {
-        provideTextDocumentContent: (uri) => this.snapshots.get(uri.toString()) || '',
-      }),
       this.changes,
       this.status,
       vscode.window.registerTreeDataProvider('cfide.contests', this),
@@ -210,9 +196,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           if (
             cached?.submissions.some(
               (s) => !s.verdict || ['TESTING', 'SUBMITTED'].includes(s.verdict),
-            ) ||
-            (await repo.attempts(record.contest.id)).some((a) =>
-              ['sending', 'prepared', 'uncertain'].includes(a.state),
             )
           )
             this.pendingContests.add(record.contest.id);
@@ -226,7 +209,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private handle() {
     return (
-      this.session.handle ||
       vscode.workspace.getConfiguration('cfide').get<string>('codeforces.handle', '').trim() ||
       undefined
     );
@@ -335,8 +317,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private async select(id: number) {
     await this.runtime().repo.get(id);
     if (this.selectedId !== id) {
-      this.registrationMessage = undefined;
-      this.announcementsMessage = undefined;
       this.errorMessage = undefined;
       this.lastBoard = 0;
     }
@@ -388,26 +368,21 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     await this.initialized;
     if (message.type === 'ready') return this.publish();
     if (message.type === 'addContest') return this.add();
-    if (message.type === 'login') return this.login();
-    if (message.type === 'connectBrowser') return this.connectBrowser();
-    if (message.type === 'logout') {
-      this.trust();
-      if (this.submitting) throw new Error('Wait for the current submission before disconnecting.');
-      await this.session.logout();
-      this.browserConnected = false;
-      return this.publish();
-    }
-    if (message.type === 'connectCookie') return this.connectCookie();
+    if (message.type === 'setupDownloads') return this.setupDownloads();
     if (message.type === 'watchHandle') {
       const handle = await vscode.window.showInputBox({
         title: 'Codeforces handle (read-only tracking)',
         value: this.handle(),
-        validateInput: (h) => (/^[A-Za-z0-9_.-]{1,64}$/.test(h) ? null : 'Enter a valid handle.'),
+        validateInput: (h) =>
+          !h || /^[A-Za-z0-9_.-]{1,64}$/.test(h)
+            ? null
+            : 'Enter a valid handle, or leave blank to stop tracking.',
       });
-      if (handle)
+      if (handle !== undefined)
         await vscode.workspace
           .getConfiguration('cfide')
           .update('codeforces.handle', handle, vscode.ConfigurationTarget.Global);
+      this.lastStatus.clear();
       return this.publish();
     }
     if (message.type === 'checkEnvironment')
@@ -424,6 +399,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
     if (message.type === 'openProblem') return this.openProblem(message.contestId, message.index);
+    if (message.type === 'importHtml') return this.importHtml(message.contestId, message.index);
     if (message.type === 'syncContest')
       return this.task('Downloading available problems…', () =>
         service.sync(message.contestId, message.index),
@@ -452,54 +428,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       });
       return this.changed(message.contestId);
     }
-    if (message.type === 'resolveAttempt')
-      return this.resolveAttempt(message.contestId, message.attemptId);
-    if (message.type === 'viewSnapshot') {
-      const attempt = (await repo.attempts(message.contestId)).find(
-        (a) => a.id === message.attemptId,
-      );
-      if (attempt) {
-        const uri = vscode.Uri.from({
-          scheme: 'cfide-snapshot',
-          path: `/${attempt.id}/main.${attempt.language === 'cpp' ? 'cpp' : 'py'}`,
-        });
-        this.snapshots.set(uri.toString(), await fs.readFile(repo.snapshotPath(attempt), 'utf8'));
-        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
-      }
-      return;
-    }
-    if (message.type === 'registration')
-      return this.task('Checking official registration…', async () => {
-        if (
-          message.register &&
-          (await vscode.window.showWarningMessage(
-            'Send a registration request for contest ' +
-              message.contestId +
-              ' as ' +
-              this.session.handle +
-              '? Adding a contest locally does not register you.',
-            { modal: true },
-            'Register',
-          )) !== 'Register'
-        )
-          return;
-        this.registrationMessage = await this.session.registration(
-          message.contestId,
-          message.register,
-        );
-      });
-    if (message.type === 'announcements')
-      return this.task('Reading contest messages…', async () => {
-        const page = await this.session.page(`/contest/${message.contestId}`),
-          $ = cheerio.load(page.html);
-        this.announcementsMessage =
-          $('.contest-announcement, .announcement, .notice')
-            .text()
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 8000) ||
-          'No announcement text was recognized in the returned page. This is not a guarantee that the contest has no announcements.';
-      });
   }
   private async openProblem(id: number, index: string) {
     this.trust();
@@ -518,7 +446,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       );
     const statement = cached || {
       title: 'Statement not downloaded',
-      html: `<h2>题面尚未下载</h2><p>本地解答已可编辑、运行。官方样例尚不可用；这不代表下载成功。</p><p>${escaped(item?.error || '尚无已缓存的题面。请在比赛中心下载题面和样例。')}</p><p>如果提示浏览器验证，重复重试通常无效；需通过真实浏览器完成验证后再导入题面。</p>`,
+      html: `<h2>题面尚未下载</h2><p>本地解答已可编辑、运行。官方样例尚不可用；这不代表下载成功。</p><p>${escaped(item?.error || '尚无已缓存的题面。请在比赛中心下载题面和样例。')}</p><p>若匿名下载被拦截，可设置公共下载组件，或在比赛中心导入已保存的题目 HTML。无需连接浏览器或登录。</p>`,
       timeLimit: '',
       memoryLimit: '',
       fetchedAt: 0,
@@ -596,206 +524,61 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     });
     return { ...statement, html: $.html() };
   }
-  private async login() {
-    this.trust();
-    if (this.browser) {
-      if (vscode.env.remoteName)
-        throw new Error(
-          'Dedicated browser mode currently requires local desktop VS Code, not a remote extension host.',
-        );
-      if (
-        (await vscode.window.showInformationMessage(
-          'Open a dedicated Chrome/Edge profile for Codeforces? It exposes a local-only debugging interface while running. Use this profile only for Codeforces. Complete verification and sign-in yourself; then click Connect in Contest Center. Your everyday browser profile is not accessed.',
-          { modal: true },
-          'Open dedicated browser',
-        )) !== 'Open dedicated browser'
-      )
-        return;
-      await this.task('Opening dedicated browser…', async () => {
-        const launched = await this.browser!.launch();
-        void vscode.window.showInformationMessage(
-          launched
-            ? 'CFIDE browser opened. Sign in there, then click Connect after sign-in.'
-            : 'The CFIDE browser is already running. Switch to its window, finish sign-in, then click Connect after sign-in.',
-        );
-      });
-      return;
-    }
-    const handle = await vscode.window.showInputBox({
-      title: 'Codeforces sign in',
-      prompt: 'Handle or email. Your password is sent only to codeforces.com and is not stored.',
-    });
-    if (!handle) return;
-    const password = await vscode.window.showInputBox({
-      title: 'Codeforces password',
-      password: true,
-      ignoreFocusOut: true,
-    });
-    if (!password) return;
-    await this.task('Signing in to Codeforces…', async () => {
-      await this.session.login(handle, password);
-    });
-  }
-  private async connectCookie() {
-    this.trust();
-    const cookie = await vscode.window.showInputBox({
-      title: 'Connect an existing Codeforces session (advanced)',
-      prompt:
-        'Paste the Cookie header from your own authenticated Codeforces session. Stored only in VS Code SecretStorage; never in the workspace.',
-      password: true,
-      ignoreFocusOut: true,
-    });
-    if (cookie)
-      await this.task('Validating session…', async () => {
-        await this.session.connectCookie(cookie);
-      });
-  }
-  private async connectBrowser() {
-    this.trust();
-    if (vscode.env.remoteName)
-      throw new Error('Dedicated browser mode requires local desktop VS Code.');
-    if (this.submitting)
-      throw new Error(
-        'Wait for the current submission to finish before changing browser connections.',
-      );
-    await this.task('Connecting to dedicated browser…', async () => {
-      this.browserConnected = false;
-      const handle = await this.session.connectBrowser();
-      this.browserConnected = true;
-      void vscode.window.showInformationMessage(
-        handle
-          ? `CFIDE browser connected as ${handle}.`
-          : 'Browser connected for public downloads, but no signed-in account was detected. Sign in in the browser, then reconnect before submitting.',
-      );
-    });
-  }
-  private async submit() {
-    this.trust();
-    await this.initialized;
-    if (this.submitting) throw new Error('A submission is already being prepared.');
-    this.submitting = true;
-    try {
-      const snapshot = await this.workspace.snapshot(),
-        { problem, source } = snapshot;
-      if (!problem.contestId)
-        throw new Error('Select a Codeforces contest problem, not a local practice problem.');
-      if (!this.session.handle) {
-        await this.login();
-        if (!this.session.handle) return;
-      }
-      const { repo, service } = this.runtime();
-      const id = problem.contestId;
-      if (repo.contestRoot(id) !== snapshot.store.root)
-        throw new Error('Workspace changed before submission. No source was sent.');
-      const form = await this.session.submitForm(id);
-      const choices = form.languages.filter((p) =>
-        problem.language === 'cpp' ? /C\+\+|G\+\+/i.test(p.name) : /Python|PyPy/i.test(p.name),
-      );
-      if (!choices.length)
-        throw new Error('No matching language is offered by Codeforces for this contest.');
-      const key = `cfide.programType.${id}.${problem.language}`;
-      const remembered = this.context.workspaceState.get<string>(key);
-      let type;
-      {
-        const selected = await vscode.window.showQuickPick(
-          [...choices]
-            .sort((a, b) => Number(b.id === remembered) - Number(a.id === remembered))
-            .map((p) => ({
-              label: p.name,
-              id: p.id,
-              description: p.id === remembered ? 'Last used' : undefined,
-            })),
-          {
-            title: `Submit ${id}/${problem.id} as ${this.session.handle}: choose exact Codeforces language`,
-          },
-        );
-        if (!selected) return;
-        type = { id: selected.id, name: selected.label };
-        await this.context.workspaceState.update(key, type.id);
-      }
-      await this.task(`Submitting ${id}/${problem.id} · ${type.name}…`, async () => {
-        const attempt = await service.submit(
-          id,
-          problem.id,
-          problem.language,
-          type!.id,
-          type!.name,
-          source,
-          form.fields,
-        );
-        this.pendingContests.add(id);
-        await this.select(id);
-        if (attempt.state === 'confirmed')
-          void vscode.window.showInformationMessage(
-            `CFIDE: submission #${attempt.submissionId} received. Tracking verdict.`,
-          );
-        else
-          void vscode.window.showWarningMessage(
-            `CFIDE: ${attempt.state === 'rejected' ? 'Submission rejected' : 'Submission receipt uncertain'}. Open Contest Center → My submissions for details.`,
-          );
-        await service.refreshSubmissions(id, this.session.handle!);
-      });
-    } finally {
-      this.submitting = false;
-    }
-  }
-  private async resolveAttempt(id: number, attemptId: string) {
-    const { repo } = this.runtime();
-    const attempt = (await repo.attempts(id)).find((a) => a.id === attemptId);
-    if (!attempt || !['prepared', 'sending', 'uncertain'].includes(attempt.state)) return;
-    const choice = await vscode.window.showQuickPick(
-      ['Verify and link an official submission', 'I checked: no submission was received'],
-      { title: 'Resolve uncertain receipt. Do not resubmit without checking.' },
-    );
-    if (!choice) return;
-    if (choice.startsWith('I checked')) {
-      if (
-        (await vscode.window.showWarningMessage(
-          'This unlocks a new submission and may cause a duplicate if Codeforces received the earlier request. Have you checked your official submissions?',
-          { modal: true },
-          'Mark resolved',
-        )) !== 'Mark resolved'
-      )
-        return;
-      attempt.state = 'rejected';
-      attempt.message = 'Manually resolved by user: no receipt found; new submission unlocked.';
-    } else {
-      const official = await this.api.submissions(id, attempt.handle);
-      const selected = await vscode.window.showQuickPick(
-        official
-          .filter(
-            (s) =>
-              s.problem.index === attempt.problemIndex &&
-              s.programmingLanguage === attempt.programTypeName &&
-              s.id > (attempt.baselineId ?? 0),
-          )
-          .map((s) => ({ label: `#${s.id} · ${submissionLabel(s)}`, id: s.id })),
-        { title: 'Choose the submission whose source should match the saved snapshot' },
-      );
-      if (!selected) return;
-      const page = await this.session.page(`/contest/${id}/submission/${selected.id}`),
-        $ = cheerio.load(page.html);
-      const remote = $('#program-source-text').text(),
-        local = await fs.readFile(repo.snapshotPath(attempt), 'utf8');
-      if (
-        !remote ||
-        createHash('sha256').update(local).digest('hex') !== attempt.sourceHash ||
-        remote.replace(/\r\n/g, '\n').trimEnd() !== local.replace(/\r\n/g, '\n').trimEnd()
-      )
-        throw new Error(
-          'Official source is unavailable or differs from the saved snapshot. No link was made.',
-        );
-      attempt.state = 'confirmed';
-      attempt.submissionId = selected.id;
-      attempt.message = 'Source snapshot verified against official submission.';
-    }
-    await repo.saveAttempt(attempt);
-    await this.publish();
-  }
   private async refreshStatus(id: number) {
     const handle = this.handle();
-    if (!handle) throw new Error('Sign in or set a read-only handle.');
+    if (!handle) throw new Error('Set a public read-only handle first.');
     await this.runtime().service.refreshSubmissions(id, handle);
+  }
+  private async setupDownloads() {
+    this.trust();
+    if (
+      (await vscode.window.showInformationMessage(
+        'Install curl_cffi 0.16.3 from PyPI into an isolated CFIDE download environment? Requires Python 3.10+. No login, browser, or system Python packages will be modified.',
+        { modal: true },
+        'Install public downloader',
+      )) !== 'Install public downloader'
+    )
+      return;
+    await this.task('Setting up anonymous problem downloads…', async () => {
+      const config = vscode.workspace.getConfiguration('cfide');
+      await this.reader.setup(
+        config.get<string>(
+          'codeforces.setupPython',
+          process.platform === 'win32' ? 'python' : 'python3',
+        ),
+        path.join(this.context.globalStorageUri.fsPath, 'public-download-env'),
+      );
+      this.downloaderReady = await this.reader.ready();
+      void vscode.window.showInformationMessage(
+        'Public downloader ready. Retry the contest download. No account sign-in is needed.',
+      );
+    });
+  }
+  private async importHtml(id: number, index: string) {
+    this.trust();
+    const files = await vscode.window.showOpenDialog({
+      title: `Import saved public problem HTML for ${id}/${index}`,
+      canSelectMany: false,
+      filters: { HTML: ['html', 'htm'] },
+    });
+    if (!files?.length) return;
+    const info = await fs.stat(files[0].fsPath);
+    if (info.size > 8000000) throw new Error('Problem HTML exceeds 8 MB.');
+    if (
+      (await vscode.window.showWarningMessage(
+        `Import this HTML as ${id}/${index}? Verify that the saved page is this exact problem. Solutions and custom tests will be kept; official samples will be replaced.`,
+        { modal: true },
+        'Import HTML',
+      )) !== 'Import HTML'
+    )
+      return;
+    await this.task('Importing saved public problem…', async () => {
+      await this.runtime().service.importProblemHtml(
+        id,
+        index,
+        await fs.readFile(files[0].fsPath, 'utf8'),
+      );
+    });
   }
   private async poll() {
     if (this.pollBusy || !vscode.workspace.isTrusted) return;
@@ -846,10 +629,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private async publish() {
     if (!this.dashboard) return;
     try {
-      if (this.browser && !this.browser.connected) {
-        this.browserConnected = false;
-        this.session.handle = undefined;
-      }
       const { repo } = this.runtime(),
         selected = this.selectedId;
       const contests = await repo.list();
@@ -872,13 +651,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       const state: ContestViewState = {
         contests,
         selectedId: selected,
-        signedInHandle: this.session.handle,
-        connectionMode: this.browser ? 'browser' : 'http',
-        browserConnected: this.browserConnected,
+        downloaderReady: this.downloaderReady,
         watchHandle: handle,
         submissions: status.submissions,
         submissionsUpdatedAt: status.fetchedAt,
-        attempts: selected ? await repo.attempts(selected) : [],
         rows: rows.slice(0, 100),
         rankProblemIndices: board?.problems.map((p) => p.index) ?? [],
         rankTotal: board?.rows.length ?? 0,
@@ -886,8 +662,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         rankMode: this.rankMode,
         busy: this.busy,
         error: this.errorMessage,
-        registration: this.registrationMessage,
-        announcements: this.announcementsMessage,
         serverNow: Date.now() + this.api.clockOffset,
       };
       if (selected !== this.selectedId || repo !== this.repo) return;
@@ -940,7 +714,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   dispose() {
-    this.browser?.disconnect();
+    this.reader.dispose();
     this.service?.dispose();
     this.queue.dispose();
     this.timers.forEach(clearInterval);

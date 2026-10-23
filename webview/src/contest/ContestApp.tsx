@@ -5,7 +5,7 @@ import { send } from '../bridge';
 
 export function ContestApp() {
   const [state, setState] = useState<ContestViewState>();
-  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings' | 'messages'>('prepare');
+  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings'>('prepare');
   const [search, setSearch] = useState('');
   const [clock, setClock] = useState(Date.now());
   const [offset, setOffset] = useState(0);
@@ -40,72 +40,25 @@ export function ContestApp() {
         <div>
           <span className="eyebrow">CFIDE / CONTEST CENTER</span>
           <h1>Your contest workspace</h1>
-          <p>Prepare once. Read, code, test and submit here.</p>
+          <p>Prepare contests. Read, code and test locally. No account sign-in.</p>
         </div>
         <button disabled={disabled} onClick={() => send({ type: 'addContest' })}>
           ＋ Add contest
         </button>
       </header>
       <section className="account-bar">
-        <span>
-          {state?.signedInHandle
-            ? `Signed in as ${state.signedInHandle}`
-            : 'Not signed in to Codeforces'}
-        </span>
-        {!state?.signedInHandle ? (
-          <button disabled={disabled} onClick={() => send({ type: 'login' })}>
-            {state?.connectionMode === 'browser' ? '1. Open dedicated Chrome' : 'Sign in'}
-          </button>
-        ) : (
-          <button
-            className="secondary"
-            disabled={disabled}
-            onClick={() => send({ type: 'logout' })}
-          >
-            {state?.connectionMode === 'browser' ? 'Disconnect browser' : 'Sign out'}
-          </button>
-        )}
-        {state?.connectionMode === 'browser' && (
-          <>
-            <button disabled={disabled} onClick={() => send({ type: 'connectBrowser' })}>
-              2. Connect after sign-in
-            </button>
-            <p>
-              {state.browserConnected
-                ? 'Dedicated browser connected. Keep it open during the contest.'
-                : 'Browser not connected. Sign in manually in the dedicated Chrome window, then connect. No browser extension is required.'}
-            </p>
-            {state.browserConnected && !state.signedInHandle && (
-              <button
-                className="secondary"
-                disabled={disabled}
-                onClick={() => send({ type: 'logout' })}
-              >
-                Disconnect browser
-              </button>
-            )}
-          </>
-        )}
-        <button
-          className="secondary"
-          disabled={disabled}
-          onClick={() => send({ type: 'watchHandle' })}
-        >
-          Track handle{state?.watchHandle ? `: ${state.watchHandle}` : ''}
+        <span>Anonymous mode · no login or browser connection</span>
+        <button disabled={disabled} onClick={() => send({ type: 'watchHandle' })}>
+          Track public handle{state?.watchHandle ? ': ' + state.watchHandle : ''}
         </button>
-        {state?.connectionMode === 'http' && (
-          <details>
-            <summary>Session troubleshooting</summary>
-            <p>
-              If normal sign-in requires website verification, an existing authenticated Cookie
-              header can be connected. It is stored in VS Code SecretStorage, never in this
-              workspace.
-            </p>
-            <button disabled={disabled} onClick={() => send({ type: 'connectCookie' })}>
-              Connect existing session
-            </button>
-          </details>
-        )}
+        <button disabled={disabled} onClick={() => send({ type: 'setupDownloads' })}>
+          {state?.downloaderReady ? 'Repair download setup' : 'Set up public downloads'}
+        </button>
+        <p>
+          {state?.downloaderReady
+            ? 'curl_cffi public downloader enabled.'
+            : 'Basic anonymous downloads are available. Set up curl_cffi for better compatibility; Python 3.10+ is required.'}
+        </p>
       </section>
       <label className="contest-picker">
         Current contest
@@ -164,7 +117,7 @@ export function ContestApp() {
             </div>
           </section>
           <nav className="tabs" aria-label="Contest sections">
-            {(['prepare', 'submissions', 'rankings', 'messages'] as const).map((value) => (
+            {(['prepare', 'submissions', 'rankings'] as const).map((value) => (
               <button
                 className={tab === value ? '' : 'secondary'}
                 key={value}
@@ -173,9 +126,8 @@ export function ContestApp() {
                 {
                   {
                     prepare: 'Problems & preparation',
-                    submissions: 'My submissions',
+                    submissions: 'Public submissions',
                     rankings: 'Rankings',
-                    messages: 'Registration & messages',
                   }[value]
                 }
               </button>
@@ -261,9 +213,11 @@ export function ContestApp() {
                         <span className="badge">
                           {submission
                             ? submissionLabel(submission)
-                            : problem.ready
-                              ? 'Not submitted'
-                              : 'Not downloaded'}
+                            : !problem.ready
+                              ? 'Not downloaded'
+                              : state.watchHandle
+                                ? 'No recent public submission'
+                                : 'No handle tracked'}
                         </span>
                       </div>
                       {problem.error && <p className="error">{problem.error}</p>}
@@ -285,6 +239,15 @@ export function ContestApp() {
                         >
                           Refresh statement / samples
                         </button>
+                        <button
+                          className="secondary"
+                          disabled={disabled}
+                          onClick={() =>
+                            send({ type: 'importHtml', contestId: id, index: problem.index })
+                          }
+                        >
+                          Import saved HTML
+                        </button>
                       </div>
                     </section>
                   );
@@ -303,7 +266,7 @@ export function ContestApp() {
             <>
               <div className="actions">
                 <button
-                  disabled={disabled}
+                  disabled={disabled || !state.watchHandle}
                   onClick={() => send({ type: 'refreshStatus', contestId: id })}
                 >
                   Refresh submissions
@@ -313,47 +276,6 @@ export function ContestApp() {
                   {updated(state.submissionsUpdatedAt, now)}
                 </small>
               </div>
-              <h3>Local submission receipts</h3>
-              <p>
-                Every request saves the exact source. An uncertain receipt is not a failed
-                submission; verify before retrying.
-              </p>
-              {state.attempts.map((a) => (
-                <section key={a.id} className="card">
-                  <div className="card-title">
-                    <h2>
-                      {a.problemIndex} · {a.programTypeName}
-                    </h2>
-                    <span className="badge">
-                      {a.state}
-                      {a.submissionId ? ` · #${a.submissionId}` : ''}
-                    </span>
-                  </div>
-                  <p>
-                    {new Date(a.createdAt).toLocaleString()} · {a.handle} · SHA-256{' '}
-                    {a.sourceHash.slice(0, 12)}
-                  </p>
-                  <p>{a.message}</p>
-                  <div className="actions">
-                    <button
-                      className="secondary"
-                      onClick={() => send({ type: 'viewSnapshot', contestId: id, attemptId: a.id })}
-                    >
-                      View submitted source
-                    </button>
-                    {['sending', 'prepared', 'uncertain'].includes(a.state) && (
-                      <button
-                        disabled={disabled}
-                        onClick={() =>
-                          send({ type: 'resolveAttempt', contestId: id, attemptId: a.id })
-                        }
-                      >
-                        Resolve receipt
-                      </button>
-                    )}
-                  </div>
-                </section>
-              ))}
               <h3>Official Codeforces submissions</h3>
               <div className="table-scroll">
                 <table>
@@ -408,9 +330,10 @@ export function ContestApp() {
                 </button>
                 <button
                   className="secondary"
+                  disabled={!state.watchHandle}
                   onClick={() => send({ type: 'rankFilter', mode: 'nearby', search: '' })}
                 >
-                  Near me
+                  Near tracked handle
                 </button>
               </div>
               <form
@@ -487,53 +410,11 @@ export function ContestApp() {
               )}
             </>
           )}
-          {tab === 'messages' && (
-            <>
-              <section className="card">
-                <h2>Official registration</h2>
-                <p>
-                  Local contest setup is not official registration. Check the response below before
-                  relying on your registration status.
-                </p>
-                <div className="actions">
-                  <button
-                    disabled={disabled}
-                    onClick={() => send({ type: 'registration', contestId: id, register: false })}
-                  >
-                    Check registration page
-                  </button>
-                  <button
-                    className="secondary"
-                    disabled={disabled || !state.signedInHandle}
-                    onClick={() => send({ type: 'registration', contestId: id, register: true })}
-                  >
-                    Request registration
-                  </button>
-                </div>
-                <pre>{state.registration || 'Not checked.'}</pre>
-              </section>
-              <section className="card">
-                <h2>Contest messages</h2>
-                <button
-                  disabled={disabled}
-                  onClick={() => send({ type: 'announcements', contestId: id })}
-                >
-                  Refresh messages
-                </button>
-                <pre>
-                  {state.announcements ||
-                    'Not loaded. This version extracts recognizable public notices; a full clarification workflow is not available yet.'}
-                </pre>
-              </section>
-            </>
-          )}
         </>
       )}
       <footer>
-        {state?.connectionMode === 'browser'
-          ? 'Sign in only in the dedicated browser. Its profile stores the session; Disconnect does not sign out of the website. '
-          : 'Passwords are not stored. Session cookies are kept in VS Code SecretStorage. '}{' '}
-        API reads are throttled; network failures retain cached work.
+        No login, cookies or managed browser. Submit/register on the official website yourself.
+        Public API data may be delayed or unavailable; cached local work is preserved.
       </footer>
     </main>
   );

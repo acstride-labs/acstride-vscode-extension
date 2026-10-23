@@ -16,7 +16,7 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('run'), testId: id.optional() }),
   z.object({ type: z.literal('stop') }),
   z.object({ type: z.literal('switchLanguage') }),
-  z.object({ type: z.literal('submit') }),
+  z.object({ type: z.literal('copySource') }),
 ]);
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =

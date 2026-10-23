@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+- Remove login/logout, Cookie import, dedicated browser/CDP integration and their dependencies.
+- Remove in-IDE solution submission/receipts, registration and messages controls; retain public verdict tracking by handle.
+- Add anonymous curl_cffi problem downloads with isolated one-time setup and a basic public GET fallback.
+- Add saved public problem HTML import; preserve source code/custom tests during imports and failures.
+- Replace the submit toolbar action with Copy solution code for manual official-site submission.
+- Keep multi-contest scheduling/directories, statements/math, C++/Python local testing, cached public rankings and offline data.
+- Public live checks passed without any account login or browser process. No previous user source/test/profile files are automatically deleted.
+
 ## 0.4.0
 
 - Default to a dedicated Chrome/Edge profile: manually sign in first, then explicitly connect from Contest Center.

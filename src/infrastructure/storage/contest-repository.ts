@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
   contestIdSchema,
@@ -9,7 +9,6 @@ import {
   type Contest,
   type ContestRecord,
   type Statement,
-  type SubmissionAttempt,
   type Standings,
   type CFSubmission,
 } from '../../domain/contest';
@@ -64,7 +63,18 @@ export class ContestRepository {
     return Promise.all(registry.contests.map((id) => this.get(id)));
   }
   async get(id: number): Promise<ContestRecord> {
-    return contestRecordSchema.parse(await this.read(this.metadata(id, 'contest.json'), null));
+    const record = contestRecordSchema.parse(
+      await this.read(this.metadata(id, 'contest.json'), null),
+    );
+    // Old cached failures must not send users to removed account/browser controls.
+    const currentError = (error?: string) =>
+      error &&
+      /dedicated (?:browser|chrome)|browser\/site verification|cookie|sign[ -]?in/i.test(error)
+        ? 'Previous download failed. Set up public downloads and retry, or import saved problem HTML. No login/browser connection is needed.'
+        : error;
+    record.error = currentError(record.error);
+    for (const problem of record.problems) problem.error = currentError(problem.error);
+    return record;
   }
   async add(contest: Contest, language: Language) {
     return this.exclusive(async () => {
@@ -128,71 +138,6 @@ export class ContestRepository {
       fetchedAt: 0,
       submissions: [],
     });
-  }
-  async attempts(id: number): Promise<SubmissionAttempt[]> {
-    let files: string[];
-    try {
-      files = await fs.readdir(this.metadata(id, 'submissions'));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-      throw error;
-    }
-    const attempts = await Promise.all(
-      files
-        .filter((f) => /^[a-f0-9-]{36}$/.test(f))
-        .map((f) =>
-          this.read<SubmissionAttempt | null>(
-            this.metadata(id, `submissions/${f}/attempt.json`),
-            null,
-          ),
-        ),
-    );
-    return attempts
-      .filter((a): a is SubmissionAttempt => a !== null)
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }
-  async prepareAttempt(
-    id: number,
-    index: string,
-    language: Language,
-    programTypeId: string,
-    programTypeName: string,
-    handle: string,
-    source: string,
-  ): Promise<SubmissionAttempt> {
-    const attempt: SubmissionAttempt = {
-      id: randomUUID(),
-      contestId: id,
-      problemIndex: problemIndexSchema.parse(index),
-      language,
-      programTypeId,
-      programTypeName,
-      handle,
-      sourceHash: createHash('sha256').update(source).digest('hex'),
-      createdAt: Date.now(),
-      state: 'prepared',
-    };
-    const folder = this.metadata(id, `submissions/${attempt.id}`);
-    await fs.mkdir(folder, { recursive: true });
-    await fs.writeFile(path.join(folder, language === 'cpp' ? 'main.cpp' : 'main.py'), source, {
-      flag: 'wx',
-    });
-    await this.saveAttempt(attempt);
-    return attempt;
-  }
-  async saveAttempt(attempt: SubmissionAttempt) {
-    if (!/^[a-f0-9-]{36}$/.test(attempt.id)) throw new Error('Invalid submission attempt ID.');
-    await this.atomic(
-      this.metadata(attempt.contestId, `submissions/${attempt.id}/attempt.json`),
-      attempt,
-    );
-  }
-  snapshotPath(attempt: SubmissionAttempt) {
-    if (!/^[a-f0-9-]{36}$/.test(attempt.id)) throw new Error('Invalid submission attempt ID.');
-    return this.metadata(
-      attempt.contestId,
-      `submissions/${attempt.id}/${attempt.language === 'cpp' ? 'main.cpp' : 'main.py'}`,
-    );
   }
 }
 function safeHandle(handle: string) {

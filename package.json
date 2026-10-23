@@ -1,8 +1,8 @@
 {
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
-  "description": "Codeforces contests inside VS Code: scheduled imports, C++/Python testing, submissions and rankings.",
-  "version": "0.4.0",
+  "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
+  "version": "0.5.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -48,26 +48,6 @@
         "title": "CFIDE: Open Contest Problem"
       },
       {
-        "command": "cfide.signIn",
-        "title": "CFIDE: Sign In to Codeforces"
-      },
-      {
-        "command": "cfide.connectBrowser",
-        "title": "CFIDE: Connect Dedicated Codeforces Browser"
-      },
-      {
-        "command": "cfide.connectCookie",
-        "title": "CFIDE: Connect Existing Codeforces Session (Advanced)"
-      },
-      {
-        "command": "cfide.signOut",
-        "title": "CFIDE: Sign Out of Codeforces"
-      },
-      {
-        "command": "cfide.submitSolution",
-        "title": "CFIDE: Submit Solution to Codeforces"
-      },
-      {
         "command": "cfide.switchLanguage",
         "title": "CFIDE: Switch Solution Language"
       },
@@ -90,6 +70,14 @@
       {
         "command": "cfide.refresh",
         "title": "CFIDE: Refresh Problems"
+      },
+      {
+        "command": "cfide.setupPublicDownloads",
+        "title": "CFIDE: Set Up Public Downloads"
+      },
+      {
+        "command": "cfide.copySolution",
+        "title": "CFIDE: Copy Solution Code"
       }
     ],
     "viewsContainers": {
@@ -171,26 +159,10 @@
     "configuration": {
       "title": "CFIDE",
       "properties": {
-        "cfide.codeforces.connectionMode": {
-          "type": "string",
-          "enum": [
-            "browser",
-            "http"
-          ],
-          "default": "browser",
-          "scope": "machine",
-          "description": "Use a dedicated, manually signed-in Chrome/Edge profile (recommended), or the experimental legacy HTTP session. Reload VS Code after changing this setting."
-        },
-        "cfide.codeforces.browserExecutable": {
-          "type": "string",
-          "default": "",
-          "scope": "machine",
-          "description": "Optional absolute Chrome/Edge application path. On macOS use the .app path. CFIDE always creates a separate profile, never your everyday browser profile."
-        },
         "cfide.codeforces.handle": {
           "type": "string",
           "default": "",
-          "description": "Read-only Codeforces handle for submission tracking and rank highlighting. Signing in overrides this for your own submissions."
+          "description": "Optional public read-only Codeforces handle for submission results and nearby ranking. No account authentication is performed."
         },
         "cfide.python.interpreter": {
           "type": "string",
@@ -242,6 +214,18 @@
           "default": "",
           "scope": "machine",
           "description": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+        },
+        "cfide.codeforces.setupPython": {
+          "type": "string",
+          "default": "python3",
+          "scope": "machine",
+          "description": "Python 3.10+ executable for creating the isolated public download environment. On Windows use python if python3 is unavailable."
+        },
+        "cfide.codeforces.downloadPython": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional absolute path to an existing Python interpreter with curl_cffi installed. Leave blank to use the isolated environment created by Set Up Public Downloads."
         }
       }
     }
@@ -262,8 +246,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sanitize-html": "^2.18.1",
-    "tough-cookie": "^6.0.2",
-    "ws": "^8.22.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -273,7 +255,6 @@
     "@types/react-dom": "^18.3.0",
     "@types/sanitize-html": "^2.16.2",
     "@types/vscode": "^1.95.0",
-    "@types/ws": "^8.18.2",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.28.2",
     "prettier": "^3.9.10",

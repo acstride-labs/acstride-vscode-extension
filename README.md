@@ -1,127 +1,91 @@
 # CFIDE
 
-A Codeforces contest workbench inside desktop VS Code, with C++ and Python 3 support. Version 0.4 adds a dedicated Chrome/Edge connection: sign in manually, then let the IDE read pages and send submissions through that same browser. No browser extension is required.
+An anonymous Codeforces workbench for desktop VS Code, with C++ and Python support. Version 0.5 removes account login, cookies, managed browsers and in-IDE submissions. Prepare contests, read public problems, test locally and track public verdicts/rankings without signing in.
 
-## Dedicated browser setup (default in 0.4)
+## What is included
 
-1. Use **local desktop VS Code** and install Chrome or Edge. Remote extension hosts and VS Code for the web are not supported by this connection mode.
-2. Open **CFIDE: Open Contest Center** and click **1. Open dedicated Chrome** (also available through **CFIDE: Sign In to Codeforces**). Review the local-debugging notice before opening it.
-3. CFIDE starts a normal browser using a separate profile under the extension's global storage directory, not your daily Chrome profile. It does not use Playwright's browser launcher, ask for your password, or automate verification. Complete Codeforces verification and sign-in in that browser yourself.
-4. Return to Contest Center and click **2. Connect after sign-in**, or run **CFIDE: Connect Dedicated Codeforces Browser**. Check the detected account. An anonymous connection supports public downloads, but submissions require a detected signed-in account.
-5. Keep the dedicated browser open. Downloads, registration adapters and submissions now use real browser navigation, not copied cookies in Node.js HTTP requests. API-based rankings/status remain independent.
-6. After restarting VS Code or the browser, reconnect explicitly. The dedicated browser profile can preserve your website session; CFIDE does not infer sign-in from cached metadata. If the account changes or expires, reconnect before submitting.
+- Multiple contest folders, independent problems, countdowns, archive controls and incremental downloads when problems are released.
+- Public statements with sanitized HTML, local math rendering, supported image caching and official samples.
+- Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
+- Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
+- Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
+- Copy solution code for manual submission on the official website. The extension does not send solutions anywhere.
+- Saved problem HTML import as a fallback when public downloads are blocked.
 
-**Disconnect browser** closes only CFIDE's operations tab/connection. It does not close Chrome, sign you out of Codeforces, or delete the browser profile. Sign out inside Chrome if desired; close the dedicated browser to stop its debugging interface. Use this profile only for Codeforces and do not upload/share it. Its session data lives outside the project repository.
+There are **no login, Cookie import, browser connection, automatic submission, registration or clarification controls**. Register and submit on the official website yourself. Adding a contest locally does not register your account. Public tracking does not authenticate ownership of a handle.
 
-The connection uses Chrome's local debugging interface on a random loopback port, discovered only from CFIDE's own profile. There is no arbitrary endpoint field, external debugging listener, browser-extension installation, or attempt to read your daily browser's cookies. Other software running as your user can potentially access a local debugging interface; treat the dedicated profile as sensitive. Browser sandboxing and web security are not disabled.
+## Start here
 
-If the browser is not found, set `cfide.codeforces.browserExecutable` to an absolute application path (macOS: `/Applications/Google Chrome.app`; Windows: the full `chrome.exe`/`msedge.exe` path). Changing `cfide.codeforces.connectionMode` requires reloading VS Code. The previous experimental HTTP login remains available as `http`, but browser mode is the default.
+1. Install the generated VSIX using **Extensions: Install from VSIX…**, or build this repository and press F5.
+2. Open a trusted, single local workspace folder. Install a C++ compiler and/or Python 3 for local solutions.
+3. Open **CFIDE: Open Contest Center**. For better download compatibility, click **Set up public downloads**. This requires Python 3.10+ and installs pinned `curl_cffi==0.16.3` from PyPI into an isolated environment under VS Code extension global storage. It does not modify system Python packages or install/start a browser.
+4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
+5. Open a problem: solution on the left, cached statement on the right, **CFIDE Tests** below. Switch languages without discarding either solution. Official samples are read-only; add your own tests separately.
+6. Use **Copy solution code**, then submit on the official website yourself. Set **Track public handle** to see public submission results and nearby rankings. Clear the handle to stop tracking.
 
-## Contest workflow
+Without the helper, the extension tries a basic anonymous GET downloader. Some networks/sites block it. Setting up `curl_cffi` improves compatibility but is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work.
 
-1. Open a trusted local workspace. Run **CFIDE: Add Codeforces Contest** and paste a regular contest URL or numeric ID. Choose the default local language.
-2. Use **CFIDE: Open Contest Center** to view the countdown, download settings, compiler/interpreter checks and registration information. Adding a contest locally does **not** register your account.
-3. Keep the VS Code extension host running: when the contest starts, CFIDE attempts to download released problems and official samples. Imports are incremental; partial failures retry with backoff. Archived contests stop automatic downloading/polling. Closing VS Code stops the timer; overdue work resumes when reopened.
-4. Open a problem from the contest tree or center: source on the left, cached statement with math on the right, and **CFIDE Tests** in the bottom panel. Official samples are read-only; add separate custom tests. Switch C++/Python without discarding either solution.
-5. Connect your manually signed-in dedicated browser using the setup above. Submit from the tests toolbar or **CFIDE: Submit Solution to Codeforces**. Each submission asks for the exact language offered by the official form (last choice first), saves a source snapshot and tracks the official verdict.
-6. Use **My submissions** for receipts, snapshots and uncertain-result resolution. **Rankings** supports top 100, nearby and handle search, with cache timestamps and frozen-board indication. A read-only handle can track public submissions/rankings without signing in.
+### If a problem cannot be downloaded
 
-### Online integration is experimental
+Use **Import saved HTML** on that problem's card and select an HTML file you saved from the correct public problem page. Confirm the contest/problem pairing. The parser sanitizes the statement and extracts official samples; it does not execute the imported scripts. Import/reimport updates only the statement and official samples, preserving solutions and custom tests. Standalone HTML without the original Codeforces statement structure, PDF files, and incomplete sample pairs are not supported. Some images may still require network access.
 
-Version 0.3.1 sends desktop Chrome-style navigation headers for website requests. A live read-only test still encountered website verification: these headers do not make Node.js a browser or guarantee downloads/login. Failed downloads no longer prevent opening a released problem's local solution and custom tests; missing statements and official samples remain explicitly marked as unavailable.
+## Local practice
 
-The public Codeforces API does not provide solution submission or full problem statements. Statements, submission and simple registration use website adapters, which can break when Codeforces changes its forms or applies anti-bot verification. CAPTCHA, 2FA and browser challenges are **not** bypassed or solved by the extension. In browser mode a challenge activates CFIDE's operations tab so you can handle it manually. This is not a guaranteed browser-free contest client. Legacy HTTP mode retains its advanced SecretStorage-backed Cookie import, not used by browser mode.
+**CFIDE: Create Local Problem** works independently of Codeforces. Choose C++ or Python and enter an ID/title. The default template sums two integers with a `2 3 → 5` test. Run using the bottom panel or `Cmd+Alt+R` on macOS / `Ctrl+Alt+R` elsewhere. Change expected output to `6` to inspect a WA difference.
 
-On 2026-10-24, the old Node HTTP problem request was blocked by site verification. The 0.4 native Chrome + direct CDP transport passed real public statement/sample parsing and disconnect/reconnect checks. Authenticated login, registration and real submissions have **not** been verified against a real account. Their adapters are covered by synthetic form/session tests, not an end-to-end contest acceptance test.
+Local AC is **not official acceptance**. The default checker compares tokens, ignoring whitespace but preserving case and numeric spelling. Uncheck expected output for run-only mode; blank expected output is a real expectation. Memory use is not measured, and wall-clock timings are not Codeforces timings. Local programs execute on your computer: this is **not a security sandbox**. Output is capped at 1 MB per process, compilation at 30 seconds, and each test has a configurable wall-clock limit.
 
-CFIDE never automatically repeats a submission POST after a lost response. A receipt without a definite ID stays uncertain, blocking duplicate submissions for that problem/account. It can reconcile a unique recent candidate only after comparing the owner's official source against the saved snapshot, or ask you to resolve it explicitly. Similar timestamps alone are not considered proof.
+## Settings
 
-The IDE does not collect or persist passwords in browser mode. The dedicated Chrome/Edge profile owns session persistence. Legacy HTTP mode saves cookies only in VS Code SecretStorage, not workspace files. No backend service or telemetry is used. Never share browser profiles or exported cookies.
+- `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
+- `cfide.codeforces.setupPython`: Python 3.10+ executable for download setup, default `python3`; use `python` on Windows if necessary.
+- `cfide.codeforces.downloadPython`: advanced override, an absolute existing interpreter path with `curl_cffi` installed. Leave blank to use the managed isolated environment. Clear this override before repairing the default setup.
+- `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
+- `cfide.cpp.args`: argument array, default `-std=c++20 -O2 -Wall -Wextra`.
+- `cfide.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
+- `cfide.python.args`: additional solution interpreter arguments.
+- `cfide.run.timeoutMs`: per-test timeout, default 2000 ms.
+- `cfide.cpp.templatePath` / `cfide.python.templatePath`: optional absolute templates with `${PROBLEM_ID}` substitution.
 
-Only regular `/contest/` competitions are supported. Gym, group contests, virtual participation, full clarification messaging and complex registration/consent flows are out of scope. Registration requests require a separate confirmation, and forms containing consent checkboxes are refused. Announcements are best-effort, not a complete replacement for official messages.
+C++ completion comes from your installed language extension, not CFIDE. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
 
-## Try it
-
-1. Install Node.js 24 LTS to develop/build the extension. To solve problems, install a C++ compiler (`g++` or `clang++`) and/or Python 3.
-2. Run `npm ci` and `npm run check` in this repository.
-3. Open this repository in desktop VS Code and press **F5** (`Run CFIDE Extension`).
-4. In the Extension Development Host, open an empty local folder and trust it.
-5. Run **CFIDE: Create Local Problem** from the Command Palette (or the CFIDE sidebar).
-6. Choose **C++** or **Python 3**, then enter an ID such as `A` and a title. Both default templates sum two integers, with a `2 3 → 5` example test.
-7. Edit `A/main.cpp` or `A/main.py`; use **Run all tests** in the bottom CFIDE Tests panel, or **CFIDE: Run Tests** (`Cmd+Alt+R` on macOS, `Ctrl+Alt+R` elsewhere).
-8. Add a test, enter input and optional expected output, and click **Save changes**. Set expected output to `6` for input `2 3` to see a WA and the first differing token.
-
-To install outside the development host, run `npm run package` and use VS Code's **Extensions: Install from VSIX...** command with the generated `.vsix` file.
-
-## Configuration
-
-- `cfide.cpp.compiler`: compiler executable or absolute path; defaults to `g++`. Use `clang++` on macOS if preferred.
-- `cfide.cpp.args`: default `-std=c++20 -O2 -Wall -Wextra` (an argument array, no shell).
-- `cfide.run.timeoutMs`: per-test wall-clock limit; default 2000 ms.
-- `cfide.cpp.templatePath`: optional absolute template path. `${PROBLEM_ID}` is replaced with the local ID.
-- `cfide.python.interpreter`: Python 3 executable or absolute path; defaults to `python3`. On Windows set `python` if `python3` is unavailable. For virtual environments, use the full interpreter path. This setting is independent of the interpreter selected by Microsoft's Python extension.
-- `cfide.python.args`: additional interpreter arguments, for example `["-O"]`. CFIDE adds unbuffered execution, UTF-8 mode and disabled bytecode-cache writes.
-- `cfide.python.templatePath`: optional absolute Python template path, with the same `${PROBLEM_ID}` placeholder.
-- `cfide.codeforces.handle`: optional public read-only tracking handle; signing in selects the authenticated account instead.
-- `cfide.codeforces.connectionMode`: `browser` (default) or legacy `http`; reload required.
-- `cfide.codeforces.browserExecutable`: optional absolute Chrome/Edge application path, machine-scoped.
-
-Python needs no C++ compiler. Syntax errors and exceptions produce RE with the Python traceback under stderr. Each test starts a fresh interpreter. Sibling Python modules can be imported from the original problem directory; relative data-file access uses the temporary execution directory.
-
-The compiler must already be installed. On macOS, CFIDE detects the active Apple SDK for Apple clang to resolve standard-library headers. C++ language completion is supplied by your existing language extension (for example clangd), not by CFIDE.
-
-## Results
-
-`AC` means local expected tokens match, **not** official acceptance. `WA` reports the first different, missing, or extra token. Whitespace is ignored; case and numeric spelling are preserved. `RAN` means no expected output was supplied. `RE`, `TLE`, `OLE`, compile diagnostics and cancellation are displayed separately. Blank expected output is a real expectation; uncheck it to run without checking.
-
-Each run saves a snapshot of the source, compiles it once for C++ or invokes Python directly, then executes tests sequentially in a temporary working directory. C++ compilation is limited to 30 seconds; combined stdout/stderr is capped at 1 MB per process. Stop terminates the process tree. This is local process execution, **not a security sandbox**. Timings are wall-clock measurements and are not equivalent to Codeforces time limits. Memory usage is not measured.
-
-## Workspace data
+## Workspace and migration
 
 ```text
 your-workspace/
-  .cfide/contests.json    # registered local contests
+  .cfide/contests.json
   contests/
     1234/
       .cfide/contest.json
-      .cfide/statements/ # sanitized cached statements and supported images
-      .cfide/submissions/ # attempt metadata and exact submitted source snapshots
+      .cfide/statements/     # cached sanitized statements/assets
+      .cfide/standings.json
+      .cfide/status-HANDLE.json
       A/solutions/main.cpp
-      A/solutions/main.py # created when switching language
-      A/tests/samples/   # imported, read-only in the UI
-      A/tests/custom/    # your editable tests
-    5678/               # independent problem A, solutions and tests
-  .cfide/workspace.json   # versioned problem index
-  A/main.cpp             # editable source
-  A/tests/sample-1.in    # test input
-  A/tests/sample-1.out   # expected output (optional)
-  B/main.py              # a Python problem
+      A/solutions/main.py
+      A/tests/samples/       # official, read-only in UI
+      A/tests/custom/        # user-editable
+    5678/                    # independent sources/tests, including its own A
+  .cfide/workspace.json     # legacy local-practice index
+  A/main.cpp               # local practice remains compatible
+  B/main.py
 ```
 
-Code and saved tests survive VS Code restarts; select the problem in the sidebar to reopen it. Runtime results are session-only. Existing problem directories are never overwritten. After external file edits, use **CFIDE: Refresh Problems** and reopen the problem.
+Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Old account/submission snapshot files and dedicated browser profiles are **not automatically deleted**, but 0.5 no longer reads account cookies, uses those snapshots or launches/connects to a browser. No Chrome installation is removed. No backend service or telemetry is used.
 
-Reimporting a statement updates official samples, not solutions or custom tests. Downloaded statements remain readable offline; only supported Codeforces-hosted raster images are cached, with warnings for unavailable assets. Existing 0.1/0.2 local practice folders continue to work. The first workspace folder is used; multi-root selection is not implemented.
+## Development and verification
 
-## Development
+Node.js 24 LTS is required for development. A real C++ compiler and Python interpreter are used by integration tests; override `CXX` / `PYTHON` if needed.
 
 ```sh
 npm ci
-npm run typecheck
-npm test
-npm run build
+npm run check
 npm run package
-# Optional live read-only checks (may fail when Codeforces requires site verification):
-CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts
-# Opt-in native-browser transport check; opens/closes a disposable dedicated browser, no login or submissions:
-CFIDE_DEDICATED_LIVE=1 npm test -- test/live/dedicated-browser.test.ts
+# Optional public live checks; use an existing isolated interpreter with curl_cffi:
+CFIDE_LIVE=1 CFIDE_CURL_PYTHON=/absolute/path/to/venv/bin/python npm test -- test/live/codeforces.test.ts
 ```
 
-Integration tests invoke a real C++ compiler and Python 3; set `CXX` and `PYTHON` to choose them. CI is configured for Linux, Windows and macOS. VS Code UI smoke steps are in `test/MANUAL.md`.
+The live check exercises the actual anonymous product transport, real contest import, official sample parsing and additional public problem pages. It never logs in, starts a browser, registers or submits code. On 2026-10-24 these checks passed, including Theatre Square's real `6 6 4 → 4` sample. This does not guarantee all future contests/network environments will work. See `test/MANUAL.md` for acceptance steps.
 
-Architecture: `domain` contains models/checking; `application/contest-service.ts` coordinates contest imports, retries and durable submission receipts; `infrastructure/codeforces` separates the public API, authenticated website session, parser and rate-limited request queue; `infrastructure/storage` isolates contests and persists caches/snapshots; `vscode` adapts commands, native trees, panels and SecretStorage; React `webview` renders the center, statements and tests. `shared` defines validated message protocols. All Codeforces requests share a serialized queue with at least 2.1 seconds between request starts; submissions/status take priority over ranking refreshes.
+Architecture: `domain` contains models/checking; `application` handles contest scheduling/imports/public tracking; `infrastructure/codeforces` separates JSON API reads, anonymous problem downloads, sanitization and a serialized request queue; `infrastructure/storage` isolates contest files/caches; `vscode` adapts native views/commands; React `webview` renders the center, statements and tests. Public API calls and problem downloads are throttled with at least 2.1 seconds between queued request starts.
 
-## Milestone scope
-
-This is an experimental contest-workbench prototype, not a production-ready guarantee for live contests. Stress testing, custom checkers, multi-root workspaces and web-only VS Code are not implemented. Desktop local workspaces are the supported starting point; remote workspaces require additional validation. Automated integration tests exercise real local compilers/interpreters and synthetic Codeforces responses. Keep an official-site fallback for a real contest until authenticated end-to-end testing has been completed.
-
-The publisher ID is a development placeholder. No Marketplace publication is configured. No open-source license has been selected yet; all rights reserved.
+Only regular public contests and desktop single-folder file workspaces are supported. Gym/group/private contests, virtual participation, stress testing, custom checkers and web-only VS Code are out of scope. Public API data may be unavailable, frozen, delayed or limited to recent submissions. The publisher is a development placeholder, no Marketplace release is configured, and no open-source license has been selected.
