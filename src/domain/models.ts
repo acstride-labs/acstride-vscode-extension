@@ -1,6 +1,8 @@
+export type Language = 'cpp' | 'python';
 export interface Problem {
   id: string;
   title: string;
+  language: Language;
 }
 export interface TestCase {
   id: string;
@@ -28,7 +30,7 @@ export interface RunResult {
   cancelled?: boolean;
 }
 export interface RunConfig {
-  compiler: string;
+  command: string;
   args: string[];
   timeoutMs: number;
 }

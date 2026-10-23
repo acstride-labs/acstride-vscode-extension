@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { HostMessage, WebviewRequest } from '../../src/shared/protocol';
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
+import { languages } from '../../src/domain/languages';
 import './styles.css';
 declare function acquireVsCodeApi(): { postMessage(message: WebviewRequest): void };
 const api = acquireVsCodeApi();
@@ -48,7 +49,7 @@ function App() {
         if (m.running) {
           setResults({});
           setError('');
-          setNotice('Compiling and running…');
+          setNotice('Running tests…');
         }
       }
       if (m.type === 'progress') setResults((old) => ({ ...old, [m.result.testId]: m.result }));
@@ -74,7 +75,10 @@ function App() {
       <header>
         <span className="eyebrow">CFIDE / LOCAL WORKBENCH</span>
         <h1>{problem ? `${problem.id} · ${problem.title}` : 'Tests'}</h1>
-        <p>Write C++. Test locally. See what changed.</p>
+        <p>
+          {problem ? languages[problem.language].label : 'C++ / Python 3'} · Test locally. See what
+          changed.
+        </p>
       </header>
       <nav>
         <button disabled={running || anyDirty} onClick={() => send({ type: 'run' })}>

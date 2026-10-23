@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { randomBytes } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { Problem } from '../domain/models';
+import type { Language, Problem } from '../domain/models';
+import { languages } from '../domain/languages';
 import { FileWorkspaceStore } from '../infrastructure/storage/file-workspace-store';
 import { CppRunner } from '../infrastructure/execution/cpp-runner';
+import { PythonRunner } from '../infrastructure/execution/python-runner';
 import { RunTests } from '../application/run-tests';
 import { requestSchema, type HostMessage } from '../shared/protocol';
 export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
@@ -54,7 +56,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       const file = vscode.window.activeTextEditor?.document.uri.fsPath;
       if (file || !this.current) {
         const problem = (await this.store().listProblems()).find(
-          (p) => this.store().sourcePath(p.id) === file,
+          (p) => this.store().sourcePath(p.id, p.language) === file,
         );
         if (!problem) throw new Error('Open a CFIDE problem from the sidebar first.');
         if (problem.id !== this.current?.id || !this.panel) await this.open(problem);
@@ -81,6 +83,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   }
   getTreeItem(p: Problem) {
     const item = new vscode.TreeItem(`${p.id} · ${p.title}`);
+    item.description = languages[p.language].label;
     item.iconPath = new vscode.ThemeIcon('code');
     item.command = { command: 'cfide.openProblem', title: 'Open', arguments: [p] };
     return item;
@@ -91,8 +94,16 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     await this.mutation;
     if (this.dirtyTests) throw new Error('Save test changes before creating a problem.');
     const store = this.store();
+    const selected = await vscode.window.showQuickPick(
+      (Object.entries(languages) as [Language, (typeof languages)[Language]][]).map(
+        ([language, value]) => ({ label: value.label, description: value.sourceFile, language }),
+      ),
+      { title: 'Problem language', placeHolder: 'Choose C++ or Python 3' },
+    );
+    if (!selected) return;
+    const language = selected.language;
     const id = await vscode.window.showInputBox({
-      title: 'Create local C++ problem',
+      title: `Create local ${selected.label} problem`,
       prompt: 'Problem ID (letters, digits, underscores and hyphens)',
       value: 'A',
       validateInput: (s) =>
@@ -109,13 +120,23 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     });
     if (!title) return;
     const config = vscode.workspace.getConfiguration('cfide');
-    const templatePath = config.get<string>('cpp.templatePath', '');
+    const templatePath = config.get<string>(`${language}.templatePath`, '');
     const template = await fs.readFile(
       templatePath ||
-        path.join(this.context.extensionPath, 'resources', 'templates', 'default.cpp'),
+        path.join(
+          this.context.extensionPath,
+          'resources',
+          'templates',
+          languages[language].template,
+        ),
       'utf8',
     );
-    const problem = await store.createProblem(id, title, template.replaceAll('${PROBLEM_ID}', id));
+    const problem = await store.createProblem(
+      id,
+      title,
+      template.replaceAll('${PROBLEM_ID}', id),
+      language,
+    );
     await store.saveTest(id, { id: 'sample-1', input: '2 3\n', expected: '5\n' });
     this.changes.fire(undefined);
     await this.open(problem);
@@ -127,9 +148,12 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const saved = (await this.store().listProblems()).find((p) => p.id === problem?.id);
     if (!saved) throw new Error('Unknown problem. Refresh the sidebar.');
     this.current = saved;
-    await vscode.window.showTextDocument(vscode.Uri.file(this.store().sourcePath(saved.id)), {
-      viewColumn: vscode.ViewColumn.One,
-    });
+    await vscode.window.showTextDocument(
+      vscode.Uri.file(this.store().sourcePath(saved.id, saved.language)),
+      {
+        viewColumn: vscode.ViewColumn.One,
+      },
+    );
     if (!this.panel) {
       const assets = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview');
       this.panel = vscode.window.createWebviewPanel(
@@ -221,18 +245,26 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     this.send({ type: 'running', running: true });
     try {
       const store = this.store(),
-        source = store.sourcePath(this.current.id);
+        source = store.sourcePath(this.current.id, this.current.language);
       const document = await vscode.workspace.openTextDocument(vscode.Uri.file(source));
       if (document.isDirty && !(await document.save()))
         throw new Error('Could not save source before running.');
       const config = vscode.workspace.getConfiguration('cfide');
-      const compiler = config.get<string>('cpp.compiler', 'g++');
-      this.output.appendLine(`Compiler: ${compiler}; source: ${source}`);
-      const result = await new RunTests(store, new CppRunner()).execute(
+      const python = this.current.language === 'python';
+      const command = python
+        ? config.get<string>('python.interpreter', 'python3')
+        : config.get<string>('cpp.compiler', 'g++');
+      this.output.appendLine(
+        `${python ? 'Python interpreter' : 'Compiler'}: ${command}; source: ${source}`,
+      );
+      const result = await new RunTests(
+        store,
+        python ? new PythonRunner() : new CppRunner(),
+      ).execute(
         this.current.id,
         {
-          compiler,
-          args: config.get<string[]>('cpp.args', []),
+          command,
+          args: config.get<string[]>(python ? 'python.args' : 'cpp.args', []),
           timeoutMs: config.get<number>('run.timeoutMs', 2000),
         },
         this.abort.signal,

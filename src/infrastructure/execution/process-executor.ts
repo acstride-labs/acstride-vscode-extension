@@ -16,6 +16,7 @@ export function executeProcess(
     timeoutMs: number;
     signal: AbortSignal;
     outputLimit?: number;
+    env?: NodeJS.ProcessEnv;
   },
 ): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
@@ -26,14 +27,15 @@ export function executeProcess(
     const start = performance.now();
     const child = spawn(command, args, {
       cwd: options.cwd,
+      env: options.env,
       shell: false,
       detached: process.platform !== 'win32',
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    let stdout = '',
-      stderr = '',
-      size = 0;
+    const stdout: Buffer[] = [],
+      stderr: Buffer[] = [];
+    let size = 0;
     let reason: ProcessResult['reason'];
     const kill = (why: NonNullable<ProcessResult['reason']>) => {
       reason ??= why;
@@ -60,10 +62,10 @@ export function executeProcess(
     };
     const collect = (chunk: Buffer, stream: 'stdout' | 'stderr') => {
       const remaining = Math.max(0, (options.outputLimit ?? 1_000_000) - size);
-      const text = chunk.subarray(0, remaining).toString('utf8');
+      const bytes = chunk.subarray(0, remaining);
       size += chunk.length;
-      if (stream === 'stdout') stdout += text;
-      else stderr += text;
+      // Decode after concatenation: UTF-8 characters may span pipe chunks.
+      if (bytes.length) (stream === 'stdout' ? stdout : stderr).push(bytes);
       if (size > (options.outputLimit ?? 1_000_000)) kill('output');
     };
     child.stdout.on('data', (c) => collect(c, 'stdout'));
@@ -77,7 +79,13 @@ export function executeProcess(
     });
     child.on('close', (code) => {
       cleanup();
-      resolve({ stdout, stderr, code, reason, durationMs: Math.round(performance.now() - start) });
+      resolve({
+        stdout: Buffer.concat(stdout).toString('utf8'),
+        stderr: Buffer.concat(stderr).toString('utf8'),
+        code,
+        reason,
+        durationMs: Math.round(performance.now() - start),
+      });
     });
     child.stdin.end(options.input ?? '');
     if (options.signal.aborted) abort();

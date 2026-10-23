@@ -1,8 +1,8 @@
 {
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
-  "description": "Create C++ problems, manage tests, compile, run and compare outputs locally.",
-  "version": "0.1.0",
+  "description": "Create C++ and Python problems, manage tests, run and compare outputs locally.",
+  "version": "0.2.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -73,7 +73,7 @@
     "viewsWelcome": [
       {
         "view": "cfide.problems",
-        "contents": "Create a C++ problem to get started.\n[Create Local Problem](command:cfide.createProblem)"
+        "contents": "Create a C++ or Python problem to get started.\n[Create Local Problem](command:cfide.createProblem)"
       }
     ],
     "menus": {
@@ -94,12 +94,32 @@
         "command": "cfide.runTests",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
-        "when": "editorLangId == cpp"
+        "when": "editorLangId == cpp || editorLangId == python"
       }
     ],
     "configuration": {
       "title": "CFIDE",
       "properties": {
+        "cfide.python.interpreter": {
+          "type": "string",
+          "default": "python3",
+          "scope": "machine",
+          "description": "Python 3 executable or absolute path. On Windows you may need to set this to python. For virtual environments, use the interpreter's full path."
+        },
+        "cfide.python.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional Python interpreter arguments. CFIDE adds unbuffered UTF-8 execution flags."
+        },
+        "cfide.python.templatePath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional absolute path to a Python template; supports ${PROBLEM_ID}."
+        },
         "cfide.cpp.compiler": {
           "type": "string",
           "default": "g++",

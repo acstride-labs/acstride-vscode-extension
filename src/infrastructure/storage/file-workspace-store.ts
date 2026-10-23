@@ -3,11 +3,19 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { WorkspaceStore } from '../../application/ports/workspace-store';
-import type { TestCase } from '../../domain/models';
+import type { Language, TestCase } from '../../domain/models';
+import { languages } from '../../domain/languages';
 const identifier = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/);
 const manifestSchema = z.object({
   schemaVersion: z.literal(1),
-  problems: z.array(z.object({ id: identifier, title: z.string().max(200) })),
+  // Existing v1 workspaces have C++ problems without a language field.
+  problems: z.array(
+    z.object({
+      id: identifier,
+      title: z.string().max(200),
+      language: z.enum(['cpp', 'python']).default('cpp'),
+    }),
+  ),
 });
 const testSchema = z.object({
   id: identifier,
@@ -19,8 +27,8 @@ export class FileWorkspaceStore implements WorkspaceStore {
   private manifestPath() {
     return path.join(this.root, '.cfide', 'workspace.json');
   }
-  sourcePath(id: string) {
-    return path.join(this.root, identifier.parse(id), 'main.cpp');
+  sourcePath(id: string, language: Language = 'cpp') {
+    return path.join(this.root, identifier.parse(id), languages[language].sourceFile);
   }
   private async manifest() {
     try {
@@ -40,16 +48,17 @@ export class FileWorkspaceStore implements WorkspaceStore {
   async listProblems() {
     return (await this.manifest()).problems;
   }
-  async createProblem(id: string, title: string, source: string) {
+  async createProblem(id: string, title: string, source: string, language: Language = 'cpp') {
     identifier.parse(id);
+    z.enum(['cpp', 'python']).parse(language);
     z.string().min(1).max(200).parse(title);
     const manifest = await this.manifest();
     if (manifest.problems.some((p) => p.id === id))
       throw new Error(`Problem ${id} already exists.`);
-    const folder = path.dirname(this.sourcePath(id));
+    const folder = path.dirname(this.sourcePath(id, language));
     await fs.mkdir(folder); // Do not adopt or overwrite an existing user directory.
-    await fs.writeFile(this.sourcePath(id), source, { flag: 'wx' });
-    const problem = { id, title: z.string().min(1).max(200).parse(title) };
+    await fs.writeFile(this.sourcePath(id, language), source, { flag: 'wx' });
+    const problem = { id, title: z.string().min(1).max(200).parse(title), language };
     manifest.problems.push(problem);
     await this.atomic(this.manifestPath(), JSON.stringify(manifest, null, 2));
     return problem;

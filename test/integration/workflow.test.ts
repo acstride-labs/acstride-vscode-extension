@@ -27,10 +27,10 @@ describe('local C++ workflow', () => {
     await store.saveTest('A', { id: 'custom-1', input: '2 3', expected: '6' });
     await store.saveTest('A', { id: 'run-only', input: '4 7' });
     const restored = new FileWorkspaceStore(store.root);
-    expect(await restored.listProblems()).toEqual([{ id: 'A', title: 'Sum' }]);
+    expect(await restored.listProblems()).toEqual([{ id: 'A', title: 'Sum', language: 'cpp' }]);
     const result = await new RunTests(restored, new CppRunner()).execute(
       'A',
-      { compiler: process.env.CXX || 'g++', args: ['-std=c++20'], timeoutMs: 1000 },
+      { command: process.env.CXX || 'g++', args: ['-std=c++20'], timeoutMs: 1000 },
       new AbortController().signal,
     );
     expect(result.compileError).toBeUndefined();
@@ -49,7 +49,7 @@ describe('local C++ workflow', () => {
     const store = await workspace(),
       runner = new CppRunner();
     await store.createProblem('A', 'Errors', 'not valid C++');
-    const config = { compiler: process.env.CXX || 'g++', args: ['-std=c++20'], timeoutMs: 1000 };
+    const config = { command: process.env.CXX || 'g++', args: ['-std=c++20'], timeoutMs: 1000 };
     const run = () =>
       runner.run(
         store.sourcePath('A'),

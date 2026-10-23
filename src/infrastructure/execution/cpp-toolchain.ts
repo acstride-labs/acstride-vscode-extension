@@ -15,7 +15,7 @@ export async function platformCompilerArgs(
     config.args.some((a) => a === '-isysroot' || a.startsWith('--sysroot'))
   )
     return [];
-  const version = await executeProcess(config.compiler, ['--version'], {
+  const version = await executeProcess(config.command, ['--version'], {
     cwd: os.tmpdir(),
     timeoutMs: 5000,
     signal,

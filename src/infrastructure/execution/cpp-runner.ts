@@ -4,7 +4,7 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import type { ProgramRunner } from '../../application/ports/program-runner';
 import type { RunConfig, RunResult, TestCase, TestResult } from '../../domain/models';
-import { tokenDifference } from '../../domain/checkers/token-checker';
+import { runCases } from './run-cases';
 import { executeProcess } from './process-executor';
 import { platformCompilerArgs } from './cpp-toolchain';
 export class CppRunner implements ProgramRunner {
@@ -24,7 +24,7 @@ export class CppRunner implements ProgramRunner {
       const binary = path.join(folder, process.platform === 'win32' ? 'main.exe' : 'main');
       const platformArgs = await platformCompilerArgs(config, signal);
       const compile = await executeProcess(
-        config.compiler,
+        config.command,
         [...platformArgs, ...config.args, '-iquote', path.dirname(source), snapshot, '-o', binary],
         { cwd: folder, timeoutMs: 30000, signal },
       );
@@ -35,51 +35,10 @@ export class CppRunner implements ProgramRunner {
           compileError:
             compile.stderr || compile.stdout || `Compilation stopped: ${compile.reason}`,
         };
-      for (const test of tests) {
-        if (signal.aborted) {
-          result.cancelled = true;
-          break;
-        }
-        const execution = await executeProcess(binary, [], {
-          cwd: folder,
-          input: test.input,
-          timeoutMs: config.timeoutMs,
-          signal,
-        });
-        const difference =
-          test.expected === undefined
-            ? undefined
-            : tokenDifference(test.expected, execution.stdout);
-        const verdict =
-          execution.reason === 'cancelled'
-            ? 'CANCELLED'
-            : execution.reason === 'timeout'
-              ? 'TLE'
-              : execution.reason === 'output'
-                ? 'OLE'
-                : execution.code !== 0
-                  ? 'RE'
-                  : test.expected === undefined
-                    ? 'RAN'
-                    : difference
-                      ? 'WA'
-                      : 'AC';
-        const item: TestResult = {
-          testId: test.id,
-          verdict,
-          stdout: execution.stdout,
-          stderr: execution.stderr,
-          durationMs: execution.durationMs,
-          difference,
-        };
-        result.results.push(item);
-        progress?.(item);
-        if (verdict === 'CANCELLED') {
-          result.cancelled = true;
-          break;
-        }
-      }
-      return result;
+      return {
+        ...result,
+        ...(await runCases(binary, [], tests, config, { cwd: folder, signal }, progress)),
+      };
     } finally {
       await fs.rm(folder, { recursive: true, force: true });
     }
