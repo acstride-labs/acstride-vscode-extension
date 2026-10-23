@@ -7,6 +7,22 @@ import { settingsRequestSchema, settingsValuesSchema } from '../../src/shared/se
 import { contestRequestSchema } from '../../src/shared/contest-protocol';
 
 describe('configurable localization', () => {
+  it('uses familiar developer terminology and idiomatic mismatch messages', () => {
+    expect(translate('zh-CN', 'First difference at token {token}', { token: 1 })).toBe(
+      '第 1 个 token 不一致',
+    );
+    expect(translate('zh-CN', '(missing token)')).toBe('（缺少 token）');
+    expect(Object.values(catalogs['zh-CN']).join('\n')).not.toContain('词元');
+    expect(translate('en', 'First difference at token {token}', { token: 2 })).toBe(
+      'First mismatch: token 2',
+    );
+    expect(translate('ru', 'First difference at token {token}', { token: 2 })).toBe(
+      'Первое несовпадение: токен №2',
+    );
+    expect(translate('ja', 'First difference at token {token}', { token: 2 })).toBe(
+      '最初の不一致：2 個目のトークン',
+    );
+  });
   it('has complete nonempty four-language catalogs with exactly matching placeholders', () => {
     const placeholders = (s: string) =>
       [...s.matchAll(/\{([A-Za-z][A-Za-z0-9]*)\}/g)].map((match) => match[1]).sort();

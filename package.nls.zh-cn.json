@@ -3,7 +3,7 @@
   "command.cfide.openContestCenter": "CFIDE: 打开比赛信息",
   "command.cfide.addContest": "CFIDE: 添加 Codeforces 比赛",
   "command.cfide.openContestProblem": "CFIDE: 打开比赛题目",
-  "command.cfide.switchLanguage": "CFIDE: 切换解答语言",
+  "command.cfide.switchLanguage": "CFIDE: 切换编程语言",
   "command.cfide.createProblem": "CFIDE: 创建本地题目",
   "command.cfide.openProblem": "CFIDE: 打开题目",
   "command.cfide.runTests": "CFIDE: 运行测试",
@@ -25,6 +25,6 @@
   "setting.cfide.python.templatePath": "可选的 Python 模板绝对路径，支持 ${PROBLEM_ID}。",
   "setting.cfide.cpp.compiler": "C++ 编译器可执行文件或绝对路径。",
   "setting.cfide.cpp.args": "编译器参数，不经过 Shell 执行。",
-  "setting.cfide.run.timeoutMs": "每个测试的时限（毫秒）",
+  "setting.cfide.run.timeoutMs": "单个用例时限（毫秒）",
   "setting.cfide.cpp.templatePath": "可选的 C++ 模板绝对路径，支持 ${PROBLEM_ID}。"
 }

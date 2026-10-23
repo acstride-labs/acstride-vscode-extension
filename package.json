@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Codeforces IDE",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {

@@ -3,7 +3,7 @@
   "command.cfide.openContestCenter": "CFIDE: コンテスト情報を開く",
   "command.cfide.addContest": "CFIDE: Codeforces コンテストを追加",
   "command.cfide.openContestProblem": "CFIDE: コンテストの問題を開く",
-  "command.cfide.switchLanguage": "CFIDE: 解答言語を切り替え",
+  "command.cfide.switchLanguage": "CFIDE: プログラミング言語を変更",
   "command.cfide.createProblem": "CFIDE: ローカルの問題を作成",
   "command.cfide.openProblem": "CFIDE: 問題を開く",
   "command.cfide.runTests": "CFIDE: テストを実行",

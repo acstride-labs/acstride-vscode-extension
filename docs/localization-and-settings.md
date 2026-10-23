@@ -18,6 +18,8 @@ The selected scope loads the values for that scope: user values inherit defaults
 
 ## Configurable language resources
 
+Write for developers in each locale, not as a literal translation of the resource ID. Chinese uses established terms such as `token`, `Handle`, `Hack`, JSON and API rather than unfamiliar coined equivalents (for example, do not render `token` as “词元”). Use “代码”, “编程语言” and “用例” for source, language selection and local test cases. Russian `токен` and Japanese `トークン` are conventional local technical terms and should not be forcibly replaced with English. Keep error messages short, actionable and accurate; preserve parameters and distinguish official verdicts from local results. Wording regression tests cover the first-mismatch messages in all four locales.
+
 `src/shared/locales/{en,zh-CN,ru,ja}.json` are the only editable translation catalogs. Stable English source messages serve as resource IDs; translations are values, never branching conditions. Keep canonical source IDs stable when refining a translation. The shared `src/shared/i18n.ts` resolves the locale and renders `{name}` parameters. Unknown languages fall back to English; unknown technical diagnostics are retained rather than modified. Known canonical diagnostic templates can be translated at presentation time without rewriting persisted errors.
 
 Locale resolution: an explicit supported preference wins; otherwise follow VS Code's display language. Supported Chinese tags resolve to simplified Chinese, Russian/Japanese regional tags resolve to their base locale, other languages fall back to English. There are four supported languages; `auto` is a selection mode, not a fifth translation.

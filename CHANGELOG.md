@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1
+
+- Replace literal Chinese terminology with familiar developer wording, including `token`, Handle, code, programming language and test cases.
+- Improve mismatch messages and Python/language labels across all four locales; document localization conventions and add terminology regression tests.
+
 ## 0.8.0
 
 - Reorganize answering into a square problem rail, left-hand statement and native VS Code editor with tests beneath it; keep existing language extensions and user source files.
