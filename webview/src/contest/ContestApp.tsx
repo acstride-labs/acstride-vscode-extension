@@ -54,7 +54,7 @@ export function ContestApp() {
         </span>
         {!state?.signedInHandle ? (
           <button disabled={disabled} onClick={() => send({ type: 'login' })}>
-            Sign in
+            {state?.connectionMode === 'browser' ? '1. Open dedicated Chrome' : 'Sign in'}
           </button>
         ) : (
           <button
@@ -62,8 +62,29 @@ export function ContestApp() {
             disabled={disabled}
             onClick={() => send({ type: 'logout' })}
           >
-            Sign out
+            {state?.connectionMode === 'browser' ? 'Disconnect browser' : 'Sign out'}
           </button>
+        )}
+        {state?.connectionMode === 'browser' && (
+          <>
+            <button disabled={disabled} onClick={() => send({ type: 'connectBrowser' })}>
+              2. Connect after sign-in
+            </button>
+            <p>
+              {state.browserConnected
+                ? 'Dedicated browser connected. Keep it open during the contest.'
+                : 'Browser not connected. Sign in manually in the dedicated Chrome window, then connect. No browser extension is required.'}
+            </p>
+            {state.browserConnected && !state.signedInHandle && (
+              <button
+                className="secondary"
+                disabled={disabled}
+                onClick={() => send({ type: 'logout' })}
+              >
+                Disconnect browser
+              </button>
+            )}
+          </>
         )}
         <button
           className="secondary"
@@ -72,16 +93,19 @@ export function ContestApp() {
         >
           Track handle{state?.watchHandle ? `: ${state.watchHandle}` : ''}
         </button>
-        <details>
-          <summary>Session troubleshooting</summary>
-          <p>
-            If normal sign-in requires website verification, an existing authenticated Cookie header
-            can be connected. It is stored in VS Code SecretStorage, never in this workspace.
-          </p>
-          <button disabled={disabled} onClick={() => send({ type: 'connectCookie' })}>
-            Connect existing session
-          </button>
-        </details>
+        {state?.connectionMode === 'http' && (
+          <details>
+            <summary>Session troubleshooting</summary>
+            <p>
+              If normal sign-in requires website verification, an existing authenticated Cookie
+              header can be connected. It is stored in VS Code SecretStorage, never in this
+              workspace.
+            </p>
+            <button disabled={disabled} onClick={() => send({ type: 'connectCookie' })}>
+              Connect existing session
+            </button>
+          </details>
+        )}
       </section>
       <label className="contest-picker">
         Current contest
@@ -506,8 +530,10 @@ export function ContestApp() {
         </>
       )}
       <footer>
-        Passwords are not stored. Session cookies are kept in VS Code SecretStorage. API reads are
-        throttled; network failures retain cached work.
+        {state?.connectionMode === 'browser'
+          ? 'Sign in only in the dedicated browser. Its profile stores the session; Disconnect does not sign out of the website. '
+          : 'Passwords are not stored. Session cookies are kept in VS Code SecretStorage. '}{' '}
+        API reads are throttled; network failures retain cached work.
       </footer>
     </main>
   );

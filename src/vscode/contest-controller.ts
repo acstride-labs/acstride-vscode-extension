@@ -13,6 +13,7 @@ import type { Language, Problem } from '../domain/models';
 import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
 import { CodeforcesSession } from '../infrastructure/codeforces/session-client';
+import { BrowserSession } from '../infrastructure/codeforces/browser-session';
 import { RequestQueue } from '../infrastructure/codeforces/request-queue';
 import { cacheStatementAssets } from '../infrastructure/codeforces/asset-cache';
 import { ContestRepository } from '../infrastructure/storage/contest-repository';
@@ -39,6 +40,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private queue = new RequestQueue();
   private api = new CodeforcesApi(this.queue);
   private session: CodeforcesSession;
+  private browser?: BrowserSession;
+  private browserConnected = false;
   private initialized: Promise<void>;
   private service?: ContestService;
   private repo?: ContestRepository;
@@ -71,7 +74,18 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
   ) {
-    this.session = new CodeforcesSession(context.secrets, this.queue);
+    if (
+      vscode.workspace.getConfiguration('cfide').get('codeforces.connectionMode', 'browser') ===
+      'browser'
+    ) {
+      this.browser = new BrowserSession(
+        path.join(context.globalStorageUri.fsPath, 'codeforces-browser-profile'),
+        () =>
+          vscode.workspace.getConfiguration('cfide').get<string>('codeforces.browserExecutable') ||
+          undefined,
+      );
+    }
+    this.session = new CodeforcesSession(context.secrets, this.queue, fetch, this.browser);
     this.initialized = this.session.restore();
     this.selectedId = context.workspaceState.get<number>('cfide.selectedContest');
   }
@@ -121,10 +135,13 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       node?.kind === 'problem' ? this.openProblem(node.contestId, node.index) : undefined,
     );
     command('cfide.signIn', () => this.login());
+    command('cfide.connectBrowser', () => this.connectBrowser());
     command('cfide.connectCookie', () => this.connectCookie());
     command('cfide.signOut', async () => {
       this.trust();
+      if (this.submitting) throw new Error('Wait for the current submission before disconnecting.');
       await this.session.logout();
+      this.browserConnected = false;
       await this.publish();
     });
     command('cfide.submitSolution', () => this.submit());
@@ -216,6 +233,23 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private async changed(id: number) {
     this.changes.fire(undefined);
+    const target = this.statementTarget;
+    if (target?.contestId === id && this.statementPanel) {
+      const cached = await this.runtime().repo.statement(id, target.index);
+      if (
+        cached &&
+        target === this.statementTarget &&
+        cached.fetchedAt !== target.statement.fetchedAt
+      ) {
+        target.statement = cached;
+        void this.statementPanel?.webview.postMessage({
+          type: 'statement',
+          contestId: id,
+          index: target.index,
+          statement: this.mapAssets(id, cached),
+        } satisfies ContestHostMessage);
+      }
+    }
     if (id === this.selectedId) await this.publish();
   }
   async getChildren(node?: Node): Promise<Node[]> {
@@ -355,9 +389,12 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (message.type === 'ready') return this.publish();
     if (message.type === 'addContest') return this.add();
     if (message.type === 'login') return this.login();
+    if (message.type === 'connectBrowser') return this.connectBrowser();
     if (message.type === 'logout') {
       this.trust();
+      if (this.submitting) throw new Error('Wait for the current submission before disconnecting.');
       await this.session.logout();
+      this.browserConnected = false;
       return this.publish();
     }
     if (message.type === 'connectCookie') return this.connectCookie();
@@ -561,6 +598,29 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private async login() {
     this.trust();
+    if (this.browser) {
+      if (vscode.env.remoteName)
+        throw new Error(
+          'Dedicated browser mode currently requires local desktop VS Code, not a remote extension host.',
+        );
+      if (
+        (await vscode.window.showInformationMessage(
+          'Open a dedicated Chrome/Edge profile for Codeforces? It exposes a local-only debugging interface while running. Use this profile only for Codeforces. Complete verification and sign-in yourself; then click Connect in Contest Center. Your everyday browser profile is not accessed.',
+          { modal: true },
+          'Open dedicated browser',
+        )) !== 'Open dedicated browser'
+      )
+        return;
+      await this.task('Opening dedicated browser…', async () => {
+        const launched = await this.browser!.launch();
+        void vscode.window.showInformationMessage(
+          launched
+            ? 'CFIDE browser opened. Sign in there, then click Connect after sign-in.'
+            : 'The CFIDE browser is already running. Switch to its window, finish sign-in, then click Connect after sign-in.',
+        );
+      });
+      return;
+    }
     const handle = await vscode.window.showInputBox({
       title: 'Codeforces sign in',
       prompt: 'Handle or email. Your password is sent only to codeforces.com and is not stored.',
@@ -589,6 +649,25 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       await this.task('Validating session…', async () => {
         await this.session.connectCookie(cookie);
       });
+  }
+  private async connectBrowser() {
+    this.trust();
+    if (vscode.env.remoteName)
+      throw new Error('Dedicated browser mode requires local desktop VS Code.');
+    if (this.submitting)
+      throw new Error(
+        'Wait for the current submission to finish before changing browser connections.',
+      );
+    await this.task('Connecting to dedicated browser…', async () => {
+      this.browserConnected = false;
+      const handle = await this.session.connectBrowser();
+      this.browserConnected = true;
+      void vscode.window.showInformationMessage(
+        handle
+          ? `CFIDE browser connected as ${handle}.`
+          : 'Browser connected for public downloads, but no signed-in account was detected. Sign in in the browser, then reconnect before submitting.',
+      );
+    });
   }
   private async submit() {
     this.trust();
@@ -767,6 +846,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private async publish() {
     if (!this.dashboard) return;
     try {
+      if (this.browser && !this.browser.connected) {
+        this.browserConnected = false;
+        this.session.handle = undefined;
+      }
       const { repo } = this.runtime(),
         selected = this.selectedId;
       const contests = await repo.list();
@@ -790,6 +873,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         contests,
         selectedId: selected,
         signedInHandle: this.session.handle,
+        connectionMode: this.browser ? 'browser' : 'http',
+        browserConnected: this.browserConnected,
         watchHandle: handle,
         submissions: status.submissions,
         submissionsUpdatedAt: status.fetchedAt,
@@ -855,6 +940,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   dispose() {
+    this.browser?.disconnect();
     this.service?.dispose();
     this.queue.dispose();
     this.timers.forEach(clearInterval);

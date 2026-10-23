@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Contest Workbench",
   "description": "Codeforces contests inside VS Code: scheduled imports, C++/Python testing, submissions and rankings.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -50,6 +50,10 @@
       {
         "command": "cfide.signIn",
         "title": "CFIDE: Sign In to Codeforces"
+      },
+      {
+        "command": "cfide.connectBrowser",
+        "title": "CFIDE: Connect Dedicated Codeforces Browser"
       },
       {
         "command": "cfide.connectCookie",
@@ -167,6 +171,22 @@
     "configuration": {
       "title": "CFIDE",
       "properties": {
+        "cfide.codeforces.connectionMode": {
+          "type": "string",
+          "enum": [
+            "browser",
+            "http"
+          ],
+          "default": "browser",
+          "scope": "machine",
+          "description": "Use a dedicated, manually signed-in Chrome/Edge profile (recommended), or the experimental legacy HTTP session. Reload VS Code after changing this setting."
+        },
+        "cfide.codeforces.browserExecutable": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional absolute Chrome/Edge application path. On macOS use the .app path. CFIDE always creates a separate profile, never your everyday browser profile."
+        },
         "cfide.codeforces.handle": {
           "type": "string",
           "default": "",
@@ -243,6 +263,7 @@
     "react-dom": "^18.3.1",
     "sanitize-html": "^2.18.1",
     "tough-cookie": "^6.0.2",
+    "ws": "^8.22.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -252,6 +273,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/sanitize-html": "^2.16.2",
     "@types/vscode": "^1.95.0",
+    "@types/ws": "^8.18.2",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.28.2",
     "prettier": "^3.9.10",

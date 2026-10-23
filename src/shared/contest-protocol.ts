@@ -13,6 +13,7 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('addContest') }),
   z.object({ type: z.literal('login') }),
+  z.object({ type: z.literal('connectBrowser') }),
   z.object({ type: z.literal('logout') }),
   z.object({ type: z.literal('connectCookie') }),
   z.object({ type: z.literal('watchHandle') }),
@@ -63,6 +64,8 @@ export interface ContestViewState {
   contests: ContestRecord[];
   selectedId?: number;
   signedInHandle?: string;
+  connectionMode: 'browser' | 'http';
+  browserConnected: boolean;
   watchHandle?: string;
   submissions: CFSubmission[];
   submissionsUpdatedAt: number;

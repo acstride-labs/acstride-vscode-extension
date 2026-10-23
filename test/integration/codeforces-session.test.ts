@@ -23,6 +23,36 @@ function secretStore() {
   };
 }
 describe('authenticated Codeforces session', () => {
+  it('uses the manually authenticated browser without importing cookies or accepting passwords', async () => {
+    const secrets = secretStore(),
+      queue = new RequestQueue(0);
+    const browser = {
+      connected: true,
+      connect: vi.fn(async () => ({ html: signedIn, url: 'https://codeforces.com/' })),
+      page: vi.fn(async () => ({
+        html: submitHtml,
+        url: 'https://codeforces.com/contest/1234/submit',
+      })),
+      disconnect: vi.fn(),
+    };
+    const http = vi.fn<typeof fetch>();
+    const session = new CodeforcesSession(secrets, queue, http, browser);
+    await session.restore();
+    expect(session.handle).toBeUndefined();
+    expect(await session.connectBrowser()).toBe('tester');
+    expect((await session.submitForm(1234)).languages).toHaveLength(2);
+    expect(http).not.toHaveBeenCalled();
+    expect(browser.page).toHaveBeenCalledWith('/contest/1234/submit', undefined, 'tester');
+    expect(secrets.data.size).toBe(0);
+    await expect(session.login('tester', 'do-not-send')).rejects.toThrow('manually');
+    await expect(session.connectCookie('do-not-send')).rejects.toThrow('disabled');
+    browser.page.mockResolvedValue({ html: loginHtml, url: 'https://codeforces.com/enter' });
+    await expect(session.page('/')).rejects.toThrow('expired');
+    expect(session.handle).toBeUndefined();
+    await session.logout();
+    expect(browser.disconnect).toHaveBeenCalled();
+    queue.dispose();
+  });
   it('sends credentials only to Codeforces and persists cookies, never passwords', async () => {
     const secrets = secretStore(),
       queue = new RequestQueue(0);

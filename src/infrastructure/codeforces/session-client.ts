@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { RequestQueue } from './request-queue';
 import { browserNavigationHeaders } from './browser-headers';
+import type { BrowserConnection } from './browser-session';
 
 export interface SecretStore {
   get(key: string): PromiseLike<string | undefined>;
@@ -16,9 +17,10 @@ export interface ProgramType {
 }
 const SECRET = 'cfide.codeforces.session.v1';
 export class SiteVerificationError extends Error {
-  constructor() {
+  constructor(message?: string) {
     super(
-      'Codeforces requires browser/site verification. IDE login/submission is unavailable until verification is resolved. No submission success has been assumed.',
+      message ||
+        'Codeforces requires browser/site verification. IDE login/submission is unavailable until verification is resolved. No submission success has been assumed.',
     );
   }
 }
@@ -82,8 +84,10 @@ export class CodeforcesSession {
     private secrets: SecretStore,
     private queue: RequestQueue,
     private fetcher: typeof fetch = fetch,
+    private browser?: BrowserConnection,
   ) {}
   async restore() {
+    if (this.browser) return; // A browser connection is never inferred from stored HTTP cookies.
     const raw = await this.secrets.get(SECRET);
     if (!raw) return;
     try {
@@ -109,6 +113,7 @@ export class CodeforcesSession {
       );
   }
   async logout() {
+    this.browser?.disconnect();
     this.handle = undefined;
     this.jar = new CookieJar();
     this.ftaa = '';
@@ -120,6 +125,25 @@ export class CodeforcesSession {
       throw new Error('Invalid Codeforces path.');
     return this.queue.schedule(
       async () => {
+        if (this.browser) {
+          let result;
+          try {
+            result = await this.browser.page(pathname, body, this.handle);
+          } catch (error) {
+            if (this.browser.connected === false) this.handle = undefined;
+            throw error;
+          }
+          if (
+            this.handle &&
+            loggedHandle(result.html)?.toLowerCase() !== this.handle.toLowerCase()
+          ) {
+            this.handle = undefined;
+            throw new Error(
+              'The browser session expired or account changed. Reconnect before continuing.',
+            );
+          }
+          return result;
+        }
         let url = new URL(pathname, 'https://codeforces.com'),
           method = body ? 'POST' : 'GET',
           payload = body?.toString();
@@ -169,6 +193,10 @@ export class CodeforcesSession {
     );
   }
   async login(handleOrEmail: string, password: string) {
+    if (this.browser)
+      throw new Error(
+        'Sign in manually in the dedicated browser, then connect. Passwords are not accepted by the IDE in browser mode.',
+      );
     const previous = { jar: this.jar, handle: this.handle, ftaa: this.ftaa, bfaa: this.bfaa };
     this.jar = new CookieJar();
     this.handle = undefined;
@@ -209,6 +237,10 @@ export class CodeforcesSession {
     }
   }
   async connectCookie(cookieHeader: string) {
+    if (this.browser)
+      throw new Error(
+        'Cookie import is disabled in browser mode. Connect the dedicated browser instead.',
+      );
     const previous = { jar: this.jar, handle: this.handle };
     this.jar = new CookieJar();
     this.handle = undefined;
@@ -264,8 +296,8 @@ export class CodeforcesSession {
       source,
       tabSize: '4',
       sourceCodeConfirmed: 'true',
-      ftaa: this.ftaa,
-      bfaa: this.bfaa,
+      ftaa: fields.get('ftaa') || this.ftaa,
+      bfaa: fields.get('bfaa') || this.bfaa,
     }))
       fields.set(key, value);
     const result = await this.page(
@@ -281,6 +313,14 @@ export class CodeforcesSession {
     )?.[1];
     if (id) return { submissionId: Number(id) };
     return submissionReceipt(result.html, contestId);
+  }
+  async connectBrowser() {
+    if (!this.browser)
+      throw new Error('Switch to browser connection mode and reload VS Code first.');
+    this.handle = undefined;
+    const result = await this.queue.schedule(() => this.browser!.connect(), 0);
+    this.handle = loggedHandle(result.html);
+    return this.handle;
   }
   async registration(contestId: number, register = false): Promise<string> {
     if (!this.handle) throw new Error('Sign in to Codeforces first.');

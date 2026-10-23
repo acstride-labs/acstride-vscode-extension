@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+- Default to a dedicated Chrome/Edge profile: manually sign in first, then explicitly connect from Contest Center.
+- Native browser launch and direct local CDP transport; no browser extension or Playwright runtime dependency.
+- Route website downloads and submission forms through the browser without copying session cookies into Node.js.
+- Isolated profile/global storage, random loopback debugging port, exact profile/endpoint validation, and a separate IDE operations tab.
+- Account preflight before writes, no automatic submission retry, manual challenge handling, and explicit disconnect/reconnect behavior.
+- Keep legacy HTTP mode configurable. Add browser/session boundary tests and opt-in native-browser live diagnostics.
+- Authenticated live login/submission remains unverified; implementation does not imply successful challenge solving.
+
 ## 0.3.1
 
 - Add a pinned desktop Chrome-style navigation header profile for website requests.
