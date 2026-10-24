@@ -66,6 +66,9 @@ export type ContestHostMessage =
   | { type: 'translationAvailability'; enabled: boolean }
   | {
       type: 'translation';
+      contestId?: number;
+      index?: string;
+      collection?: 'contest' | 'standalone';
       status: 'pending' | 'ready' | 'failed' | 'disabled';
       html?: string;
       error?: string;

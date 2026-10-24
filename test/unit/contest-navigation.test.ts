@@ -112,3 +112,37 @@ it('keeps refresh identity independent of translated labels and clears it after 
   expect(controller.refreshing).toBeUndefined();
   expect(controller.busy).toBeUndefined();
 });
+
+it('delivers a completed translation with its problem identity after switching statements', async () => {
+  const controller = Object.create(ContestController.prototype) as any;
+  const target = {
+    contestId: 2261,
+    index: 'A',
+    collection: 'contest',
+    statement: { fetchedAt: 1, html: 'Original A' },
+  };
+  controller.statementTarget = target;
+  controller.ai = { translationOptions: () => ({ enabled: true }) };
+  let finish!: (html: string) => void;
+  controller.translate = () =>
+    new Promise<string>((resolve) => {
+      finish = resolve;
+    });
+  controller.mapAssets = (_id: number, statement: unknown) => statement;
+  const postMessage = vi.fn();
+  controller.dashboard = { webview: { postMessage } };
+  const translating = controller.showTranslation({ contestId: 2261, index: 'A' });
+  controller.statementTarget = { ...target, index: 'B' };
+  finish('Translated A');
+  await translating;
+  expect(postMessage).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      type: 'translation',
+      contestId: 2261,
+      index: 'A',
+      collection: 'contest',
+      status: 'ready',
+      html: 'Translated A',
+    }),
+  );
+});

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.3
+
+- Preserve each problem’s original/translated view when switching problems, including translations that finish in the background. Associate translation updates with their problem so results never overwrite another statement. Update the Chinese translation progress message.
+
 ## 0.15.2
 
 - Show ranking and submission refresh progress and refresh notices beside their refresh controls instead of above the contest heading. Add busy indicators, including the problem rail refresh, with reduced-motion support.

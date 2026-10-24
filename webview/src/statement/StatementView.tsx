@@ -8,11 +8,9 @@ export function StatementView() {
   const { t } = useI18n();
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [translated, setTranslated] = useState(false);
-  const [translation, setTranslation] = useState<{
-    status: string;
-    html?: string;
-    error?: string;
-  }>();
+  type Translation = Extract<ContestHostMessage, { type: 'translation' }>;
+  const [translation, setTranslation] = useState<Translation>();
+  const views = useRef(new Map<string, { translated: boolean; translation?: Translation }>());
   const [data, setData] = useState<Extract<ContestHostMessage, { type: 'statement' }>>();
   const content = useRef<HTMLDivElement>(null),
     key = useRef('');
@@ -24,27 +22,36 @@ export function StatementView() {
         setTranslationEnabled(event.data.enabled);
         if (!event.data.enabled) {
           setTranslated(false);
+          for (const view of views.current.values()) view.translated = false;
           setTranslation(undefined);
         }
         return;
       }
       if (event.data.type === 'translation') {
-        setTranslation(event.data);
-        if (event.data.status === 'disabled') setTranslated(false);
+        const message = event.data;
+        const targetKey =
+          message.contestId !== undefined && message.index
+            ? `${message.collection ?? 'contest'}/${message.contestId}/${message.index}`
+            : key.current;
+        const view = views.current.get(targetKey) ?? { translated: false };
+        view.translation = message;
+        if (message.status === 'disabled') view.translated = false;
+        views.current.set(targetKey, view);
+        if (targetKey === key.current) {
+          setTranslation(message);
+          setTranslated(view.translated);
+        }
         return;
       }
       if (event.data.type !== 'statement') return;
       setTranslationEnabled(event.data.translationEnabled);
-      if (!event.data.translationEnabled) setTranslated(false);
-      if (
-        key.current !==
-        `${event.data.collection ?? 'contest'}/${event.data.contestId}/${event.data.index}`
-      ) {
-        setTranslated(false);
-        setTranslation(undefined);
-      }
       scroll.current.set(key.current, viewport.current?.scrollTop ?? 0);
       key.current = `${event.data.collection ?? 'contest'}/${event.data.contestId}/${event.data.index}`;
+      const view = views.current.get(key.current) ?? { translated: false };
+      if (!event.data.translationEnabled) view.translated = false;
+      views.current.set(key.current, view);
+      setTranslated(view.translated);
+      setTranslation(view.translation);
       setData(event.data);
     };
     window.addEventListener('message', listener);
@@ -87,15 +94,26 @@ export function StatementView() {
                 disabled={!translationEnabled || !data?.statement.fetchedAt}
                 onClick={() => {
                   if (!translationEnabled) return;
-                  setTranslated(!translated);
-                  if (!translated)
-                    data &&
-                      send({
-                        type: 'translateStatement',
-                        contestId: data.contestId,
-                        index: data.index,
-                        collection: data.collection,
-                      });
+                  const next = !translated;
+                  const view = views.current.get(key.current) ?? { translated: false };
+                  view.translated = next;
+                  views.current.set(key.current, view);
+                  setTranslated(next);
+                  if (
+                    next &&
+                    view.translation?.status !== 'ready' &&
+                    view.translation?.status !== 'pending' &&
+                    data
+                  ) {
+                    view.translation = { type: 'translation', status: 'pending' };
+                    setTranslation(view.translation);
+                    send({
+                      type: 'translateStatement',
+                      contestId: data.contestId,
+                      index: data.index,
+                      collection: data.collection,
+                    });
+                  }
                 }}
               >
                 <svg

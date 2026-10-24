@@ -706,13 +706,16 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         error: error instanceof Error ? error.message : String(error),
       };
     }
-    if (target === this.statementTarget) this.postTranslation(target);
+    this.postTranslation(target);
   }
   private postTranslation(target: NonNullable<ContestController['statementTarget']>) {
     const panel = target.collection === 'contest' ? this.dashboard : this.statementPanel;
     const translation = target.translation;
     void panel?.webview.postMessage({
       type: 'translation',
+      contestId: target.contestId,
+      index: target.index,
+      collection: target.collection,
       ...translation,
       html: translation?.html
         ? this.mapAssets(
