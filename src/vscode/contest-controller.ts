@@ -458,6 +458,12 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
     if (message.type === 'translateStatement') return this.showTranslation(message);
     if (message.type === 'openContestDetails') return this.openCenter(message.contestId);
+    if (message.type === 'openContestWebsite') {
+      await vscode.env.openExternal(
+        vscode.Uri.parse(`https://codeforces.com/contest/${message.contestId}`),
+      );
+      return;
+    }
     if (message.type === 'contestSection') {
       this.section = message.section;
       if (message.section === 'rankings') this.lastBoard = 0;

@@ -413,5 +413,6 @@
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "可选的 Java 模板绝对路径，支持 ${PROBLEM_ID}。",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新建 Java 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "可选的 Kotlin 模板绝对路径，支持 ${PROBLEM_ID}。",
-  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新建 Kotlin 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。"
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新建 Kotlin 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。",
+  "Open on Codeforces": "在 Codeforces 打开"
 }

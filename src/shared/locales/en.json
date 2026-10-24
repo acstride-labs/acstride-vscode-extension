@@ -413,5 +413,6 @@
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Optional absolute path to a Java template; supports ${PROBLEM_ID}.",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Java code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.",
-  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Kotlin code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced."
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Kotlin code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
+  "Open on Codeforces": "Open on Codeforces"
 }

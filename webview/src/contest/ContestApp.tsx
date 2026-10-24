@@ -80,7 +80,14 @@ export function ContestApp() {
                 </span>
               </h1>
               <p>
-                #{id}
+                #{id}{' '}
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => send({ type: 'openContestWebsite', contestId: id })}
+                >
+                  {t('Open on Codeforces')} ↗
+                </button>
                 {contest.frozen ? ' · ' + t('Standings frozen') : ''}
                 {record.archived ? ' · ' + t('Archived') : ''}
               </p>

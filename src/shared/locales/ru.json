@@ -413,5 +413,6 @@
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Необязательный полный путь к шаблону Java; поддерживается ${PROBLEM_ID}.",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Начальный код новых решений на Java. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется.",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Необязательный полный путь к шаблону Kotlin; поддерживается ${PROBLEM_ID}.",
-  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Начальный код новых решений на Kotlin. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется."
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Начальный код новых решений на Kotlin. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется.",
+  "Open on Codeforces": "Открыть на Codeforces"
 }

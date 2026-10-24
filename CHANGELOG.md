@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.4
+
+- Add a localized link beside the contest ID to open the current contest on Codeforces in the external browser.
+
 ## 0.15.3
 
 - Preserve each problem’s original/translated view when switching problems, including translations that finish in the background. Associate translation updates with their problem so results never overwrite another statement. Update the Chinese translation progress message.

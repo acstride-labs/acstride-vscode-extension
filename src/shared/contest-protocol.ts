@@ -21,6 +21,7 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('openSettings') }),
   z.object({ type: z.literal('openAiSettings') }).strict(),
   z.object({ type: z.literal('openContestDetails'), contestId: contestIdSchema }).strict(),
+  z.object({ type: z.literal('openContestWebsite'), contestId: contestIdSchema }).strict(),
   z
     .object({
       type: z.literal('contestSection'),

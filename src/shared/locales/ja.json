@@ -413,5 +413,6 @@
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Java テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Java 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Kotlin テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
-  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Kotlin 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。"
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Kotlin 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
+  "Open on Codeforces": "Codeforces で開く"
 }
