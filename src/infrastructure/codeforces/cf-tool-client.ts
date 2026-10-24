@@ -24,7 +24,31 @@ export function cfToolExecutable(root: string, platform = process.platform) {
   );
 }
 
-// Anonymous API bridge only. No session commands, user-selected executable, shell or secrets.
+export class CfToolError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly data?: unknown,
+  ) {
+    super(message);
+  }
+}
+const receiptSchema = z.object({
+  protocol: z.literal(1),
+  id: z.string().regex(/^[a-f0-9]{32}$/),
+  state: z.enum(['unknown', 'confirmed', 'abandoned']),
+  handle: z.string().regex(/^[A-Za-z0-9_.-]{1,24}$/),
+  contestId: z.number().int().positive(),
+  index: z.string().regex(/^[A-Z][0-9]{0,2}$/),
+  languageId: z.string().regex(/^[0-9]+$/),
+  language: z.string(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  createdAt: z.string().datetime(),
+  submissionId: z.number().int().positive().optional(),
+});
+export type SubmissionReceipt = z.infer<typeof receiptSchema>;
+
+// Typed client operations only. Account commands are invoked explicitly by the host.
 export class CfToolClient {
   private abort = new AbortController();
   private handshake?: Promise<void>;
@@ -35,7 +59,7 @@ export class CfToolClient {
       `Codeforces tool failed (${code}). Cached data is retained.`,
   ) {}
 
-  private async run(args: string[], problem = false) {
+  private async run(args: string[], problem = false, input?: string) {
     const requestId = randomUUID();
     const result = await this.executor(
       this.executable,
@@ -49,6 +73,7 @@ export class CfToolClient {
         problem ? '210s' : '25s',
       ],
       {
+        input,
         cwd: path.dirname(this.executable),
         timeoutMs: problem ? 220000 : 30000,
         outputLimit: Number.POSITIVE_INFINITY,
@@ -69,7 +94,11 @@ export class CfToolClient {
       throw new Error(this.formatError('protocol_mismatch'));
     const value = parsed.data;
     if (result.code !== 0 || !value.ok || value.error)
-      throw new Error(this.formatError(value.error?.code ?? 'request_failed'));
+      throw new CfToolError(
+        value.error?.code ?? 'request_failed',
+        this.formatError(value.error?.code ?? 'request_failed'),
+        value.data,
+      );
     return value.data;
   }
 
@@ -167,6 +196,119 @@ export class CfToolClient {
         expected: sample.output,
       })),
     };
+  }
+
+  async account() {
+    return z
+      .object({
+        handle: z.string().regex(/^[A-Za-z0-9_.-]{1,24}$/),
+        authenticated: z.literal(true),
+      })
+      .parse(await this.run(['session', 'check', '--experimental']));
+  }
+  async login(username: string, password: string) {
+    return z
+      .object({ handle: z.string().regex(/^[A-Za-z0-9_.-]{1,24}$/), stored: z.literal(true) })
+      .parse(
+        await this.run(
+          ['session', 'login', '--experimental', '--credentials-stdin', '--store'],
+          false,
+          JSON.stringify({ username, password }),
+        ),
+      );
+  }
+  async forgetSession() {
+    await this.run(['session', 'forget']);
+  }
+  async languages(contestId: number) {
+    return z
+      .array(z.object({ id: z.string().regex(/^[0-9]+$/), name: z.string() }))
+      .parse(
+        await this.run(['languages', 'list', '--contest', String(contestId), '--experimental']),
+      );
+  }
+  async submit(
+    contestId: number,
+    index: string,
+    file: string,
+    languageId: string,
+    hash: string,
+    expectedHandle: string,
+  ) {
+    if (
+      !path.isAbsolute(file) ||
+      !/^[a-f0-9]{64}$/.test(hash) ||
+      !/^[0-9]+$/.test(languageId) ||
+      !/^[A-Za-z0-9_.-]{1,24}$/.test(expectedHandle) ||
+      !/^[A-Z][0-9]{0,2}$/.test(index) ||
+      !Number.isSafeInteger(contestId) ||
+      contestId < 1
+    )
+      throw new Error('Invalid submission request.');
+    try {
+      return receiptSchema.parse(
+        await this.run(
+          [
+            'submit',
+            '--contest',
+            String(contestId),
+            '--problem',
+            index,
+            '--file',
+            file,
+            '--language-id',
+            languageId,
+            '--expected-sha256',
+            hash,
+            '--expected-handle',
+            expectedHandle,
+            '--experimental',
+            '--confirm',
+          ],
+          true,
+        ),
+      );
+    } catch (error) {
+      if (error instanceof CfToolError && error.code === 'submission_unknown')
+        return receiptSchema.parse(error.data);
+      throw error;
+    }
+  }
+  async reconcile(id: string) {
+    if (!/^[a-f0-9]{32}$/.test(id)) throw new Error('Invalid submission receipt.');
+    try {
+      return receiptSchema.parse(
+        await this.run(['receipt', 'reconcile', id, '--experimental'], true),
+      );
+    } catch (error) {
+      if (error instanceof CfToolError && error.code === 'submission_unknown')
+        return receiptSchema.parse(error.data);
+      throw error;
+    }
+  }
+  async watch(contestId: number, handle: string, submissionId: number) {
+    return z
+      .object({
+        id: z.literal(submissionId),
+        contestId: z.literal(contestId),
+        problem: z.object({ index: z.string() }),
+        creationTimeSeconds: z.number(),
+        programmingLanguage: z.string(),
+        verdict: z.string(),
+        testset: z.string().optional(),
+      })
+      .parse(
+        await this.run([
+          'submission',
+          'watch',
+          '--contest',
+          String(contestId),
+          '--handle',
+          handle,
+          '--submission-id',
+          String(submissionId),
+        ]),
+      );
   }
 
   dispose() {

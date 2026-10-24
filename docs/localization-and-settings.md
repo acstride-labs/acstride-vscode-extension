@@ -4,7 +4,7 @@
 
 The contest sidebar has three ordered actions: add (`+`), contest center (trophy), settings (gear). `cfide.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice has a settings shortcut too.
 
-Contest info contains problem downloads/retries, submissions, rankings and a per-contest settings tab. Default language, automatic downloads and archive apply only to that contest; they no longer appear in global Settings. Saved-HTML import has been removed.
+Contest info contains automatically downloaded problems, public submissions, rankings and per-contest language/archive settings. Automatic downloads are always enabled, with bounded per-problem retries and selection-triggered recovery. There is no manual download toggle or button. Saved-HTML import has been removed.
 
 Settings contains:
 
@@ -22,7 +22,7 @@ Settings starts with per-language environment checks. One allowlisted `checkAllE
 
 Starter-code editing uses separate `cpp.templateCode` and `python.templateCode` values at the selected user/workspace scope. Settings shows resolved previews while retaining independent drafts. Inline nonblank code wins over legacy `templatePath`, then the bundled template. Only trusted workspaces may preview configured files. Template files and inline values have size limits; templates are read as text, never evaluated. `${PROBLEM_ID}` substitution happens only when creating a solution. Existing source files are protected by exclusive creation in storage. The editor replaces the old path inputs, not the existing file-based configuration keys.
 
-Run and copy messages include their displayed problem/language identity. The host rejects stale identities. Both actions save that exact source buffer before reading it; a failed save aborts the action. Execution receives the captured language rather than rereading a mutable language selection to choose its source. Copying writes only the selected code to the clipboard and opens the official submission URL; there is no automatic submission.
+Run and submit messages include their displayed problem/language identity. Both save the exact source buffer first and reject stale targets. Submission uses native login/language/confirmation dialogs, binds the source hash and confirmed account, and calls only typed CF Tool operations. Pending receipt IDs survive restart; exact-source reconciliation precedes result watching. No credentials/source are stored in the Webview or VS Code tracking state, and no submission is automatically resent.
 
 Write for developers in each locale, not as a literal translation of the resource ID. Chinese uses established terms such as `token`, `Handle`, `Hack`, JSON and API rather than unfamiliar coined equivalents (for example, do not render `token` as “词元”). Use “代码”, “编程语言” and “用例” for source, language selection and local test cases. Russian `токен` and Japanese `トークン` are conventional local technical terms and should not be forcibly replaced with English. Keep error messages short, actionable and accurate; preserve parameters and distinguish official verdicts from local results. Wording regression tests cover the first-mismatch messages in all four locales.
 

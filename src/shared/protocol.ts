@@ -21,11 +21,12 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('run'), testId: id.optional(), target: problemTargetSchema }),
   z.object({ type: z.literal('stop') }),
   z.object({ type: z.literal('switchLanguage') }),
-  z.object({ type: z.literal('copySource'), target: problemTargetSchema }),
+  z.object({ type: z.literal('submitSource'), target: problemTargetSchema }),
 ]);
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =
   | { type: 'state'; problem: Problem; tests: TestCase[] }
+  | { type: 'submitting'; submitting: boolean }
   | { type: 'running'; running: boolean; testId?: string }
   | { type: 'progress'; result: TestResult }
   | { type: 'result'; result: RunResult }

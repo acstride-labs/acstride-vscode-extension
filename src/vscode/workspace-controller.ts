@@ -12,6 +12,7 @@ import { RunTests } from '../application/run-tests';
 import { requestSchema, type HostMessage } from '../shared/protocol';
 import { webviewHtml } from './webview-html';
 import { postLocale, t } from './localization';
+import type { SubmissionSnapshot } from './submission-controller';
 
 export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
   private changes = new vscode.EventEmitter<Problem | undefined>();
@@ -24,6 +25,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   private abort?: AbortController;
   private busy = false;
   private dirtyTests = false;
+  private submitting = false;
+  submitHandler?: (snapshot: SubmissionSnapshot) => Promise<void>;
   private mutation: Promise<unknown> = Promise.resolve();
   private disposables: vscode.Disposable[] = [];
   private readonly output = vscode.window.createOutputChannel('AC-Stride');
@@ -83,7 +86,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           }
         }),
       );
-    command('cfide.copySolution', () => this.copySolution());
+    command('cfide.submitSolution', () => this.submitSolution());
     command('cfide.createProblem', () => this.create());
     command('cfide.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
     command('cfide.refresh', () => this.changes.fire(undefined));
@@ -358,8 +361,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           void this.switchLanguage().catch((e) => this.error(e));
           return;
         }
-        if (message.type === 'copySource') {
-          void this.copySolution(message.target).catch((e) => this.error(e));
+        if (message.type === 'submitSource') {
+          void this.submitSolution(message.target).catch((e) => this.error(e));
           return;
         }
         const captured = this.current;
@@ -386,6 +389,12 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       null,
       this.disposables,
     );
+  }
+  async refreshTests(contestId: number, index: string) {
+    const current = this.current;
+    if (!current || current.contestId !== contestId || current.id !== index) return;
+    const tests = await this.store().listTests(index);
+    if (this.current === current) this.send({ type: 'state', problem: current, tests });
   }
   private async state() {
     if (this.current)
@@ -424,16 +433,36 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     )
       throw new Error('Problem or language changed. Retry from the updated toolbar.');
   }
-  async copySolution(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+  async submitSolution(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
     this.ensureTarget(target);
-    const { source, problem } = await this.snapshot();
-    await vscode.env.clipboard.writeText(source);
-    if (problem.contestId)
-      await vscode.env.openExternal(
-        vscode.Uri.parse(
-          `https://codeforces.com/contest/${problem.contestId}/submit/${encodeURIComponent(problem.id)}`,
-        ),
-      );
+    this.trust();
+    if (this.submitting) return;
+    if (!this.submitHandler) throw new Error(t('Submission client is unavailable.'));
+    this.submitting = true;
+    this.send({ type: 'submitting', submitting: true });
+    try {
+      const { source, problem, store } = await this.snapshot();
+      const captured = { ...problem };
+      await this.submitHandler({
+        problem: captured,
+        source,
+        file: store.sourcePath(problem.id, problem.language),
+        assertCurrent: () => {
+          this.ensureTarget(captured);
+          if (
+            vscode.workspace.textDocuments?.some(
+              (document) =>
+                document.uri.fsPath === store.sourcePath(problem.id, problem.language) &&
+                document.isDirty,
+            )
+          )
+            throw new Error(t('Source changed while preparing submission. Save and try again.'));
+        },
+      });
+    } finally {
+      this.submitting = false;
+      this.send({ type: 'submitting', submitting: false });
+    }
   }
   private async run(testId?: string, target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
     this.ensureTarget(target);

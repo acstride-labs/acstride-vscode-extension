@@ -54,6 +54,7 @@ async function fixture(language: Language) {
   const controller = Object.assign(Object.create(WorkspaceController.prototype), {
     current: problem,
     scopedStore: store,
+    submitHandler: vi.fn(async () => {}),
     output: { appendLine: () => {} },
   });
   return { controller: controller as WorkspaceController, store, problem };
@@ -80,7 +81,7 @@ describe('selected source and automatic saving', () => {
       expect(await fs.readFile(source, 'utf8')).toBe(code);
       expect(language === 'cpp' ? mock.pythonRun : mock.cppRun).not.toHaveBeenCalled();
     });
-    it(`saves and copies the selected ${language} buffer, not the other language`, async () => {
+    it(`saves and submits the selected ${language} buffer, not the other language`, async () => {
       const { controller, store, problem } = await fixture(language);
       const source = store.sourcePath('A', language),
         code = `${language} unsaved edits\n`;
@@ -89,22 +90,25 @@ describe('selected source and automatic saving', () => {
         return true;
       });
       mock.documents.set(source, { isDirty: true, save });
-      await controller.copySolution(problem);
+      await controller.submitSolution(problem);
       expect(save).toHaveBeenCalledOnce();
-      expect(mock.clipboard).toHaveBeenCalledWith(code);
-      expect(mock.external).toHaveBeenCalledWith('https://codeforces.com/contest/7/submit/A');
+      expect(controller.submitHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ source: code, file: source, problem }),
+      );
+      expect(mock.clipboard).not.toHaveBeenCalled();
+      expect(mock.external).not.toHaveBeenCalled();
       const other = language === 'cpp' ? 'python' : 'cpp';
       expect(await fs.readFile(store.sourcePath('A', other), 'utf8')).toBe(
         other === 'cpp' ? '// saved C++' : '# saved Python',
       );
     });
   }
-  it('refuses a stale language or contest target instead of copying a different file', async () => {
+  it('refuses a stale language or contest target before submitting a different file', async () => {
     const { controller, problem } = await fixture('cpp');
-    await expect(controller.copySolution({ ...problem, language: 'python' })).rejects.toThrow(
+    await expect(controller.submitSolution({ ...problem, language: 'python' })).rejects.toThrow(
       'language changed',
     );
-    await expect(controller.copySolution({ ...problem, contestId: 8 })).rejects.toThrow(
+    await expect(controller.submitSolution({ ...problem, contestId: 8 })).rejects.toThrow(
       'language changed',
     );
     expect(mock.clipboard).not.toHaveBeenCalled();
@@ -121,10 +125,10 @@ describe('selected source and automatic saving', () => {
     expect(mock.cppRun).not.toHaveBeenCalled();
     expect(mock.pythonRun).not.toHaveBeenCalled();
   });
-  it('does not copy or navigate if saving the source fails', async () => {
+  it('does not submit if saving the source fails', async () => {
     const { controller, store, problem } = await fixture('python');
     mock.documents.set(store.sourcePath('A', 'python'), { isDirty: true, save: async () => false });
-    await expect(controller.copySolution(problem)).rejects.toThrow('Could not save source');
+    await expect(controller.submitSolution(problem)).rejects.toThrow('Could not save source');
     expect(mock.clipboard).not.toHaveBeenCalled();
     expect(mock.external).not.toHaveBeenCalled();
   });

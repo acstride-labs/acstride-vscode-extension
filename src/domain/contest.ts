@@ -14,7 +14,6 @@ export const contestSchema = z.object({
 export const contestRecordSchema = z.object({
   schemaVersion: z.literal(1),
   contest: contestSchema,
-  autoDownload: z.boolean().default(true),
   archived: z.boolean().default(false),
   defaultLanguage: z.enum(['cpp', 'python']).default('cpp'),
   problems: z
@@ -23,6 +22,8 @@ export const contestRecordSchema = z.object({
         index: problemIndexSchema,
         name: z.string(),
         ready: z.boolean(),
+        downloadAttempts: z.number().int().nonnegative().default(0),
+        nextRetryAt: z.number().default(0),
         error: z.string().optional(),
       }),
     )
@@ -100,3 +101,5 @@ export function submissionLabel(s: CFSubmission): string {
         : `Passed ${s.testset ?? 'tests'}`;
   return s.verdict.replaceAll('_', ' ');
 }
+
+export const maxDownloadAttempts = 4;

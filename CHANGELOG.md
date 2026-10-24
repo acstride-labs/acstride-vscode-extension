@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0
+
+- Always download released problems automatically; remove the per-contest toggle, manual download controls and obsolete placeholder instructions.
+- Persist up to four attempts per problem, show downloading/failure states, and start a fresh cycle when a failed problem is selected. Merge duplicate requests and refresh open statements/samples without replacing code or custom tests.
+- Replace copy-and-open with experimental one-click submission, native password input, official language selection and a second confirmation. Bind the saved source and confirmed account before sending.
+- Persist pending receipt tracking, reconcile exact source/submission identity, and notify official verdicts in VS Code; distinguish pretests from final acceptance and never retry a submission POST automatically.
+- Include the theme-colored AC-Stride Activity Bar icon.
+
+## 0.11.2
+
+- Replace the generic code Activity Bar icon with the AC-Stride brand mark, using a transparent, theme-colored 24 px SVG.
+
 ## 0.11.1
 
 - Update CF Tool to remove fixed response, statement, image and asset-count limits that rejected large public contest data.

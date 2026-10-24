@@ -45,7 +45,7 @@ capabilities with empty PATH and checks request/protocol identity. `package` and
 
 Both `build:cf-tool` and `build:downloader` use `scripts/cf-tool-source.mjs` to resolve the same exact clean commit. Downloader manifests record this source revision too. No binaries or frozen runtimes are committed to Git; CI packages generated platform-specific outputs in the VSIX.
 
-Production and development hosts always use the extension-owned CF Tool. Missing/incompatible bundles report an installation failure; no TypeScript network fallback exists. The bridge exposes anonymous API reads and `problem read --bundled --assets-dir DIR`. It does not activate keyring, credentials, cookies, website POSTs or self-update. CF Tool owns webpage parsing, samples, image transport/cache and cross-process request pacing. Only local rendering sanitization and workspace orchestration remain in the extension. Uncached remote images are blocked by the Webview CSP.
+Production and development hosts always use the extension-owned CF Tool. Missing/incompatible bundles report an installation failure; no TypeScript network fallback exists. The typed client exposes anonymous reads plus explicit experimental account, language, submit, receipt and watch operations. Credentials travel only on stdin after a native password prompt; submission requires native confirmation, exact source hash and expected account binding. Anonymous operations never load sessions. No self-update or browser-cookie import exists. CF Tool owns webpage parsing, samples, image transport/cache and cross-process request pacing. Only local rendering sanitization and workspace orchestration remain in the extension. Uncached remote images are blocked by the Webview CSP.
 
 ## Dependencies and release hygiene
 

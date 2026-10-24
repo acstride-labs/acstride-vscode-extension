@@ -11,23 +11,23 @@ const result = (verdict: Verdict): TestResult => ({
   durationMs: 1,
 });
 describe('test case tabs', () => {
-  it('places the copy/navigation action after Run all, without duplicate top buttons', async () => {
+  it('places the submission action after Run all, without duplicate top buttons', async () => {
     const app = await fs.readFile('webview/src/main.tsx', 'utf8');
     const toolbar = app.slice(
       app.indexOf('<div className="test-toolbar">'),
       app.indexOf('<div className="test-tabs"'),
     );
     expect(toolbar.indexOf("t('Run all tests')")).toBeGreaterThan(-1);
-    expect(toolbar.indexOf("t('Copy and submit')")).toBeGreaterThan(
+    expect(toolbar.indexOf("'One-click submit'")).toBeGreaterThan(
       toolbar.indexOf("t('Run all tests')"),
     );
-    expect(toolbar).toContain("type: 'copySource'");
+    expect(toolbar).toContain("type: 'submitSource'");
     const statement = await fs.readFile('webview/src/statement/StatementView.tsx', 'utf8');
-    expect(statement).not.toContain("type: 'copySource'");
+    expect(statement).not.toContain("type: 'submitSource'");
     const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
     expect(
       manifest.contributes.menus['editor/title'].some(
-        (entry: { command: string }) => entry.command === 'cfide.copySolution',
+        (entry: { command: string }) => entry.command === 'cfide.submitSolution',
       ),
     ).toBe(false);
   });

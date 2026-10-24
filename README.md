@@ -5,11 +5,11 @@ Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
 [Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
 [product website](https://github.com/acstride-labs/acstride-web).
 
-The extension ID, `cfide.*` commands/settings and `.cfide` workspace data remain
-unchanged for compatibility with existing installations. Build environment variables
+The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compatible
+with existing installations. The obsolete copy/navigation action is removed in 0.12. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.11 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.12 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -18,29 +18,24 @@ A Codeforces extension for desktop VS Code, with C++ and Python support and Engl
 - Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
-- Copy solution code and open the matching Codeforces submission page. Paste and submit there yourself; AC-Stride does not send solutions.
+- One-click submission with an official-language picker and a native confirmation dialog showing the account, problem, language and file. Receipt reconciliation binds notifications to an exact submission ID; pretests and final acceptance remain distinct.
 - Compact case tabs: verified passes are green, all abnormal verdicts are red; run-only results stay neutral. Single-case runs preserve other results and switching tabs preserves unsaved test drafts.
 - Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
-There are **no login, Cookie import, browser connection, automatic submission, registration or clarification controls**. Register and submit on the official website yourself. Adding a contest locally does not register your account. Public tracking does not authenticate ownership of a handle.
+Public downloads and rankings remain anonymous. One-click submission uses CF Tool's **experimental** session/submission commands only after explicit user action and confirmation. First use prompts for username/password in native VS Code inputs; only CF Tool receives credentials via stdin, and it stores the resulting session in the OS keyring. The extension never stores passwords or imports browser cookies. Use **AC-Stride: Sign in to Codeforces** to reconnect and **Sign out of Codeforces** to remove the local session.
 
-The separately developed CLI has opt-in experimental account/submission commands,
-but the extension's bridge exposes **only anonymous API reads**. It never loads
-CLI keyring sessions, forwards cookies/passwords, or submits source. Its protocol,
-request IDs, operation schemas and exit status are checked before accepting data.
-The CLI owns webpage parsing, sample extraction and image downloads. The extension
-validates protocol data and sanitizes HTML for display, without direct Codeforces
-requests or a second transport fallback. The client internally uses the bundled
-curl_cffi public reader; there is no downloader setup screen.
+Login and automatic submission have not been verified against a real account. Site verification/2FA may prevent them. Unknown submissions are never automatically resent. Receipts survive restart and are checked against exact source identity before an official submission ID is monitored. An unknown receipt may require checking the official website; do not repeatedly submit. No CAPTCHA is solved or bypassed.
+
+The CLI owns all Codeforces HTTP, statement/sample parsing and image downloads. The extension validates structured results and sanitizes HTML for display. Tools are bundled in the VSIX with no runtime downloads.
 
 ## Start here
 
 1. Install the VSIX matching your operating system and CPU using **Extensions: Install from VSIX…**. Build targets are Windows x64, macOS Apple Silicon/Intel and Linux x64 (glibc, Ubuntu 22.04+ baseline); other architectures and Alpine/musl are not supported yet. Marketplace publishing is not configured.
 2. Open a trusted, single local workspace folder. A C++ compiler and/or Python 3 is only required to **run your own solutions**, not to download/read problems.
-3. Open **AC-Stride: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
-4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
+3. Open **AC-Stride: Open Contest Center**. Public problem downloads are automatic and always enabled; there is no setup or manual download switch.
+4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Released problems download automatically. Keep VS Code running through the start for upcoming contests. Missing statements show download progress; each problem gets up to four automatic attempts with backoff, then a failure message. Selecting an undownloaded/failed problem starts or resumes a download cycle, with duplicate requests merged. Old auto-download-off settings are ignored. Archived contests pause background work.
 5. Open a problem: the square A/B/C… buttons switch problems, with statement on the left, native VS Code editor on the right and tests beneath the code. Resize the dividers as needed. Use the top language control to switch between C++ and Python without discarding either source. Official samples are read-only; **+** adds and selects a custom-case tab.
-6. Beside **Run all**, **Copy code & open submission page** (中文：**复制代码并去提交**) saves and copies the selected language's code, then opens that problem's submission page in your default browser. Paste and submit there yourself. The language switch remains visible in the same toolbar; both run and copy reject stale problem/language requests. Open **Settings** using the sidebar gear and set **My Codeforces handle** to show your submissions and rank. Clear it to disable tracking.
+6. Beside **Run all**, **One-click submit** saves the selected language's source, checks your session, lets you choose a matching official language, and opens a second confirmation dialog. Cancelling sends nothing. Source/account changes abort sending. After exact receipt verification, official results appear in VS Code notifications. Unknown receipts remain pending across restarts; source is never automatically resubmitted. The optional **My Codeforces handle** setting controls public ranking/submission views independently of your authenticated submission account.
 
 The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; AC-Stride never silently downloads components or falls back to installing pip packages.
 
@@ -52,7 +47,7 @@ This runtime is exclusively for public downloads, not for executing solutions. T
 
 ### If a problem cannot be downloaded
 
-Use **Download problems** or a problem's **Refresh problem** action to retry later. You can still open a local solution and add your own cases. Existing code, custom tests and cached statements are preserved. Saved-HTML import has been removed; no user files are deleted.
+Downloads retry automatically up to four times per problem. Selecting a failed problem starts another bounded attempt cycle; the statement pane updates on success/failure. You can keep coding and editing custom cases while waiting. Imported samples refresh the open test view without discarding custom drafts. Existing code, tests and cached statements are preserved.
 
 ## Local practice
 
@@ -62,7 +57,7 @@ Local AC is **not official acceptance**. The default checker compares tokens, ig
 
 ## Settings
 
-Use the contest sidebar's **+ / trophy / gear** for add / contest info / settings. Global Settings contains interface language, your handle, C++/Python tools/arguments/templates, local time limit and environment checks. Each contest's **Contest settings** tab contains only that contest's default language, automatic downloads and archive switch. No downloader-status panel or center-navigation button crowds Settings. Language applies immediately without discarding open forms or test drafts; statements, code and raw tool diagnostics stay in their original language.
+Use the contest sidebar's **+ / trophy / gear** for add / contest info / settings. Global Settings contains interface language, your handle, C++/Python tools/arguments/templates, local time limit and environment checks. Each contest's **Contest settings** tab contains only that contest's default language and archive switch. No downloader-status panel or center-navigation button crowds Settings. Language applies immediately without discarding open forms or test drafts; statements, code and raw tool diagnostics stay in their original language.
 
 Choose **User settings** or **This workspace** before editing tool/tracking settings. Workspace settings override user settings; environment checks use the active saved configuration. Save/discard draft changes before switching scope or contest. Language is always an application-level user preference. Archive preserves all local code/tests.
 
@@ -105,7 +100,7 @@ your-workspace/
   B/main.py
 ```
 
-Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Old account/submission snapshot files, browser profiles and 0.5's download venv are **not automatically deleted**, but are no longer read, launched or used. The removed `codeforces.setupPython` / `downloadPython` settings are ignored. No Chrome installation is removed. No backend service or telemetry is used.
+Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Legacy browser profiles and 0.5's download venv are **not automatically deleted** and are not used. Modern CF Tool sessions live in the OS keyring; modern submission receipts/source snapshots live in its private state directory. Extension tracking metadata lives in VS Code global state and contains no passwords/cookies/source. The removed `codeforces.setupPython` / `downloadPython` settings are ignored. No Chrome installation is removed. No backend service or telemetry is used.
 
 ## Development and verification
 

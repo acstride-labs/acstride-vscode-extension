@@ -127,3 +127,62 @@ it('accepts only matching structured problem identities and declared local asset
   await expect(client.problem(1, '../A', '/assets')).rejects.toThrow();
   client.dispose();
 });
+
+it('sends passwords only on stdin and preserves unknown receipts for exact-ID reconciliation', async () => {
+  const receipt = {
+    protocol: 1,
+    id: 'a'.repeat(32),
+    state: 'unknown',
+    handle: 'tester',
+    contestId: 1,
+    index: 'A',
+    languageId: '31',
+    language: 'Python 3',
+    sha256: 'b'.repeat(64),
+    createdAt: new Date().toISOString(),
+  };
+  const run = vi.fn(async (_exe: string, args: string[], _options: { input?: string }) => {
+    const submitting = args[0] === 'submit';
+    return {
+      code: submitting ? 5 : 0,
+      durationMs: 1,
+      stderr: '',
+      stdout: JSON.stringify({
+        protocol: 1,
+        requestId: args[args.indexOf('--request-id') + 1],
+        type: 'result',
+        ok: !submitting,
+        data: submitting ? receipt : { handle: 'tester', stored: true },
+        ...(submitting
+          ? {
+              error: {
+                code: 'submission_unknown',
+                message: 'PRIVATE SERVER BODY',
+                retryable: false,
+              },
+            }
+          : {}),
+      }),
+    };
+  });
+  const client = new CfToolClient('/bundle/acstride-cf', run);
+  await client.login('tester', 'private-password');
+  expect(JSON.stringify(run.mock.calls[0][1])).not.toContain('private-password');
+  expect(JSON.parse(run.mock.calls[0][2].input!)).toEqual({
+    username: 'tester',
+    password: 'private-password',
+  });
+  await expect(
+    client.submit(1, 'A', '/work/main.py', '31', 'b'.repeat(64), 'tester'),
+  ).resolves.toEqual(receipt);
+  expect(run.mock.calls.at(-1)![1]).toEqual(
+    expect.arrayContaining([
+      '--expected-handle',
+      'tester',
+      '--expected-sha256',
+      'b'.repeat(64),
+      '--confirm',
+    ]),
+  );
+  client.dispose();
+});

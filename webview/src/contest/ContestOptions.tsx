@@ -14,7 +14,6 @@ export function ContestOptions({
 }) {
   const { t } = useI18n();
   const initial = {
-    autoDownload: record.autoDownload,
     defaultLanguage: record.defaultLanguage,
     archived: record.archived,
   };
@@ -28,7 +27,7 @@ export function ContestOptions({
       setOptions(initial);
       setDirty(false);
     }
-  }, [record.autoDownload, record.defaultLanguage, record.archived]);
+  }, [record.defaultLanguage, record.archived]);
   return (
     <fieldset className="card settings-section contest-options" disabled={disabled}>
       <label>
@@ -43,17 +42,6 @@ export function ContestOptions({
           <option value="cpp">C++</option>
           <option value="python">Python 3</option>
         </select>
-      </label>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={options.autoDownload}
-          onChange={(e) => {
-            setDirty(true);
-            setOptions({ ...options, autoDownload: e.target.checked });
-          }}
-        />
-        {t('Automatically download problems at start')}
       </label>
       <label className="checkbox-label">
         <input

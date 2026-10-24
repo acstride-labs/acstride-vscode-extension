@@ -10,6 +10,7 @@ import { SettingsApp } from './settings/SettingsApp';
 import { useI18n } from './i18n';
 import './styles.css';
 function App() {
+  const [submitting, setSubmitting] = useState(false);
   const { t } = useI18n();
   const [problem, setProblem] = useState<Problem>();
   const [tests, setTests] = useState<TestCase[]>([]);
@@ -34,6 +35,10 @@ function App() {
   useEffect(() => {
     const receive = (event: MessageEvent<HostMessage>) => {
       const m = event.data;
+      if (m.type === 'submitting') {
+        setSubmitting(m.submitting);
+        return;
+      }
       if (m.type === 'state') {
         const key = `${m.problem.contestId ?? 'local'}/${m.problem.id}/${m.problem.language}`;
         if (currentProblem.current !== key) {
@@ -116,11 +121,11 @@ function App() {
         {problem?.contestId && (
           <button
             className="secondary"
-            disabled={running}
-            title={t('Copy code and open submission page')}
-            onClick={() => send({ type: 'copySource', target: problem })}
+            disabled={running || submitting}
+            title={t('One-click submit')}
+            onClick={() => send({ type: 'submitSource', target: problem })}
           >
-            {t('Copy and submit')}
+            {t(submitting ? 'Preparing submission…' : 'One-click submit')}
           </button>
         )}
         {running && (

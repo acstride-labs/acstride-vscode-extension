@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import path from 'node:path';
 import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
 import * as cheerio from 'cheerio';
-import { parseContestId, type ContestRecord } from '../domain/contest';
+import { parseContestId, maxDownloadAttempts, type ContestRecord } from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
 import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
@@ -14,6 +14,7 @@ import {
   type ContestHostMessage,
   type ContestViewState,
 } from '../shared/contest-protocol';
+import { SubmissionController } from './submission-controller';
 import { WorkspaceController } from './workspace-controller';
 import { webviewHtml } from './webview-html';
 import { postLocale, t } from './localization';
@@ -72,6 +73,17 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         );
       return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
     });
+    const submissions = new SubmissionController(context, this.cfTool);
+    workspace.submitHandler = (snapshot) => submissions.submit(snapshot);
+    this.disposables.push(
+      submissions,
+      vscode.commands.registerCommand('cfide.signIn', () =>
+        submissions.signIn().catch((e) => this.report(e)),
+      ),
+      vscode.commands.registerCommand('cfide.signOut', () =>
+        submissions.signOut().catch((e) => this.report(e)),
+      ),
+    );
     this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
     this.initialized = this.cfTool.ready().catch(() => {
       // Report installation errors on operations while allowing local/cached work.
@@ -166,6 +178,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       if (problem.contestId) {
         await this.select(problem.contestId);
         await this.openStatement(problem.contestId, problem.id);
+        void this.runtime()
+          .service.ensureDownloaded(problem.contestId, problem.id)
+          .catch((error) => this.report(error));
       } else {
         this.statementPanel?.dispose();
         this.statementTarget = undefined;
@@ -229,18 +244,23 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     this.changes.fire(undefined);
     const target = this.statementTarget;
     if (target?.contestId === id && this.statementPanel) {
-      const cached = await this.runtime().repo.statement(id, target.index);
+      const repo = this.runtime().repo;
+      const [cached, record] = await Promise.all([repo.statement(id, target.index), repo.get(id)]);
+      const statement =
+        cached || this.pendingStatement(record.problems.find((p) => p.index === target.index));
       if (
-        cached &&
         target === this.statementTarget &&
-        cached.fetchedAt !== target.statement.fetchedAt
+        (statement.fetchedAt !== target.statement.fetchedAt ||
+          statement.html !== target.statement.html)
       ) {
-        target.statement = cached;
+        const newlyDownloaded = !!cached && statement.fetchedAt !== target.statement.fetchedAt;
+        target.statement = statement;
         void this.statementPanel?.webview.postMessage({
           type: 'statement',
           ...target,
-          statement: this.mapAssets(id, cached),
+          statement: this.mapAssets(id, statement),
         } satisfies ContestHostMessage);
+        if (newlyDownloaded) await this.workspace.refreshTests(id, target.index);
       }
     }
     if (id === this.selectedId) await this.publish();
@@ -255,7 +275,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           index: p.index,
           name: p.name,
           ready: p.ready,
-          error: p.error,
+          error: !p.ready && p.downloadAttempts >= maxDownloadAttempts ? p.error : undefined,
         }));
       return (await this.runtime().repo.list())
         .sort(
@@ -398,10 +418,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (message.type === 'openProblem') return this.openProblem(message.contestId, message.index);
     if (message.type === 'saveContestSettings')
       return this.saveContestOptions(message.contestId, message.values);
-    if (message.type === 'syncContest')
-      return this.task(t('Downloading available problems…'), () =>
-        service.sync(message.contestId, message.index),
-      );
     if (message.type === 'refreshStatus')
       return this.task(t('Refreshing submissions…'), () => this.refreshStatus(message.contestId));
     if (message.type === 'refreshStandings')
@@ -409,10 +425,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         service.refreshBoard(message.contestId),
       );
   }
-  async saveContestOptions(
-    id: number,
-    values: { autoDownload: boolean; defaultLanguage: Language; archived: boolean },
-  ) {
+  async saveContestOptions(id: number, values: { defaultLanguage: Language; archived: boolean }) {
     this.trust();
     if (this.busy) throw new Error('Another contest operation is in progress.');
     await this.runtime().repo.update(id, (record) => {
@@ -426,23 +439,28 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const problem = await service.ensureSolution(id, index);
     await this.workspace.openInStore(repo.problems(id), problem);
   }
-  private async openStatement(id: number, index: string, reveal = true) {
-    const repo = this.runtime().repo;
-    const record = await repo.get(id);
-    const cached = await repo.statement(id, index);
-    const item = (await repo.get(id)).problems.find((p) => p.index === index);
-    const escaped = (value: string) =>
-      value.replace(
-        /[&<>"']/g,
-        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-      );
-    const statement = cached || {
-      title: t('Statement not downloaded'),
-      html: `<h2>${escaped(t('Statement not downloaded'))}</h2><p>${escaped(t('Local solutions can be edited and tested. Official samples are not available yet; this is not a successful download.'))}</p><p>${escaped(t(item?.error || 'No cached statement. Download the statement and samples from Contest Center.'))}</p>`,
+  private pendingStatement(item?: {
+    downloadAttempts: number;
+  }): import('../domain/contest').Statement {
+    const failed =
+      !!item && item.downloadAttempts >= maxDownloadAttempts && !!('error' in item && item.error);
+    const title = failed
+      ? t('Problem download failed after multiple attempts.')
+      : t('Downloading problem, please wait…');
+    return {
+      title,
+      html: `<h2>${title}</h2><p>${t('You can keep coding and add custom tests while the statement is unavailable.')}</p>`,
       timeLimit: '',
       memoryLimit: '',
       fetchedAt: 0,
     };
+  }
+  private async openStatement(id: number, index: string, reveal = true) {
+    const repo = this.runtime().repo;
+    const record = await repo.get(id);
+    const cached = await repo.statement(id, index);
+    const item = record.problems.find((p) => p.index === index);
+    const statement = cached || this.pendingStatement(item);
     const language = this.workspace.active()?.problem.language ?? record.defaultLanguage;
     const problems = record.problems.map(({ index, name }) => ({ index, name }));
     this.statementTarget = { contestId: id, index, statement, language, problems };

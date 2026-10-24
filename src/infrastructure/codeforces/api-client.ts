@@ -63,7 +63,12 @@ export class CodeforcesApi {
   }
   async standings(id: number): Promise<Standings> {
     // Public regular contests require the anonymous contestId-only request.
-    const data = standingsSchema.parse(await this.call('contest.standings', { contestId: id }, 20));
+    const parsed = standingsSchema.safeParse(
+      await this.call('contest.standings', { contestId: id }, 20),
+    );
+    if (!parsed.success)
+      throw new Error('Codeforces returned an incomplete response. Please try again later.');
+    const data = parsed.data;
     return {
       contest: data.contest,
       problems: data.problems,

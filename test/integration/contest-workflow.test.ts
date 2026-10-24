@@ -53,6 +53,8 @@ describe('multiple contest workspace', () => {
           index: 'A',
           name: 'Sum',
           ready: false,
+          downloadAttempts: 0,
+          nextRetryAt: 0,
           error: 'Dedicated browser is not connected. Open it and click Connect after signing in.',
         },
       ];
@@ -149,7 +151,7 @@ describe('multiple contest workspace', () => {
     expect(partial.problems[0].ready).toBe(true);
     expect(partial.problems[1].error).toContain('Temporary');
     expect(partial.nextRetryAt).toBeGreaterThan(Date.now());
-    await service.sync(1234);
+    await service.ensureDownloaded(1234, 'B');
     expect(session.problem).toHaveBeenCalledTimes(3);
     expect((await repo.get(1234)).error).toBeUndefined();
   });
@@ -173,7 +175,7 @@ describe('multiple contest workspace', () => {
     expect(await store.listTests('A')).toHaveLength(1);
     await expect(service.ensureSolution(1234, 'Z')).rejects.toThrow('not been released');
   });
-  it('waits for release and respects archive/auto-download settings', async () => {
+  it('waits for release and pauses only archived contests', async () => {
     const { repo, service, api, session } = await fixture();
     const future = {
       ...fixtureContest,
@@ -192,14 +194,8 @@ describe('multiple contest workspace', () => {
     expect(session.problem).not.toHaveBeenCalled();
     await repo.update(1234, (r) => {
       r.archived = false;
-      r.autoDownload = false;
     });
-    await service.tick();
-    expect(session.problem).not.toHaveBeenCalled();
     api.contest.mockResolvedValue(fixtureContest);
-    await repo.update(1234, (r) => {
-      r.autoDownload = true;
-    });
     await service.tick();
     expect(session.problem).toHaveBeenCalledTimes(2);
   });
@@ -211,8 +207,56 @@ describe('multiple contest workspace', () => {
     await service.tick();
     expect((await restored.get(1234)).problems[0].ready).toBe(true);
     api.standings.mockRejectedValue(new Error('Offline'));
-    await service.sync(1234, 'A');
+    await service.sync(1234);
     expect(await restored.statement(1234, 'A')).not.toBeNull();
     expect((await restored.get(1234)).error).toBe('Offline');
   });
+});
+
+it('automatically retries each missing problem four times, persists exhaustion and restarts on selection', async () => {
+  vi.useFakeTimers();
+  const { repo, service, session, api, root } = await fixture();
+  await service.add(1234, 'python');
+  session.problem.mockRejectedValue(new Error('Temporary unavailable'));
+  for (let i = 0; i < 4; i++) {
+    await service.tick();
+    vi.setSystemTime(Date.now() + 20000);
+  }
+  expect(session.problem).toHaveBeenCalledTimes(8);
+  expect(
+    (await new ContestRepository(root).get(1234)).problems.every((p) => p.downloadAttempts === 4),
+  ).toBe(true);
+  await service.tick();
+  expect(session.problem).toHaveBeenCalledTimes(8);
+  session.problem.mockResolvedValue(structuredProblem());
+  api.standings.mockRejectedValue(new Error('Ranking unavailable'));
+  await Promise.all([service.ensureDownloaded(1234, 'A'), service.ensureDownloaded(1234, 'A')]);
+  expect(session.problem).toHaveBeenCalledTimes(9);
+  expect((await repo.get(1234)).problems[0]).toMatchObject({ ready: true, downloadAttempts: 0 });
+});
+
+it('ignores old disabled auto-download settings without losing saved workspace data', async () => {
+  const { repo, service } = await fixture();
+  await service.add(1234, 'cpp');
+  const metadata = path.join(repo.contestRoot(1234), '.cfide', 'contest.json');
+  const old = JSON.parse(await fs.readFile(metadata, 'utf8'));
+  old.autoDownload = false;
+  old.retryCount = 200;
+  old.nextRetryAt = Date.now() + 3600000;
+  await fs.writeFile(metadata, JSON.stringify(old));
+  await service.tick();
+  expect((await repo.get(1234)).problems.every((p) => p.ready)).toBe(true);
+  expect(await repo.get(1234)).not.toHaveProperty('autoDownload');
+});
+
+it('recovers an interrupted final attempt without showing a permanent loading state', async () => {
+  const { repo, service, session } = await fixture();
+  await service.add(1234, 'python');
+  await repo.update(1234, (r) => {
+    r.contest.phase = 'FINISHED';
+    r.problems = [{ index: 'A', name: 'Sum', ready: false, downloadAttempts: 4, nextRetryAt: 0 }];
+  });
+  await service.tick();
+  expect(session.problem).toHaveBeenCalledOnce();
+  expect((await repo.get(1234)).problems[0].ready).toBe(true);
 });

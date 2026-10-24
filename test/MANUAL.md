@@ -1,3 +1,24 @@
+# Manual acceptance
+
+## 0.12 automatic downloads and confirmed submission
+
+1. Add a released contest. Problems start downloading without any download button or settings toggle. Add an upcoming contest and confirm downloading waits for release. Archived contests pause background activity.
+2. Open a missing problem from either the VS Code tree or the A/B/C rail. Its pane shows downloading; source editing and custom cases remain usable. Successful downloads refresh the statement and official samples without discarding unsaved custom drafts.
+3. Simulate read failures: each problem receives up to four attempts, then shows a clear failure message. Selecting it starts a new bounded cycle. Repeated selection during a request must not duplicate the download. Reloading preserves exhausted failures and recovers interrupted attempts. Old `autoDownload: false` settings cannot disable downloading.
+4. Verify the test toolbar contains language, Run all, and One-click submit. No copy/browser navigation action remains. Only Codeforces problems expose submission.
+5. Use mock/injected CF Tool responses for automated submission checks. Cancelling login, language selection or the native confirmation must never send source. A successful confirmation binds account, official language, contest/problem and exact saved source hash; changing source/language/account must abort.
+6. With fixture receipts, restart tracking and verify exact-ID verdict notifications. Unknown receipts are never resent. Duplicate clicks during preparation send at most once. Pretests passed is distinct from final Accepted; unrelated receipt/ID/problem results must not produce a notification.
+7. A real-account submission acceptance test requires the account owner's deliberate confirmation and must be performed separately. Automated checks and public smoke checks do not establish that current login, site verification or actual submission works. Never use a real password/source in tests or fixtures.
+8. Install the matching VSIX and verify its AC-Stride monochrome Activity Bar icon in dark/light themes, four-language UI, environment checks, independent templates, local C++/Python AC/WA/diff and cancellation.
+
+## Verification recorded for 0.12
+
+The actual built Webview was previewed with simulated host messages: the manual download card/toggle are absent, pending/exhausted states are localized, and the toolbar exposes One-click submit. Host/CLI fixture tests cover confirmation cancellation, source/account binding, pending receipt persistence, exact-ID notifications and pretests/final distinction. No real account credentials or submission were used.
+
+## Historical verification
+
+Earlier validation notes below describe prior versions; their copy/navigation or download setup controls no longer exist.
+
 # AC-Stride 0.9 layout/multilingual/settings acceptance checks
 
 ## New settings and language-bound actions
@@ -69,7 +90,6 @@ The 0.5 macOS Extension Development Host previously imported all three problems 
 The 0.6 macOS arm64 Extension Development Host showed “Built-in public downloads ready” immediately after reload, with no setup/repair button. Refreshing contest 1/A completed and updated its statement cache timestamp. The final platform VSIX also passed extraction/file-hash/target/executable-permission/private-runtime startup verification with empty PATH.
 
 Earlier versions' C++/Python AC/WA GUI checks remain relevant for the local runner, but their browser/login/submission acceptance steps no longer apply. Four-platform CI is configured; only macOS arm64 live verification has been performed locally. Other targets require their CI build/startup/archive checks before distribution. Signing/notarization/Marketplace publication are not claimed.
-
 
 ## 0.11 client-layer migration verification (2026-10-24)
 

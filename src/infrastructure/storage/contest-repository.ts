@@ -63,16 +63,20 @@ export class ContestRepository {
     return Promise.all(registry.contests.map((id) => this.get(id)));
   }
   async get(id: number): Promise<ContestRecord> {
-    const record = contestRecordSchema.parse(
-      await this.read(this.metadata(id, 'contest.json'), null),
-    );
+    const saved = await this.read<unknown>(this.metadata(id, 'contest.json'), null);
+    const record = contestRecordSchema.parse(saved);
+    // Legacy per-contest retry counters must not exhaust the new per-problem cycle.
+    if (saved && typeof saved === 'object' && 'autoDownload' in saved) {
+      record.retryCount = 0;
+      record.nextRetryAt = 0;
+    }
     // Old cached failures must not send users to removed account/browser controls.
     const currentError = (error?: string) =>
       error &&
       /dedicated (?:browser|chrome)|browser\/site verification|cookie|sign[ -]?in|set.?up public downloads|selected Python|configured Python path|public download helper|basic downloader/i.test(
         error,
       )
-        ? 'Previous download failed. Retry using the built-in downloader, or import saved problem HTML. No login/browser connection is needed.'
+        ? 'Previous download failed. The built-in downloader will retry automatically. No login/browser connection is needed.'
         : error;
     record.error = currentError(record.error);
     for (const problem of record.problems) problem.error = currentError(problem.error);
@@ -89,7 +93,6 @@ export class ContestRepository {
         schemaVersion: 1,
         contest,
         defaultLanguage: language,
-        autoDownload: true,
         archived: false,
         problems: [],
         updatedAt: Date.now(),

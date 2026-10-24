@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage, ContestViewState } from '../../../src/shared/contest-protocol';
-import { submissionLabel } from '../../../src/domain/contest';
+import { submissionLabel, maxDownloadAttempts } from '../../../src/domain/contest';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
 import { ContestOptions } from './ContestOptions';
@@ -141,23 +141,6 @@ export function ContestApp() {
           </nav>
           {tab === 'prepare' && (
             <>
-              <section className="card preparation">
-                <div className="actions">
-                  <button
-                    disabled={disabled}
-                    onClick={() => send({ type: 'syncContest', contestId: id })}
-                  >
-                    {t('Download / retry missing problems')}
-                  </button>
-                </div>
-                <p>
-                  {t('{ready}/{total} problems ready.', {
-                    ready: record.problems.filter((p) => p.ready).length,
-                    total: record.problems.length || '?',
-                  })}
-                </p>
-                {record.error && <p className="error">{t(record.error)}</p>}
-              </section>
               <div className="problem-grid">
                 {record.problems.map((problem) => {
                   const submission = state.submissions.find(
@@ -173,7 +156,22 @@ export function ContestApp() {
                           <span className="badge">{t(submissionLabel(submission))}</span>
                         )}
                       </div>
-                      {problem.error && <p className="error">{t(problem.error)}</p>}
+                      {!problem.ready && (
+                        <p
+                          role="status"
+                          className={
+                            problem.downloadAttempts >= maxDownloadAttempts && !!problem.error
+                              ? 'error'
+                              : undefined
+                          }
+                        >
+                          {t(
+                            problem.downloadAttempts >= maxDownloadAttempts && !!problem.error
+                              ? 'Problem download failed after multiple attempts.'
+                              : 'Downloading problem, please wait…',
+                          )}
+                        </p>
+                      )}
                       <div className="actions">
                         <button
                           disabled={disabled}
@@ -181,18 +179,7 @@ export function ContestApp() {
                             send({ type: 'openProblem', contestId: id, index: problem.index })
                           }
                         >
-                          {t(
-                            problem.ready ? 'Open solution' : 'Open local solution (no statement)',
-                          )}
-                        </button>
-                        <button
-                          className="secondary"
-                          disabled={disabled}
-                          onClick={() =>
-                            send({ type: 'syncContest', contestId: id, index: problem.index })
-                          }
-                        >
-                          {t('Refresh statement / samples')}
+                          {t('Open solution')}
                         </button>
                       </div>
                     </section>
@@ -204,7 +191,9 @@ export function ContestApp() {
                   {t(
                     contest.phase === 'BEFORE'
                       ? 'Problem names will appear when Codeforces releases them.'
-                      : 'Download available problems to begin.',
+                      : record.retryCount >= maxDownloadAttempts
+                        ? 'Problem download failed after multiple attempts.'
+                        : 'Downloading problems, please wait…',
                   )}
                 </p>
               )}

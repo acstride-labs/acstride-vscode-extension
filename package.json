@@ -1,8 +1,8 @@
 {
   "name": "cfide",
   "displayName": "AC-Stride",
-  "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.11.1",
+  "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
+  "version": "0.12.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -81,9 +81,17 @@
         "title": "%command.cfide.refresh%"
       },
       {
-        "command": "cfide.copySolution",
-        "title": "%command.cfide.copySolution%",
-        "icon": "$(clippy)"
+        "command": "cfide.submitSolution",
+        "title": "%command.cfide.submitSolution%",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "cfide.signIn",
+        "title": "%command.cfide.signIn%"
+      },
+      {
+        "command": "cfide.signOut",
+        "title": "%command.cfide.signOut%"
       }
     ],
     "viewsContainers": {
@@ -175,9 +183,9 @@
           "enumDescriptions": [
             "%language.auto%",
             "English",
-            "简体中文",
-            "Русский",
-            "日本語"
+            "\u7b80\u4f53\u4e2d\u6587",
+            "\u0420\u0443\u0441\u0441\u043a\u0438\u0439",
+            "\u65e5\u672c\u8a9e"
           ],
           "default": "auto",
           "scope": "application",

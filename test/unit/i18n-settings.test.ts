@@ -32,7 +32,7 @@ describe('configurable localization', () => {
     expect(translate('zh-CN', '(missing token)')).toBe('（缺少 token）');
     expect(Object.values(catalogs['zh-CN']).join('\n')).not.toContain('词元');
     expect(Object.values(catalogs['zh-CN']).join('\n')).not.toContain('复制题目');
-    expect(translate('zh-CN', 'Copy and submit')).toBe('复制代码并去提交');
+    expect(translate('zh-CN', 'One-click submit')).toBe('一键提交');
     expect(translate('en', 'First difference at token {token}', { token: 2 })).toBe(
       'First mismatch: token 2',
     );
@@ -192,7 +192,7 @@ describe('settings page boundaries', () => {
       contestRequestSchema.safeParse({
         type: 'saveContestSettings',
         contestId: 1,
-        values: { autoDownload: true, defaultLanguage: 'python', archived: false },
+        values: { defaultLanguage: 'python', archived: false },
       }).success,
     ).toBe(true);
     const center = await fs.readFile('webview/src/contest/ContestApp.tsx', 'utf8');
@@ -202,7 +202,7 @@ describe('settings page boundaries', () => {
     const request = {
       type: 'saveContestSettings',
       contestId: 1,
-      values: { autoDownload: true, defaultLanguage: 'python', archived: false },
+      values: { defaultLanguage: 'python', archived: false },
     };
     expect(settingsRequestSchema.safeParse(request).success).toBe(false);
     expect(

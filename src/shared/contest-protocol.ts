@@ -18,7 +18,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
       contestId: contestIdSchema,
       values: z
         .object({
-          autoDownload: z.boolean(),
           defaultLanguage: z.enum(['cpp', 'python']),
           archived: z.boolean(),
         })
@@ -27,11 +26,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('switchLanguage') }),
   z.object({ type: z.literal('selectContest'), contestId: contestIdSchema }),
-  z.object({
-    type: z.literal('syncContest'),
-    contestId: contestIdSchema,
-    index: problemIndexSchema.optional(),
-  }),
   z.object({ type: z.literal('refreshStatus'), contestId: contestIdSchema }),
   z.object({ type: z.literal('refreshStandings'), contestId: contestIdSchema }),
   z.object({
