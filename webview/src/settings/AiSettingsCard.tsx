@@ -1,3 +1,4 @@
+import { Field, VscodeButton, VscodeProgressRing, VscodeTextfield, valueOf } from '../ui';
 import React, { useEffect, useState } from 'react';
 import { aiConfigSchema, aiKeySchema, type AiState } from '../../../src/shared/ai-protocol';
 import { send } from '../bridge';
@@ -47,41 +48,41 @@ export function AiSettingsCard({ state, busy }: { state?: AiState; busy: boolean
           'Supports OpenAI-compatible Chat Completions APIs. Testing sends only a short fixed message, without your code or problem statements.',
         )}
       </p>
-      <label>
+      <Field>
         Base URL
-        <input
+        <VscodeTextfield
           type="url"
-          value={baseUrl}
+          value={String(baseUrl)}
           placeholder="https://api.example.com/v1"
           maxLength={2048}
           disabled={busy}
-          onChange={(e) => {
-            setBaseUrl(e.target.value);
+          onInput={(e) => {
+            setBaseUrl(valueOf(e));
             setDirty(true);
             setError('');
           }}
         />
-      </label>
-      <label>
+      </Field>
+      <Field>
         {t('Model name')}
-        <input
-          value={model}
+        <VscodeTextfield
+          value={String(model)}
           placeholder="model-name"
           maxLength={200}
           disabled={busy}
-          onChange={(e) => {
-            setModel(e.target.value);
+          onInput={(e) => {
+            setModel(valueOf(e));
             setDirty(true);
             setError('');
           }}
         />
-      </label>
-      <label>
+      </Field>
+      <Field>
         API Key
-        <input
+        <VscodeTextfield
           type="password"
-          autoComplete="new-password"
-          value={apiKey}
+          autocomplete="off"
+          value={String(apiKey)}
           placeholder={t(
             storedKey
               ? 'Key saved; leave blank to keep it'
@@ -89,31 +90,31 @@ export function AiSettingsCard({ state, busy }: { state?: AiState; busy: boolean
           )}
           maxLength={8192}
           disabled={busy}
-          onChange={(e) => {
-            setApiKey(e.target.value);
+          onInput={(e) => {
+            setApiKey(valueOf(e));
             setDirty(true);
           }}
         />
-      </label>
+      </Field>
       <small>
         {t(
           'API keys are stored in VS Code secure storage for this endpoint. AI settings apply to this VS Code profile, independently of workspace scope.',
         )}
       </small>
       <div className="actions">
-        <button
+        <VscodeButton
           type="button"
           disabled={busy || (!dirty && !!state?.config.baseUrl)}
           onClick={() => act('saveAI')}
         >
           {t('Save AI settings')}
-        </button>
-        <button type="button" className="secondary" disabled={busy} onClick={() => act('testAI')}>
+        </VscodeButton>
+        <VscodeButton type="button" secondary disabled={busy} onClick={() => act('testAI')}>
           {t(state?.result?.status === 'checking' ? 'Checking…' : 'Test connection')}
-        </button>
-        <button
+        </VscodeButton>
+        <VscodeButton
           type="button"
-          className="secondary"
+          secondary
           disabled={busy || !storedKey}
           onClick={() => {
             setApiKey('');
@@ -121,7 +122,7 @@ export function AiSettingsCard({ state, busy }: { state?: AiState; busy: boolean
           }}
         >
           {t('Remove API key')}
-        </button>
+        </VscodeButton>
       </div>
       {error && (
         <p className="error" role="alert">
@@ -134,6 +135,7 @@ export function AiSettingsCard({ state, busy }: { state?: AiState; busy: boolean
           className={state.result.status === 'failed' ? 'error ai-test-result' : 'ai-test-result'}
           role={state.result.status === 'failed' ? 'alert' : 'status'}
         >
+          {state.result.status === 'checking' && <VscodeProgressRing />}
           <strong>
             {t(
               state.result.status === 'checking'

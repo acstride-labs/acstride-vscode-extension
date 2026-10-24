@@ -1,3 +1,4 @@
+import { VscodeButton } from '../ui';
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage } from '../../../src/shared/contest-protocol';
 import { ContestApp } from './ContestApp';
@@ -6,8 +7,14 @@ import { send } from '../bridge';
 import { useI18n } from '../i18n';
 export function ContestPage() {
   const { t } = useI18n();
-  const [state, setState] =
-    useState<Extract<ContestHostMessage, { type: 'contestState' }>['state']>();
+  const [state, setState] = useState<
+    Extract<
+      ContestHostMessage,
+      {
+        type: 'contestState';
+      }
+    >['state']
+  >();
   const [index, setIndex] = useState('');
   useEffect(() => {
     const listener = (event: MessageEvent) => {
@@ -23,7 +30,8 @@ export function ContestPage() {
   return (
     <main className="answer-pane contest-file">
       <nav className="problem-rail" aria-label={t('Problems')}>
-        <button
+        <VscodeButton
+          secondary={!!index}
           aria-label={t('Open contest details')}
           title={t('Open contest details')}
           aria-current={!index ? 'page' : undefined}
@@ -41,9 +49,10 @@ export function ContestPage() {
           >
             <path d="M2 17h16M3.5 16V9h4v7M8 16V4h4v12M12.5 16V11h4v5" />
           </svg>
-        </button>
+        </VscodeButton>
         {record?.problems.map((p) => (
-          <button
+          <VscodeButton
+            secondary={index !== p.index}
             key={p.index}
             title={p.name}
             aria-current={index === p.index ? 'page' : undefined}
@@ -52,7 +61,7 @@ export function ContestPage() {
             }
           >
             {p.index}
-          </button>
+          </VscodeButton>
         ))}
       </nav>
       <div className="contest-file-content">

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0
+
+- Adopt VSCode Elements throughout settings, contest navigation, statement actions and local tests. Use its React adapters for controls, accessible labels, tabs, badges and tables; preserve automatic translation saves, interactive hover guidance and independent test drafts.
+- Remove handwritten control skins, obsolete sidebar/contest list styles and duplicate tab keyboard handlers. Keep VS Code theme tokens and local Webview assets.
+
 ## 0.13.6
 
 - Save translation switches and target language immediately; automatically save prompt edits after a short pause or on blur. Keep restore confirmation and serialize saves so rapid edits retain the latest settings.

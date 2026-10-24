@@ -1,3 +1,4 @@
+import { Field, VscodeButton, VscodeCheckbox, VscodeTextfield, checkedOf, numberOf } from '../ui';
 import React, { useEffect, useState } from 'react';
 import {
   aiCacheOptionsSchema,
@@ -38,41 +39,38 @@ export function AiCacheSettingsCard({
   return (
     <section className="card settings-section">
       <h2>{t('AI cache settings')}</h2>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={draft.enabled}
-          onChange={(e) => change({ enabled: e.target.checked })}
-        />
-        {t('Enable AI request cache')}
-      </label>
+      <VscodeCheckbox
+        checked={draft.enabled}
+        onChange={(e) => change({ enabled: checkedOf(e) })}
+        label={t('Enable AI request cache')}
+      />
       <p>
         {t(
           'Stores AI request input and output locally. Identical requests reuse the result; API keys are not stored. Connection tests always bypass the cache.',
         )}
       </p>
-      <label>
+      <Field>
         {t('Maximum cached requests')}
-        <input
+        <VscodeTextfield
           type="number"
           min={1}
           max={10000}
           step={1}
-          value={Number.isNaN(draft.maxEntries) ? '' : draft.maxEntries}
-          onChange={(e) => change({ maxEntries: e.target.valueAsNumber })}
+          value={String(Number.isNaN(draft.maxEntries) ? '' : draft.maxEntries)}
+          onInput={(e) => change({ maxEntries: numberOf(e) })}
         />
-      </label>
-      <label>
+      </Field>
+      <Field>
         {t('Maximum cache size (MB)')}
-        <input
+        <VscodeTextfield
           type="number"
           min={1}
           max={1024}
           step={1}
-          value={Number.isNaN(draft.maxSizeMb) ? '' : draft.maxSizeMb}
-          onChange={(e) => change({ maxSizeMb: e.target.valueAsNumber })}
+          value={String(Number.isNaN(draft.maxSizeMb) ? '' : draft.maxSizeMb)}
+          onInput={(e) => change({ maxSizeMb: numberOf(e) })}
         />
-      </label>
+      </Field>
       <p>
         {t(
           'LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.',
@@ -84,7 +82,7 @@ export function AiCacheSettingsCard({
         </p>
       )}
       <div className="actions">
-        <button
+        <VscodeButton
           type="button"
           disabled={busy || saved}
           onClick={() => {
@@ -97,7 +95,7 @@ export function AiCacheSettingsCard({
           }}
         >
           {t('Save changes')}
-        </button>
+        </VscodeButton>
         {saved && <span role="status">{t('Saved')}</span>}
       </div>
     </section>

@@ -48,7 +48,9 @@ function render(options = defaultTranslationOptions) {
 function elements(tree: ReactElement, type: string): any[] {
   const props = tree.props as any;
   return [
-    ...(tree.type === type ? [props] : []),
+    ...((typeof tree.type === 'string' ? tree.type : (tree.type as any).displayName) === type
+      ? [props]
+      : []),
     ...[props.children]
       .flat(Infinity)
       .filter((v) => v && typeof v === 'object' && 'props' in v)
@@ -73,10 +75,10 @@ afterEach(() => {
 });
 it('saves switches immediately and serializes rapid edits without stale host overwrites', () => {
   let tree = render();
-  elements(tree, 'input')[0].onChange({ target: { checked: true } });
+  elements(tree, 'VscodeCheckbox')[0].onChange({ currentTarget: { checked: true } });
   expect(harness.send).toHaveBeenCalledTimes(1);
   tree = render();
-  elements(tree, 'input')[1].onChange({ target: { checked: true } });
+  elements(tree, 'VscodeCheckbox')[1].onChange({ currentTarget: { checked: true } });
   render({ ...defaultTranslationOptions, enabled: true });
   expect(harness.send).toHaveBeenCalledTimes(1);
   ack();
@@ -88,18 +90,20 @@ it('saves switches immediately and serializes rapid edits without stale host ove
   expect(
     elements(
       render({ ...defaultTranslationOptions, enabled: true, autoTranslate: true }),
-      'input',
+      'VscodeCheckbox',
     )[1].checked,
   ).toBe(true);
 });
 it('debounces prompt edits, flushes on blur, and never saves empty prompts', () => {
-  elements(render(), 'textarea')[0].onChange({ target: { value: 'Translate {{language}}' } });
+  elements(render(), 'VscodeTextarea')[0].onInput({
+    currentTarget: { value: 'Translate {{language}}' },
+  });
   vi.advanceTimersByTime(499);
   expect(harness.send).not.toHaveBeenCalled();
-  elements(render(), 'textarea')[0].onBlur();
+  elements(render(), 'VscodeTextarea')[0].onBlur();
   expect(harness.send).toHaveBeenCalledTimes(1);
   ack();
-  elements(render(), 'textarea')[0].onChange({ target: { value: '  ' } });
+  elements(render(), 'VscodeTextarea')[0].onInput({ currentTarget: { value: '  ' } });
   vi.advanceTimersByTime(500);
   expect(harness.send).toHaveBeenCalledTimes(1);
 });

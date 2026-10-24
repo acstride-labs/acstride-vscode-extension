@@ -15,7 +15,7 @@ describe('test case tabs', () => {
     const app = await fs.readFile('webview/src/main.tsx', 'utf8');
     const toolbar = app.slice(
       app.indexOf('<div className="test-toolbar">'),
-      app.indexOf('<div className="test-tabs"'),
+      app.indexOf('<Tabs', app.indexOf('<div className="test-toolbar">')),
     );
     expect(toolbar.indexOf("t('Run all tests')")).toBeGreaterThan(-1);
     expect(toolbar.indexOf("'One-click submit'")).toBeGreaterThan(

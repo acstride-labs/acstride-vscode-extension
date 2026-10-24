@@ -1,3 +1,13 @@
+import {
+  Field,
+  VscodeButton,
+  VscodeCheckbox,
+  VscodeOption,
+  VscodeSingleSelect,
+  VscodeTextarea,
+  checkedOf,
+  valueOf,
+} from '../ui';
 import React, { useEffect, useState, useRef } from 'react';
 import {
   defaultTranslationOptions,
@@ -10,7 +20,7 @@ import {
 import { useI18n } from '../i18n';
 import { send } from '../bridge';
 export function TranslationSettingsCard({ options }: { options?: TranslationOptions }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [draft, setDraft] = useState(defaultTranslationOptions);
   const [saved, setSaved] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -72,51 +82,46 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
   return (
     <section className="card settings-section">
       <h2>{t('AI statement translation')}</h2>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={draft.enabled}
-          onChange={(e) => change({ enabled: e.target.checked })}
-        />
-        {t('Enable AI statement translation')}
-      </label>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          disabled={!draft.enabled}
-          checked={draft.autoTranslate}
-          onChange={(e) => change({ autoTranslate: e.target.checked })}
-        />
-        {t('Translate automatically on import')}
-      </label>
+      <VscodeCheckbox
+        checked={draft.enabled}
+        onChange={(e) => change({ enabled: checkedOf(e) })}
+        label={t('Enable AI statement translation')}
+      />
+      <VscodeCheckbox
+        disabled={!draft.enabled}
+        checked={draft.autoTranslate}
+        onChange={(e) => change({ autoTranslate: checkedOf(e) })}
+        label={t('Translate automatically on import')}
+      />
       <p>
         {t(
           'Uses the AI settings above. Automatic translation starts after a statement downloads; otherwise, click its translation icon to start.',
         )}
       </p>
-      <label>
+      <Field>
         {t('Translation target language')}
-        <select
+        <VscodeSingleSelect
+          key={locale}
           value={draft.targetLanguage}
-          onChange={(e) => change({ targetLanguage: e.target.value as TranslationLanguage })}
+          onChange={(e) => change({ targetLanguage: valueOf(e) as TranslationLanguage })}
         >
           {Object.entries(translationLanguages).map(([code, name]) => (
-            <option key={code} value={code}>
+            <VscodeOption key={code} value={code}>
               {t(name)}
-            </option>
+            </VscodeOption>
           ))}
-        </select>
-      </label>
-      <label>
+        </VscodeSingleSelect>
+      </Field>
+      <Field>
         {t('Translation prompt')}
-        <textarea
+        <VscodeTextarea
           rows={8}
           value={draft.prompt}
           maxLength={20000}
-          onChange={(e) => change({ prompt: e.target.value }, true)}
+          onInput={(e) => change({ prompt: valueOf(e) }, true)}
           onBlur={flush}
         />
-      </label>
+      </Field>
       <p>
         {t(
           'Use {{language}} in the prompt. Before sending, it is replaced with the English name of the selected target language; the saved prompt stays unchanged.',
@@ -133,9 +138,9 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
         </p>
       )}
       <div className="actions">
-        <button type="button" className="secondary" onClick={() => setConfirming(true)}>
+        <VscodeButton type="button" secondary onClick={() => setConfirming(true)}>
           {t('Restore default prompt')}
-        </button>
+        </VscodeButton>
         <span role="status">{t(saved ? 'Saved' : 'Changes are saved automatically.')}</span>
         {!draft.prompt.trim() && (
           <span className="error">{t('Translation prompt cannot be empty.')}</span>
@@ -150,15 +155,10 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
         <h3 id="restore-prompt-title">{t('Restore default prompt?')}</h3>
         <p>{t('This restores the default prompt and saves it immediately.')}</p>
         <div className="actions">
-          <button
-            type="button"
-            className="secondary"
-            autoFocus
-            onClick={() => setConfirming(false)}
-          >
+          <VscodeButton type="button" secondary autoFocus onClick={() => setConfirming(false)}>
             {t('Cancel')}
-          </button>
-          <button
+          </VscodeButton>
+          <VscodeButton
             type="button"
             onClick={() => {
               change({ prompt: defaultTranslationPrompt });
@@ -166,7 +166,7 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
             }}
           >
             {t('Confirm restore')}
-          </button>
+          </VscodeButton>
         </div>
       </dialog>
     </section>
