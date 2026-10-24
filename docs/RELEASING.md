@@ -22,9 +22,12 @@ Microsoft documents retirement of global Azure DevOps PATs on December 1, 2026. 
 ### Microsoft Entra ID (long-term)
 
 1. Create an Entra application/service principal or managed identity and authorize its Marketplace identity as a Contributor of publisher `acstride`.
-2. Configure a federated credential with issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject `repo:acstride-labs/codeforces-workbench:environment:marketplace`.
+2. Configure a federated credential with issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject `repo:acstride-labs@347157336/codeforces-workbench@1431532498:environment:marketplace`.
 3. In environment variables set `MARKETPLACE_AUTH_MODE=entra`, `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`.
-4. The workflow uses `azure/login` with no subscription requirement, then `vsce publish --azure-credential`. No client secret is needed.
+4. Run **Verify Marketplace authentication** with publisher verification disabled to retrieve the public Marketplace identity ID. Add that ID to publisher `acstride` as Contributor, then run again with publisher verification enabled. This verifies rights without uploading or publishing an extension.
+5. The workflow uses `azure/login` with no subscription requirement, then `vsce publish --azure-credential`. No client secret is needed.
+
+The subject uses immutable organization/repository IDs, required for this renamed GitHub repository. Do not copy a name-only subject from an older repository. Only jobs using the `marketplace` environment can match this trust. The federated credential has no fixed expiry; GitHub exchanges each job identity for a short-lived access token automatically. After both verification steps pass, select `MARKETPLACE_AUTH_MODE=entra` and remove the unused PAT from GitHub and Azure DevOps.
 
 These account-side permissions must be configured before Marketplace publishing works. They are not created automatically by this workflow. An environment reviewer is optional for solo maintenance; do not require your own approval while also preventing self-review.
 
@@ -32,6 +35,7 @@ Official guidance:
 
 - https://code.visualstudio.com/api/working-with-extensions/publishing-extension
 - https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation-create-trust
+- https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims
 
 ## Publish
 
