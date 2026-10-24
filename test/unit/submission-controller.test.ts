@@ -226,7 +226,8 @@ it('does not treat a failed verification or expired session as logged in', async
   await f.manager.refreshAccount();
   expect(f.manager.accountState).toEqual({
     status: 'signedOut',
-    error: 'Website verification required',
+    error:
+      'Codeforces requires website verification. Sign-in is temporarily unavailable; you can keep using the other features.',
   });
 });
 it('keeps failed logins disabled and does not publish credentials', async () => {

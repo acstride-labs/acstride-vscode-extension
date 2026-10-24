@@ -2,7 +2,6 @@
   "command.cfide.openSettings": "AC-Stride: Настройки",
   "command.cfide.openContestCenter": "AC-Stride: Открыть сведения о соревновании",
   "command.cfide.addContest": "AC-Stride: Добавить соревнование Codeforces",
-  "command.cfide.openContestProblem": "AC-Stride: Открыть задачу соревнования",
   "command.cfide.switchLanguage": "AC-Stride: Сменить язык решения",
   "command.cfide.createProblem": "AC-Stride: Создать локальную задачу",
   "command.cfide.openProblem": "AC-Stride: Открыть задачу",
@@ -12,6 +11,8 @@
   "command.cfide.submitSolution": "AC-Stride: Отправить решение",
   "command.cfide.signIn": "AC-Stride: Войти в Codeforces",
   "command.cfide.signOut": "AC-Stride: Выйти из Codeforces",
+  "command.cfide.addCodeforcesProblem": "AC-Stride: Импорт задачи Codeforces",
+  "command.cfide.openCodeforcesProblem": "AC-Stride: Открыть задачу Codeforces",
   "view.contests": "Соревнования Codeforces",
   "view.practice": "Локальная практика",
   "view.tests": "Тесты",
@@ -30,5 +31,6 @@
   "setting.cfide.cpp.compiler": "Исполняемый файл компилятора C++ или полный путь.",
   "setting.cfide.cpp.args": "Аргументы компилятора передаются без оболочки.",
   "setting.cfide.run.timeoutMs": "Лимит времени на тест (мс)",
-  "setting.cfide.cpp.templatePath": "Необязательный полный путь к шаблону C++; поддерживается ${PROBLEM_ID}."
+  "setting.cfide.cpp.templatePath": "Необязательный полный путь к шаблону C++; поддерживается ${PROBLEM_ID}.",
+  "setting.cfide.solution.defaultLanguage": "Язык по умолчанию для новых соревнований, задач Codeforces и локальных задач."
 }

@@ -5,6 +5,7 @@ export const problemTargetSchema = z.object({
   id,
   language: z.enum(['cpp', 'python']),
   contestId: z.number().int().positive().optional(),
+  collection: z.literal('standalone').optional(),
 });
 export interface AccountState {
   status: 'checking' | 'signedIn' | 'signedOut';

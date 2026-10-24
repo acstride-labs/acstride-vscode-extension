@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0
+
+- Unify the sidebar into contests, standalone Codeforces problems and local practice, with one plus per group and a global settings gear. Preserve original import timestamps and sort newest first.
+- Share contest and standalone download/storage workflows, use the configured default language on import, and keep source/test state isolated between collections.
+- Merge contest information and statements into one contest-named editor with a shared overview/problem rail; remove the Problems tab and replace the large clock with a compact header status label.
+- Organize Settings into Environment, Basic, Coding and AI assistance tabs. Keep login failures inside the account card and synchronize/lock the authenticated handle.
+- Add endpoint-bound secure AI credentials, connection testing with actual replies/errors, configurable statement translation, optional automatic import translation, in-flight deduplication and a persistent 100-entry LRU cache. Sanitize generated HTML and preserve formulas and local images.
+
 ## 0.12.0
 
 - Always download released problems automatically; remove the per-contest toggle, manual download controls and obsolete placeholder instructions.

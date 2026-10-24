@@ -28,6 +28,7 @@ export const contestRecordSchema = z.object({
       }),
     )
     .default([]),
+  importedAt: z.number().optional(),
   updatedAt: z.number(),
   error: z.string().optional(),
   nextRetryAt: z.number().default(0),
@@ -112,4 +113,37 @@ export function problemAttemptState(
   const attempts = submissions.filter((s) => s.problem.index === index);
   if (attempts.some((s) => s.verdict === 'OK')) return 'passed';
   return attempts.length ? 'attempted' : 'untried';
+}
+
+export function parseProblemReference(input: string): { contestId: number; index: string } {
+  const text = input.trim();
+  const shorthand = /^(\d+)\s*([A-Za-z][0-9]{0,2})$/.exec(text);
+  if (shorthand)
+    return {
+      contestId: contestIdSchema.parse(Number(shorthand[1])),
+      index: shorthand[2].toUpperCase(),
+    };
+  try {
+    const url = new URL(text);
+    if (
+      url.protocol === 'https:' &&
+      ['codeforces.com', 'www.codeforces.com'].includes(url.hostname)
+    ) {
+      const match =
+        /^\/(?:contest\/(\d+)\/problem\/([A-Za-z][0-9]{0,2})|problemset\/problem\/(\d+)\/([A-Za-z][0-9]{0,2}))\/?$/.exec(
+          url.pathname,
+        );
+      if (match)
+        return {
+          contestId: contestIdSchema.parse(Number(match[1] ?? match[3])),
+          index: (match[2] ?? match[4]).toUpperCase(),
+        };
+    }
+  } catch {
+    /* Report a single actionable validation error below. */
+  }
+  throw new Error('Enter a Codeforces problem URL or an ID such as 2261A.');
+}
+export function newestImportedFirst<T extends { importedAt?: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => (b.importedAt ?? 0) - (a.importedAt ?? 0));
 }

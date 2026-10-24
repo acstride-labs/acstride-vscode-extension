@@ -1,14 +1,21 @@
+import { AiSettings } from './ai-settings';
+import { AiClient } from '../infrastructure/ai/client';
+import { TranslationTasks } from '../application/translation-tasks';
 import * as vscode from 'vscode';
 import path from 'node:path';
 import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
 import * as cheerio from 'cheerio';
-import { parseContestId, maxDownloadAttempts, type ContestRecord } from '../domain/contest';
+import {
+  parseContestId,
+  parseProblemReference,
+  newestImportedFirst,
+  maxDownloadAttempts,
+  type ContestRecord,
+} from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
-import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
 import { RequestQueue } from '../infrastructure/codeforces/request-queue';
-import { ContestRepository } from '../infrastructure/storage/contest-repository';
-import { ContestService } from '../application/contest-service';
+import { CodeforcesWorkspaces, type CodeforcesCollection } from './codeforces-workspaces';
 import {
   contestRequestSchema,
   type ContestHostMessage,
@@ -21,13 +28,15 @@ import { postLocale, t } from './localization';
 
 type Node = { kind: 'contest'; record: ContestRecord };
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
+  private ai!: AiSettings;
+  private translations!: TranslationTasks;
   private queue = new RequestQueue();
   private api: CodeforcesApi;
   private cfTool: CfToolClient;
   private initialized: Promise<void>;
-  private service?: ContestService;
-  private repo?: ContestRepository;
+  private workspaces: CodeforcesWorkspaces;
   private dashboard?: vscode.WebviewPanel;
+  private dashboardMode: 'overview' | 'statement' = 'overview';
   private statementPanel?: vscode.WebviewPanel;
   private statementTarget?: {
     contestId: number;
@@ -35,6 +44,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     statement: import('../domain/contest').Statement;
     language: Language;
     problems: { index: string; name: string }[];
+    collection: CodeforcesCollection;
+    translation?: { status: 'pending' | 'ready' | 'failed'; html?: string; error?: string };
   };
   private selectedId?: number;
   private rankMode: 'all' | 'nearby' | 'search' = 'all';
@@ -73,14 +84,40 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     workspace.submitHandler = (snapshot) => submissions.submit(snapshot);
     this.disposables.push(
       submissions,
-      vscode.commands.registerCommand('cfide.signIn', () =>
-        submissions.signIn().catch((e) => this.report(e)),
-      ),
+      vscode.commands.registerCommand('cfide.signIn', async () => {
+        await vscode.commands.executeCommand('cfide.openSettings', 'environment');
+        try {
+          await submissions.signIn();
+        } catch {
+          /* Account card owns login errors. */
+        }
+      }),
       vscode.commands.registerCommand('cfide.signOut', () =>
         submissions.signOut().catch((e) => this.report(e)),
       ),
     );
+    this.ai = new AiSettings(context);
+    this.translations = new TranslationTasks(
+      path.join(context.globalStorageUri.fsPath, 'translations-lru.json'),
+    );
+    this.disposables.push(this.translations);
     this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
+    this.workspaces = new CodeforcesWorkspaces(
+      () => workspace.localStore().root,
+      this.api,
+      {
+        problem: (id, index, assetsDir) =>
+          this.queue.schedule(() => this.cfTool.problem(id, index, assetsDir)),
+      },
+      (language, index) => workspace.template(language, index),
+      (id, collection) => {
+        void this.changed(id, collection);
+      },
+      (id, index, statement) => {
+        if (this.ai.translationOptions().enabled && this.ai.translationOptions().autoTranslate)
+          void this.translate(statement).catch(() => {});
+      },
+    );
     this.initialized = this.cfTool.ready().catch(() => {
       // Report installation errors on operations while allowing local/cached work.
     });
@@ -90,31 +127,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (!vscode.workspace.isTrusted)
       throw new Error('Trust this workspace before downloading or changing local contest files.');
   }
-  private runtime() {
-    const root = this.workspace.localStore().root;
-    if (this.repo?.root !== root) {
-      this.service?.dispose();
-      this.repo = new ContestRepository(root);
-      const repository = this.repo;
-      this.service = new ContestService(
-        repository,
-        this.api,
-        {
-          problem: (id, index, assetsDir) =>
-            this.queue.schedule(() => this.cfTool.problem(id, index, assetsDir)),
-        },
-        (language, index) => this.workspace.template(language, index),
-        (id) => this.changed(id),
-      );
-      this.lastStatus.clear();
-      this.pendingContests.clear();
-      this.lastBoard = 0;
-    }
-    return { repo: this.repo!, service: this.service! };
+  private runtime(collection: CodeforcesCollection = 'contest') {
+    return this.workspaces.get(collection);
   }
   register() {
-    const tree = vscode.window.createTreeView('cfide.contests', { treeDataProvider: this });
-    tree.title = t('Codeforces Contests');
     const command = (name: string, fn: (...args: any[]) => unknown) =>
       this.disposables.push(
         vscode.commands.registerCommand(name, async (...args) => {
@@ -130,22 +146,24 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.openCenter(node?.kind === 'contest' ? node.record.contest.id : undefined),
     );
     command('cfide.addContest', () => this.add());
+    command('cfide.addCodeforcesProblem', () => this.addStandalone());
+    command('cfide.openCodeforcesProblem', (problem: Problem) =>
+      this.openProblem(problem.contestId!, problem.id, 'standalone'),
+    );
     this.status.command = 'cfide.openContestCenter';
     this.disposables.push(
       this.changes,
       this.diagnostics,
       this.status,
-      tree,
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('cfide.ui.language')) {
-          tree.title = t('Codeforces Contests');
-          if (this.dashboard) this.dashboard.title = t('AC-Stride · Contest Center');
+          if (this.dashboard) void this.publish();
           postLocale(this.dashboard?.webview);
           postLocale(this.statementPanel?.webview);
           const target = this.statementTarget;
-          if (target && this.statementPanel)
-            void this.openStatement(target.contestId, target.index, false).catch((e) =>
-              this.report(e),
+          if (target && (target.collection === 'contest' ? this.dashboard : this.statementPanel))
+            void this.openStatement(target.contestId, target.index, false, target.collection).catch(
+              (e) => this.report(e),
             );
           this.changes.fire(undefined);
         }
@@ -159,21 +177,24 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       }),
     );
     this.workspace.resolveSource = async (source) => {
-      const { repo } = this.runtime();
-      for (const record of await repo.list()) {
-        const store = repo.problems(record.contest.id);
-        for (const problem of await store.listProblems())
-          for (const language of ['cpp', 'python'] as const)
-            if (store.sourcePath(problem.id, language) === source)
-              return { store, problem: { ...problem, language } };
+      for (const collection of ['contest', 'standalone'] as const) {
+        const { repo } = this.runtime(collection);
+        for (const record of await repo.list()) {
+          const store = repo.problems(record.contest.id);
+          for (const problem of await store.listProblems())
+            for (const language of ['cpp', 'python'] as const)
+              if (store.sourcePath(problem.id, language) === source)
+                return { store, problem: { ...problem, language } };
+        }
       }
       return undefined;
     };
     this.workspace.onProblemOpened = async (_store, problem) => {
       if (problem.contestId) {
-        await this.select(problem.contestId);
-        await this.openStatement(problem.contestId, problem.id);
-        void this.runtime()
+        const collection = problem.collection ?? 'contest';
+        if (collection === 'contest') await this.select(problem.contestId);
+        await this.openStatement(problem.contestId, problem.id, true, collection);
+        void this.runtime(collection)
           .service.ensureDownloaded(problem.contestId, problem.id)
           .catch((error) => this.report(error));
       } else {
@@ -187,6 +208,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         try {
           const { service } = this.runtime();
           void service.tick(Date.now()).catch(() => {});
+          void this.runtime('standalone')
+            .service.tick(Date.now())
+            .catch(() => {});
         } catch {
           /* No open workspace. */
         }
@@ -200,8 +224,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     this.timers.push(setInterval(() => void this.updateCountdown(), 1000));
     this.disposables.push(
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
-        this.service?.dispose();
-        this.repo = undefined;
+        this.workspaces.dispose();
         this.selectedId = undefined;
         this.section = 'prepare';
         this.backgroundErrors.clear();
@@ -238,11 +261,15 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       undefined
     );
   }
-  private async changed(id: number) {
+  private async changed(id: number, collection: CodeforcesCollection = 'contest') {
     this.changes.fire(undefined);
     const target = this.statementTarget;
-    if (target?.contestId === id && this.statementPanel) {
-      const repo = this.runtime().repo;
+    if (
+      target?.contestId === id &&
+      target.collection === collection &&
+      (collection === 'contest' ? this.dashboard : this.statementPanel)
+    ) {
+      const repo = this.runtime(collection).repo;
       const [cached, record] = await Promise.all([repo.statement(id, target.index), repo.get(id)]);
       const statement =
         cached || this.pendingStatement(record.problems.find((p) => p.index === target.index));
@@ -253,27 +280,31 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       ) {
         const newlyDownloaded = !!cached && statement.fetchedAt !== target.statement.fetchedAt;
         target.statement = statement;
-        void this.statementPanel?.webview.postMessage({
-          type: 'statement',
-          ...target,
-          statement: this.mapAssets(id, statement),
-        } satisfies ContestHostMessage);
-        if (newlyDownloaded) await this.workspace.refreshTests(id, target.index);
+        target.translation = undefined;
+        void (collection === 'contest' ? this.dashboard : this.statementPanel)?.webview.postMessage(
+          {
+            type: 'statement',
+            ...target,
+            statement: this.mapAssets(id, statement, collection),
+          } satisfies ContestHostMessage,
+        );
+        if (newlyDownloaded)
+          await this.workspace.refreshTests(
+            id,
+            target.index,
+            collection === 'standalone' ? 'standalone' : undefined,
+          );
       }
     }
-    if (id === this.selectedId) await this.publish();
+    if (collection === 'contest' && id === this.selectedId) await this.publish();
   }
   async getChildren(node?: Node): Promise<Node[]> {
     try {
       if (node) return [];
-      return (await this.runtime().repo.list())
-        .sort(
-          (a, b) =>
-            Number(a.archived) - Number(b.archived) ||
-            phaseOrder(a) - phaseOrder(b) ||
-            (b.contest.startTimeSeconds ?? 0) - (a.contest.startTimeSeconds ?? 0),
-        )
-        .map((record) => ({ kind: 'contest', record }));
+      return newestImportedFirst(await this.runtime().repo.list()).map((record) => ({
+        kind: 'contest',
+        record,
+      }));
     } catch {
       return [];
     }
@@ -297,6 +328,33 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     };
     return item;
   }
+  async standaloneProblems(): Promise<Problem[]> {
+    const { repo } = this.runtime('standalone');
+    const groups = await Promise.all(
+      (await repo.list()).map((r) => repo.problems(r.contest.id).listProblems()),
+    );
+    return newestImportedFirst(groups.flat());
+  }
+  private async addStandalone() {
+    this.trust();
+    const input = await vscode.window.showInputBox({
+      title: t('Import Codeforces problem'),
+      prompt: t('Problem URL or ID, for example 2261A'),
+      validateInput: (text) => {
+        try {
+          parseProblemReference(text);
+          return null;
+        } catch (error) {
+          return t((error as Error).message);
+        }
+      },
+    });
+    if (!input) return;
+    const { contestId, index } = parseProblemReference(input);
+    const { service } = this.runtime('standalone');
+    await service.addProblem(contestId, index, this.workspace.defaultLanguage());
+    await this.openProblem(contestId, index, 'standalone');
+  }
   private async add() {
     this.trust();
     const input = await vscode.window.showInputBox({
@@ -312,18 +370,11 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       },
     });
     if (!input) return;
-    const language = await vscode.window.showQuickPick(
-      [
-        { label: 'C++', value: 'cpp' as const },
-        { label: 'Python 3', value: 'python' as const },
-      ],
-      { title: t('Default solution language for this contest') },
-    );
-    if (!language) return;
+    const language = this.workspace.defaultLanguage();
     await this.task(t('Looking up contest…'), async () => {
       const { service } = this.runtime();
       const id = parseContestId(input);
-      await service.add(id, language.value);
+      await service.add(id, language);
       await this.openCenter(id);
       void service.sync(id).catch((error) => this.report(error));
     });
@@ -339,7 +390,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     await this.publish();
   }
   private async openCenter(id?: number) {
-    this.section = 'prepare';
+    this.dashboardMode = 'overview';
+    this.section = 'rankings';
     if (id) await this.select(id);
     if (!this.dashboard) {
       this.dashboard = vscode.window.createWebviewPanel(
@@ -377,11 +429,31 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         this.disposables,
       );
     } else this.dashboard.reveal(vscode.ViewColumn.One);
+    if (this.dashboard) {
+      const record = this.selectedId ? await this.runtime().repo.get(this.selectedId) : undefined;
+      this.dashboard.title = record?.contest.name ?? t('AC-Stride · Contest Center');
+      void this.dashboard.webview.postMessage({ type: 'contestOverview' });
+    }
     await this.publish();
   }
   private async handleMessage(message: import('zod').infer<typeof contestRequestSchema>) {
     await this.initialized;
-    if (message.type === 'ready') return this.publish();
+    if (message.type === 'ready') {
+      await this.publish();
+      if (
+        this.dashboardMode === 'statement' &&
+        this.statementTarget?.collection === 'contest' &&
+        this.dashboard
+      )
+        void this.dashboard.webview.postMessage({
+          type: 'statement',
+          ...this.statementTarget,
+          statement: this.mapAssets(this.statementTarget.contestId, this.statementTarget.statement),
+        });
+      return;
+    }
+    if (message.type === 'translateStatement') return this.showTranslation(message);
+    if (message.type === 'openContestDetails') return this.openCenter(message.contestId);
     if (message.type === 'contestSection') {
       this.section = message.section;
       if (message.section === 'rankings') this.lastBoard = 0;
@@ -403,7 +475,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     this.trust();
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
-    if (message.type === 'openProblem') return this.openProblem(message.contestId, message.index);
+    if (message.type === 'openProblem')
+      return this.openProblem(message.contestId, message.index, message.collection ?? 'contest');
     if (message.type === 'refreshStatus')
       return this.task(t('Refreshing submissions…'), () => this.refreshStatus(message.contestId));
     if (message.type === 'refreshStandings')
@@ -412,9 +485,13 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         this.backgroundErrors.delete(`${message.contestId}/rankings`);
       });
   }
-  private async openProblem(id: number, index: string) {
+  private async openProblem(
+    id: number,
+    index: string,
+    collection: CodeforcesCollection = 'contest',
+  ) {
     this.trust();
-    const { repo, service } = this.runtime();
+    const { repo, service } = this.runtime(collection);
     const problem = await service.ensureSolution(id, index);
     await this.workspace.openInStore(repo.problems(id), problem);
   }
@@ -434,15 +511,44 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       fetchedAt: 0,
     };
   }
-  private async openStatement(id: number, index: string, reveal = true) {
-    const repo = this.runtime().repo;
+  private async openStatement(
+    id: number,
+    index: string,
+    reveal = true,
+    collection: CodeforcesCollection = 'contest',
+  ) {
+    const repo = this.runtime(collection).repo;
     const record = await repo.get(id);
     const cached = await repo.statement(id, index);
     const item = record.problems.find((p) => p.index === index);
     const statement = cached || this.pendingStatement(item);
     const language = this.workspace.active()?.problem.language ?? record.defaultLanguage;
     const problems = record.problems.map(({ index, name }) => ({ index, name }));
-    this.statementTarget = { contestId: id, index, statement, language, problems };
+    this.statementTarget = { contestId: id, index, statement, language, problems, collection };
+    if (collection === 'contest') {
+      if (!this.dashboard) await this.openCenter(id);
+      else if (this.selectedId !== id) await this.select(id);
+      this.dashboardMode = 'statement';
+      this.section = 'prepare';
+      if (this.dashboard) {
+        this.dashboard.title = record.contest.name;
+        this.dashboard.webview.options = {
+          enableScripts: true,
+          localResourceRoots: [
+            vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
+            vscode.Uri.file(repo.assets(id)),
+          ],
+        };
+        if (reveal) this.dashboard.reveal(vscode.ViewColumn.One, true);
+        void this.dashboard.webview.postMessage({
+          type: 'statement',
+          ...this.statementTarget,
+          statement: this.mapAssets(id, statement, collection),
+        });
+      }
+      await this.publish();
+      return;
+    }
     if (!this.statementPanel) {
       this.statementPanel = vscode.window.createWebviewPanel(
         'cfide.statement',
@@ -471,8 +577,20 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           const parsed = contestRequestSchema.safeParse(raw);
           if (!parsed.success) return;
           if (parsed.data.type !== 'ready') {
-            if (['openProblem', 'switchLanguage'].includes(parsed.data.type))
-              await this.handleMessage(parsed.data).catch((e) => this.report(e));
+            const message = parsed.data;
+            const collection =
+              message.type === 'openProblem'
+                ? (message.collection ?? 'contest')
+                : (this.statementTarget?.collection ?? 'contest');
+            if (message.type === 'openProblem')
+              await this.openProblem(message.contestId, message.index, collection).catch((e) =>
+                this.report(e),
+              );
+            else if (message.type === 'openContestDetails')
+              await this.openCenter(message.contestId).catch((e) => this.report(e));
+            else if (message.type === 'translateStatement') await this.showTranslation(message);
+            else if (message.type === 'switchLanguage')
+              await this.handleMessage(message).catch((e) => this.report(e));
             return;
           }
           if (this.statementTarget) {
@@ -482,7 +600,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
               void this.statementPanel.webview.postMessage({
                 type: 'statement',
                 ...target,
-                statement: this.mapAssets(target.contestId, target.statement),
+                statement: this.mapAssets(target.contestId, target.statement, target.collection),
               } satisfies ContestHostMessage);
           }
         },
@@ -494,7 +612,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
-        vscode.Uri.file(this.runtime().repo.assets(id)),
+        vscode.Uri.file(this.runtime(collection).repo.assets(id)),
       ],
     };
     this.statementPanel.title = `${id} · ${index} · ${t('STATEMENT')}`;
@@ -504,21 +622,111 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       contestId: id,
       index,
       language,
+      collection,
       problems,
-      statement: this.mapAssets(id, statement),
+      statement: this.mapAssets(id, statement, collection),
     } satisfies ContestHostMessage);
   }
-  private mapAssets(id: number, statement: import('../domain/contest').Statement) {
+  private translate(statement: import('../domain/contest').Statement) {
+    const options = this.ai.translationOptions(),
+      config = this.ai.config();
+    return this.translations.translate(
+      [1, config, options.prompt, statement.html],
+      statement.html,
+      async (signal) =>
+        new AiClient().complete(
+          config,
+          await this.ai.key(config),
+          [
+            { role: 'system', content: options.prompt },
+            { role: 'user', content: statement.html },
+          ],
+          signal,
+          120000,
+        ),
+    );
+  }
+  private async showTranslation(request: {
+    contestId: number;
+    index: string;
+    collection?: CodeforcesCollection;
+  }) {
+    let target = this.statementTarget;
+    if (
+      !target ||
+      target.contestId !== request.contestId ||
+      target.index !== request.index ||
+      target.collection !== (request.collection ?? 'contest')
+    ) {
+      await this.openStatement(
+        request.contestId,
+        request.index,
+        false,
+        request.collection ?? 'contest',
+      );
+      target = this.statementTarget;
+    }
+    if (!target) return;
+    if (!this.ai.translationOptions().enabled) {
+      void (
+        target.collection === 'contest' ? this.dashboard : this.statementPanel
+      )?.webview.postMessage({ type: 'translation', status: 'disabled' });
+      await vscode.commands.executeCommand('cfide.openSettings', 'assistance');
+      return;
+    }
+    if (!target.statement.fetchedAt) return;
+    const pending = { status: 'pending' as const };
+    target.translation = pending;
+    this.postTranslation(target);
+    try {
+      const html = await this.translate(target.statement);
+      if (target.translation !== pending) return;
+      target.translation = { status: 'ready', html };
+    } catch (error) {
+      if (target.translation !== pending) return;
+      target.translation = {
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+    if (target === this.statementTarget) this.postTranslation(target);
+  }
+  private postTranslation(target: NonNullable<ContestController['statementTarget']>) {
+    const panel = target.collection === 'contest' ? this.dashboard : this.statementPanel;
+    const translation = target.translation;
+    void panel?.webview.postMessage({
+      type: 'translation',
+      ...translation,
+      html: translation?.html
+        ? this.mapAssets(
+            target.contestId,
+            { ...target.statement, html: translation.html },
+            target.collection,
+          ).html
+        : undefined,
+    });
+  }
+  private mapAssets(
+    id: number,
+    statement: import('../domain/contest').Statement,
+    collection: CodeforcesCollection = 'contest',
+  ) {
     const $ = cheerio.load(statement.html, undefined, false);
     $('img').each((_, node) => {
       const src = $(node).attr('src') || '';
-      if (/^cfide-asset:[a-f0-9]{64}\.(png|jpg|webp|gif)$/.test(src) && this.statementPanel)
+      if (
+        /^cfide-asset:[a-f0-9]{64}\.(png|jpg|webp|gif)$/.test(src) &&
+        (collection === 'contest' ? this.dashboard : this.statementPanel)
+      )
         $(node).attr(
           'src',
-          this.statementPanel.webview
+          (collection === 'contest' ? this.dashboard! : this.statementPanel!).webview
             .asWebviewUri(
               vscode.Uri.file(
-                path.join(this.runtime().repo.assets(id), src.slice('cfide-asset:'.length)),
+                path.join(
+                  this.runtime(collection).repo.assets(id),
+                  src.slice('cfide-asset:'.length),
+                ),
               ),
             )
             .toString(),
@@ -610,6 +818,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       const { repo } = this.runtime(),
         selected = this.selectedId;
       const contests = await repo.list();
+      if (this.dashboard)
+        this.dashboard.title =
+          contests.find((c) => c.contest.id === selected)?.contest.name ??
+          t('AC-Stride · Contest Center');
       const handle = this.handle();
       const status =
         selected && handle
@@ -643,7 +855,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         error: this.errorMessage,
         serverNow: Date.now(),
       };
-      if (selected !== this.selectedId || repo !== this.repo) return;
+      if (selected !== this.selectedId || repo !== this.runtime().repo) return;
       void this.dashboard?.webview.postMessage({
         type: 'contestState',
         state,
@@ -694,14 +906,11 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   dispose() {
     this.cfTool.dispose();
-    this.service?.dispose();
+    this.workspaces.dispose();
     this.queue.dispose();
     this.timers.forEach(clearInterval);
     this.dashboard?.dispose();
     this.statementPanel?.dispose();
     this.disposables.forEach((d) => d.dispose());
   }
-}
-function phaseOrder(record: ContestRecord) {
-  return record.contest.phase === 'CODING' ? 0 : record.contest.phase === 'BEFORE' ? 1 : 2;
 }

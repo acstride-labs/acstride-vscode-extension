@@ -1,10 +1,10 @@
-# Localization and settings architecture (0.9)
+# Localization and settings architecture (0.13)
 
 ## Interaction and ownership
 
-The contest sidebar has three ordered actions: add (`+`), contest center (trophy), settings (gear). `cfide.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice has a settings shortcut too.
+The AC-Stride container has a global settings gear. Each of the three ordered groups has one inline add (`+`) action. `cfide.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice uses the same global Settings page.
 
-Contest info contains automatically downloaded problems, public submissions, rankings and per-contest language/archive settings. Automatic downloads are always enabled, with bounded per-problem retries and selection-triggered recovery. There is no manual download toggle or button. Saved-HTML import has been removed.
+One contest editor, titled with its contest name, combines an overview/rankings rail button and problem buttons. Its overview contains public submissions and rankings; there is no Problems or per-contest Settings tab. A compact header label shows ended/countdown state. Automatic downloads are always enabled, with bounded per-problem retries and selection-triggered recovery. There is no manual download toggle or button. Saved-HTML import has been removed.
 
 Settings contains:
 
@@ -46,4 +46,14 @@ Changing a default solution language or archiving never deletes existing solutio
 
 Automated checks enforce four-catalog key/placeholder parity, literal translation-call coverage, safe fallback/interpolation, complete native NLS references, setting range/type/allowlist validation, scope separation, untrusted-workspace boundaries, and rollback on partial writes. Existing local C++/Python and anonymous download tests remain intact. Final-VSIX verification includes all four native NLS files as well as the private downloader.
 
-For a wording change, edit the corresponding JSON values and run `npm run build` to regenerate native NLS, then `npm run check`. For a new message, add the same key and parameters to all four catalogs. For a future language, add a catalog, register the locale/selection, extend native generation and tests, then verify actual UI layout. No backend translation service, machine translation of statements or extra user-side package is involved.
+For a wording change, edit the corresponding JSON values and run `npm run build` to regenerate native NLS, then `npm run check`. For a new message, add the same key and parameters to all four catalogs. For a future language, add a catalog, register the locale/selection, extend native generation and tests, then verify actual UI layout. Localization itself uses bundled catalogs. Optional AI statement translation uses the explicitly configured provider; it requires no extra user-side package.
+
+The AC-Stride container now has one native tree view with three ordered root groups (contests, independent Codeforces problems, local practice). The single-view header merge keeps the global gear at container level using stable VS Code APIs; per-group inline actions contain only the corresponding plus button. Import order is based on immutable `importedAt`, with folder creation-time fallback for legacy data.
+
+`cfide.solution.defaultLanguage` is edited alongside code templates. Contest and single-problem imports share `CodeforcesWorkspaces`, `ContestService` and `ContestRepository`; repository collection controls separate registries and file roots. `Problem.collection` is carried through source resolution, restore, test/submit targets and webview identity to prevent two copies of the same Codeforces problem from crossing state.
+
+Login errors belong to `SettingsState.account.error`. The settings request handler consumes sign-in rejection because the shared account state already publishes it; it does not duplicate the failure in the general settings-error region.
+
+Settings has four retained tab panels: environment (account, handle, tools and AI connection), basic (locale and scope), coding (templates/default language and execution), and AI assistance (translation preferences). Login synchronizes the authenticated handle into the existing effective handle configuration and locks the form field; public submissions/ranking consumers still read that setting. Save validation also enforces the authenticated handle.
+
+`AiSettings` stores provider/model and translation preferences in global state, with endpoint-bound API keys in SecretStorage. `AiClient` is the sole AI transport. `TranslationTasks` shares in-flight work, limits concurrent calls to two, sanitizes output and persists a 100-entry LRU cache. The download-completion hook starts automatic work only when enabled; manual activation joins the same task/cache. Failed tasks remain retryable. Request identity includes source, prompt and provider/model; stale task completion cannot overwrite a different active statement.

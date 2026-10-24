@@ -52,6 +52,10 @@ function fixture() {
   const contests = { saveContestOptions: vi.fn(async () => {}) };
   const workspace = {
     submissions: {
+      accountState: { status: 'signedOut', handle: undefined } as {
+        status: string;
+        handle?: string;
+      },
       signIn: vi.fn(async () => {}),
       signOut: vi.fn(async () => {}),
       refreshAccount: vi.fn(async () => {}),
@@ -65,6 +69,9 @@ function fixture() {
   return {
     contests,
     workspace,
+    syncHandle: () =>
+      (controller as unknown as { syncAccountHandle(): Promise<void> }).syncAccountHandle(),
+    error: () => (controller as unknown as { error?: string }).error,
     environments: () =>
       (
         controller as unknown as {
@@ -154,7 +161,7 @@ describe('settings persistence adapter', () => {
     expect(mock.workspace.get('run.timeoutMs')).toBe(3000);
     expect(mock.user.get('run.timeoutMs')).toBe(2500);
     expect(mock.updates.some((u) => u.key === 'ui.language')).toBe(false);
-    expect(mock.updates.length).toBe(20);
+    expect(mock.updates.length).toBe(22);
   });
   it('validates first and blocks untrusted execution settings, unavailable workspaces and stale scopes', async () => {
     const f = fixture();
@@ -210,5 +217,33 @@ it('routes settings login, logout and refresh to the shared account without chan
   expect(f.workspace.submissions.signIn).toHaveBeenCalledOnce();
   expect(f.workspace.submissions.signOut).toHaveBeenCalledOnce();
   expect(f.workspace.submissions.refreshAccount).toHaveBeenCalledOnce();
+  expect(mock.updates).toEqual([]);
+});
+
+it('keeps login failures out of the global settings error area', async () => {
+  const f = fixture();
+  f.workspace.submissions.signIn.mockRejectedValue(new Error('Website verification'));
+  await expect(f.receive({ type: 'signIn' })).resolves.toBeUndefined();
+  expect(f.error()).toBeUndefined();
+});
+
+it('synchronizes a signed-in handle to the effective setting and prevents spoofing it on save', async () => {
+  const f = fixture();
+  mock.workspace.set('codeforces.handle', 'old');
+  f.workspace.submissions.accountState = { status: 'signedIn', handle: 'logged_in' };
+  await f.syncHandle();
+  expect(mock.workspace.get('codeforces.handle')).toBe('logged_in');
+  await f.receive({
+    type: 'saveSettings',
+    scope: 'user',
+    values: { ...values, handle: 'someone_else' },
+  });
+  expect(mock.user.get('codeforces.handle')).toBe('logged_in');
+});
+it('leaves a manually configured tracking handle editable when signed out', async () => {
+  const f = fixture();
+  mock.user.set('codeforces.handle', 'manual');
+  await f.syncHandle();
+  expect(mock.user.get('codeforces.handle')).toBe('manual');
   expect(mock.updates).toEqual([]);
 });

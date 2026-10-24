@@ -4,7 +4,7 @@ import type { AccountState, HostMessage, WebviewRequest } from '../../src/shared
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
 import { completeResults, resultTone, retainResults } from './test-state';
 import { send } from './bridge';
-import { ContestApp } from './contest/ContestApp';
+import { ContestPage } from './contest/ContestPage';
 import { StatementView } from './statement/StatementView';
 import { SettingsApp } from './settings/SettingsApp';
 import { useI18n } from './i18n';
@@ -45,7 +45,7 @@ function App() {
         return;
       }
       if (m.type === 'state') {
-        const key = `${m.problem.contestId ?? 'local'}/${m.problem.id}/${m.problem.language}`;
+        const key = `${m.problem.collection ?? 'contest'}/${m.problem.contestId ?? 'local'}/${m.problem.id}/${m.problem.language}`;
         if (currentProblem.current !== key) {
           setDirtyTests({});
           setResults({});
@@ -235,7 +235,7 @@ function App() {
       )}
       {tests.map((test) => (
         <TestCard
-          key={`${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
+          key={`${problem?.collection ?? 'contest'}/${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
           active={activeId === test.id}
           test={test}
           problem={problem}
@@ -394,7 +394,7 @@ createRoot(document.getElementById('root')!).render(
   mode === 'settings' ? (
     <SettingsApp />
   ) : mode === 'contest' ? (
-    <ContestApp />
+    <ContestPage />
   ) : mode === 'statement' ? (
     <StatementView />
   ) : (

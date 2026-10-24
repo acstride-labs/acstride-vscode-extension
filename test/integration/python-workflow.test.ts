@@ -31,7 +31,7 @@ describe('Python workflow', () => {
     await store.saveTest('B', { id: 'wa', input: '2 3\n', expected: '6' });
     await store.saveTest('B', { id: 'run', input: '10 20\n' });
     const restored = new FileWorkspaceStore(store.root);
-    expect((await restored.listProblems()).map((p) => p.language)).toEqual(['cpp', 'python']);
+    expect((await restored.listProblems()).map((p) => p.language)).toEqual(['python', 'cpp']);
     expect(await fs.readFile(restored.sourcePath('B', 'python'), 'utf8')).toBe(template);
     const result = await new RunTests(restored, new PythonRunner()).execute(
       'B',
@@ -55,12 +55,14 @@ describe('Python workflow', () => {
     await fs.mkdir(path.join(store.root, '.cfide'));
     const manifest = JSON.stringify({ schemaVersion: 1, problems: [{ id: 'A', title: 'Legacy' }] });
     await fs.writeFile(path.join(store.root, '.cfide', 'workspace.json'), manifest);
-    expect(await store.listProblems()).toEqual([{ id: 'A', title: 'Legacy', language: 'cpp' }]);
+    expect(await store.listProblems()).toEqual([
+      { id: 'A', title: 'Legacy', language: 'cpp', importedAt: 0 },
+    ]);
     expect(await fs.readFile(path.join(store.root, '.cfide', 'workspace.json'), 'utf8')).toBe(
       manifest,
     );
     await store.createProblem('B', 'Python', 'print(1)', 'python');
-    expect((await store.listProblems()).map((p) => p.language)).toEqual(['cpp', 'python']);
+    expect((await store.listProblems()).map((p) => p.language)).toEqual(['python', 'cpp']);
   });
   it('reports syntax/runtime errors, time limits, output limits and missing interpreters', async () => {
     const store = await workspace(),

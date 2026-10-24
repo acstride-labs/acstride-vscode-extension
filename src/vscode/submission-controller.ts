@@ -38,6 +38,15 @@ export class SubmissionController implements vscode.Disposable {
       },
     };
   }
+  private accountError(error: unknown) {
+    return error instanceof CfToolError && error.code === 'verification_required'
+      ? t(
+          'Codeforces requires website verification. Sign-in is temporarily unavailable; you can keep using the other features.',
+        )
+      : error instanceof Error
+        ? error.message
+        : String(error);
+  }
   private setAccount(account: AccountState) {
     this.accountState = account;
     for (const listener of this.accountListeners) listener();
@@ -59,9 +68,7 @@ export class SubmissionController implements vscode.Disposable {
               error instanceof CfToolError &&
               ['not_authenticated', 'session_unavailable', 'invalid_session'].includes(error.code)
                 ? undefined
-                : error instanceof Error
-                  ? error.message
-                  : String(error),
+                : this.accountError(error),
           });
         },
       )
@@ -125,7 +132,7 @@ export class SubmissionController implements vscode.Disposable {
     } catch (error) {
       this.setAccount({
         status: 'signedOut',
-        error: error instanceof Error ? error.message : String(error),
+        error: this.accountError(error),
       });
       throw error;
     } finally {

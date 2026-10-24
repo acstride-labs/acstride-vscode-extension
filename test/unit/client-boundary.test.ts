@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-it('keeps website transport and parsing outside the extension host and webview', async () => {
+it('keeps Codeforces transport outside the host and permits only the dedicated AI client to make AI requests', async () => {
   async function sources(folder: string): Promise<string[]> {
     const entries = await fs.readdir(folder, { withFileTypes: true });
     return (
@@ -17,7 +17,12 @@ it('keeps website transport and parsing outside the extension host and webview',
       )
     ).flat();
   }
+  const aiClient = await fs.readFile('src/infrastructure/ai/client.ts', 'utf8');
   for (const source of [...(await sources('src')), ...(await sources('webview/src'))]) {
+    if (source === aiClient) {
+      expect(source).not.toContain('codeforces.com');
+      continue;
+    }
     expect(source).not.toMatch(
       /\bfetch\s*\(|\bXMLHttpRequest\b|from ['"](?:node:)?https?['"]|\brequire\(['"](?:node:)?https?['"]\)/,
     );

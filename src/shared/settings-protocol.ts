@@ -1,9 +1,17 @@
+import {
+  translationOptionsSchema,
+  type TranslationOptions,
+  aiConfigSchema,
+  aiKeySchema,
+  type AiState,
+} from './ai-protocol';
 import type { AccountState } from './protocol';
 import { z } from 'zod';
 import { locales, type Locale, type LocalePreference } from './i18n';
 const args = z.array(z.string().max(10000)).max(100);
 export const settingsValuesSchema = z
   .object({
+    defaultLanguage: z.enum(['cpp', 'python']).default('cpp'),
     handle: z.string().regex(/^(?:[A-Za-z0-9_.-]{1,64})?$/),
     compiler: z.string().trim().min(1).max(4096),
     cppArgs: args,
@@ -18,6 +26,7 @@ export const settingsValuesSchema = z
   .strict();
 export type SettingsValues = z.infer<typeof settingsValuesSchema>;
 export const settingsKeys = {
+  defaultLanguage: 'solution.defaultLanguage',
   handle: 'codeforces.handle',
   compiler: 'cpp.compiler',
   cppArgs: 'cpp.args',
@@ -31,6 +40,16 @@ export const settingsKeys = {
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
+  z
+    .object({ type: z.literal('saveTranslationSettings'), options: translationOptionsSchema })
+    .strict(),
+  z
+    .object({ type: z.literal('saveAI'), config: aiConfigSchema, apiKey: aiKeySchema.optional() })
+    .strict(),
+  z
+    .object({ type: z.literal('testAI'), config: aiConfigSchema, apiKey: aiKeySchema.optional() })
+    .strict(),
+  z.object({ type: z.literal('forgetAIKey') }).strict(),
   z.object({ type: z.literal('signIn') }).strict(),
   z.object({ type: z.literal('signOut') }).strict(),
   z.object({ type: z.literal('refreshAccount') }).strict(),
@@ -52,6 +71,8 @@ export interface EnvironmentResult {
   message?: string;
 }
 export interface SettingsState {
+  ai: AiState;
+  translationOptions: TranslationOptions;
   account: AccountState;
   locale: Locale;
   preference: LocalePreference;

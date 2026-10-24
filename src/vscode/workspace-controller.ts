@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import type { Language, Problem } from '../domain/models';
+import type { Language, Problem, ProblemTarget } from '../domain/models';
 import { languages } from '../domain/languages';
 import { FileWorkspaceStore } from '../infrastructure/storage/file-workspace-store';
 import { instantiateTemplate, readSourceTemplate } from '../infrastructure/storage/source-template';
@@ -14,7 +14,7 @@ import { webviewHtml } from './webview-html';
 import { postLocale, t } from './localization';
 import type { SubmissionController, SubmissionSnapshot } from './submission-controller';
 
-export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
+export class WorkspaceController implements vscode.Disposable {
   private changes = new vscode.EventEmitter<Problem | undefined>();
   readonly onDidChangeTreeData = this.changes.event;
   private view?: vscode.WebviewPanel;
@@ -42,6 +42,11 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   ) => Promise<{ store: FileWorkspaceStore; problem: Problem } | undefined>;
   onProblemOpened?: (store: FileWorkspaceStore, problem: Problem) => Promise<void>;
   constructor(private context: vscode.ExtensionContext) {}
+  defaultLanguage(): Language {
+    return vscode.workspace
+      .getConfiguration('cfide')
+      .get<Language>('solution.defaultLanguage', 'cpp');
+  }
   localStore() {
     const folders = vscode.workspace.workspaceFolders;
     if (!folders?.length) throw new Error('Open a folder in VS Code first.');
@@ -60,12 +65,9 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       throw new Error('Trust this workspace before creating files, compiling or running code.');
   }
   register() {
-    const tree = vscode.window.createTreeView('cfide.problems', { treeDataProvider: this });
-    tree.title = t('Local Practice');
     this.disposables.push(
       this.changes,
       this.output,
-      tree,
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         const source =
           this.current && this.store().sourcePath(this.current.id, this.current.language);
@@ -77,7 +79,6 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       }),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (!event.affectsConfiguration('cfide.ui.language')) return;
-        tree.title = t('Local Practice');
         if (this.view) this.view.title = t('Tests');
         postLocale(this.view?.webview);
         this.changes.fire(undefined);
@@ -114,6 +115,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         if (
           this.current?.id !== resolved.problem.id ||
           this.current?.contestId !== resolved.problem.contestId ||
+          this.current?.collection !== resolved.problem.collection ||
           this.current?.language !== resolved.problem.language ||
           !this.view
         )
@@ -131,21 +133,6 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         this.changes.fire(undefined);
       }),
     );
-  }
-  async getChildren() {
-    try {
-      return await this.localStore().listProblems();
-    } catch (error) {
-      this.output.appendLine(String(error));
-      return [];
-    }
-  }
-  getTreeItem(p: Problem) {
-    const item = new vscode.TreeItem(p.id + ' · ' + p.title);
-    item.description = languages[p.language].label;
-    item.iconPath = new vscode.ThemeIcon('code');
-    item.command = { command: 'cfide.openProblem', title: t('Open'), arguments: [p] };
-    return item;
   }
   async template(language: Language, id: string) {
     const config = vscode.workspace.getConfiguration('cfide');
@@ -201,13 +188,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     this.ensureIdle();
     await this.mutation;
     const store = this.localStore();
-    const selected = await vscode.window.showQuickPick(
-      (Object.entries(languages) as [Language, (typeof languages)[Language]][]).map(
-        ([language, value]) => ({ label: value.label, description: value.sourceFile, language }),
-      ),
-      { title: t('Problem language') },
-    );
-    if (!selected) return;
+    const language = this.defaultLanguage();
     const id = await vscode.window.showInputBox({
       title: t('Create local problem'),
       value: 'A',
@@ -227,8 +208,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const problem = await store.createProblem(
       id,
       title,
-      await this.template(selected.language, id),
-      selected.language,
+      await this.template(language, id),
+      language,
     );
     await store.saveTest(id, { id: 'sample-1', input: '2 3\n', expected: '5\n' });
     this.changes.fire(undefined);
@@ -298,18 +279,28 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       root: store.root,
       id: saved.id,
       contestId: saved.contestId,
+      collection: saved.collection,
     });
     await this.state();
   }
   async restoreLast() {
-    const last = this.context.workspaceState.get<{ root: string; id: string; contestId?: number }>(
-      'cfide.lastProblem',
-    );
+    const last = this.context.workspaceState.get<{
+      root: string;
+      id: string;
+      contestId?: number;
+      collection?: 'standalone';
+    }>('cfide.lastProblem');
     if (!last || typeof last !== 'object' || !vscode.workspace.isTrusted) return;
     const root = this.localStore().root;
-    const expected = last.contestId ? path.join(root, 'contests', String(last.contestId)) : root;
+    const expected = last.contestId
+      ? path.join(
+          root,
+          last.collection === 'standalone' ? 'codeforces-problems' : 'contests',
+          String(last.contestId),
+        )
+      : root;
     if (expected !== last.root) return;
-    const store = new FileWorkspaceStore(expected, last.contestId);
+    const store = new FileWorkspaceStore(expected, last.contestId, last.collection);
     const problem = (await store.listProblems()).find((p) => p.id === last.id);
     if (problem) await this.openInStore(store, problem);
   }
@@ -376,7 +367,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           return;
         }
         if (message.type === 'openLogin') {
-          void vscode.commands.executeCommand('cfide.openSettings');
+          void vscode.commands.executeCommand('cfide.openSettings', 'environment');
           return;
         }
         if (message.type === 'copySource') {
@@ -414,9 +405,15 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       this.disposables,
     );
   }
-  async refreshTests(contestId: number, index: string) {
+  async refreshTests(contestId: number, index: string, collection?: 'standalone') {
     const current = this.current;
-    if (!current || current.contestId !== contestId || current.id !== index) return;
+    if (
+      !current ||
+      current.contestId !== contestId ||
+      current.id !== index ||
+      current.collection !== collection
+    )
+      return;
     const tests = await this.store().listTests(index);
     if (this.current === current) this.send({ type: 'state', problem: current, tests });
   }
@@ -448,16 +445,17 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     if (document.isDirty && !(await document.save())) throw new Error('Could not save source.');
     return { ...active, source: await fs.readFile(uri.fsPath, 'utf8') };
   }
-  private ensureTarget(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+  private ensureTarget(target?: ProblemTarget) {
     if (
       target &&
       (target.id !== this.current?.id ||
         target.contestId !== this.current?.contestId ||
+        target.collection !== this.current?.collection ||
         target.language !== this.current?.language)
     )
       throw new Error('Problem or language changed. Retry from the updated toolbar.');
   }
-  async copySource(target: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+  async copySource(target: ProblemTarget) {
     this.ensureTarget(target);
     const { source, problem } = await this.snapshot();
     if (!problem.contestId) throw new Error(t('Only Codeforces problems can be submitted.'));
@@ -469,7 +467,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       ),
     );
   }
-  async submitSolution(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+  async submitSolution(target?: ProblemTarget) {
     this.ensureTarget(target);
     this.trust();
     if (this.submitting) return;
@@ -500,7 +498,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
       this.send({ type: 'submitting', submitting: false });
     }
   }
-  private async run(testId?: string, target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+  private async run(testId?: string, target?: ProblemTarget) {
     this.ensureTarget(target);
     this.trust();
     if (this.busy) throw new Error('A test run is already in progress.');

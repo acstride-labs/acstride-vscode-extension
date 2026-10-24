@@ -174,3 +174,14 @@ describe('selected source and automatic saving', () => {
     expect(run.mock.calls[0][0]).toBe(store.sourcePath('A', 'cpp'));
   });
 });
+
+it('rejects stale requests from an independently imported copy of the same CF problem', async () => {
+  const { controller, problem } = await fixture('cpp');
+  await expect(controller.submitSolution({ ...problem, collection: 'standalone' })).rejects.toThrow(
+    'changed',
+  );
+  await expect(controller.copySource({ ...problem, collection: 'standalone' })).rejects.toThrow(
+    'changed',
+  );
+  expect(mock.clipboard).not.toHaveBeenCalled();
+});

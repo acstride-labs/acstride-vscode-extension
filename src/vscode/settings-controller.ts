@@ -1,3 +1,6 @@
+import { AiSettings } from './ai-settings';
+import { AiClient } from '../infrastructure/ai/client';
+import type { AiState } from '../shared/ai-protocol';
 import * as vscode from 'vscode';
 import path from 'node:path';
 import { languages } from '../domain/languages';
@@ -14,6 +17,11 @@ import { webviewHtml } from './webview-html';
 import type { WorkspaceController } from './workspace-controller';
 
 export class SettingsController implements vscode.Disposable {
+  private ai: AiSettings;
+  private aiClient = new AiClient();
+  private aiResult?: AiState['result'];
+  private aiNotice?: string;
+  private aiAbort?: AbortController;
   private panel?: vscode.WebviewPanel;
   private disposables: vscode.Disposable[] = [];
   private scope: 'user' | 'workspace' = 'user';
@@ -24,14 +32,38 @@ export class SettingsController implements vscode.Disposable {
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
-  ) {}
+  ) {
+    this.ai = new AiSettings(context);
+  }
+  private async syncAccountHandle() {
+    const account = this.workspace.submissions?.accountState;
+    if (account?.status !== 'signedIn' || !account.handle) return;
+    const config = vscode.workspace.getConfiguration('cfide');
+    if (config.get('codeforces.handle') === account.handle) return;
+    const inspected = config.inspect('codeforces.handle');
+    await config.update(
+      'codeforces.handle',
+      account.handle,
+      inspected?.workspaceValue !== undefined
+        ? vscode.ConfigurationTarget.Workspace
+        : vscode.ConfigurationTarget.Global,
+    );
+  }
   register() {
+    void this.syncAccountHandle().catch((error) => {
+      this.error = String(error);
+    });
     const subscription = this.workspace.submissions?.onAccountChanged(() => {
-      void this.publish();
+      void this.syncAccountHandle()
+        .then(() => this.publish())
+        .catch((error) => {
+          this.error = String(error);
+          void this.publish();
+        });
     });
     if (subscription) this.disposables.push(subscription);
     this.disposables.push(
-      vscode.commands.registerCommand('cfide.openSettings', () => this.open()),
+      vscode.commands.registerCommand('cfide.openSettings', (tab?: string) => this.open(tab)),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (
           [
@@ -63,7 +95,7 @@ export class SettingsController implements vscode.Disposable {
       ),
     );
   }
-  private async open() {
+  private async open(tab?: string) {
     if (!this.panel) {
       this.panel = vscode.window.createWebviewPanel(
         'cfide.settings',
@@ -89,6 +121,7 @@ export class SettingsController implements vscode.Disposable {
       );
       this.panel.onDidDispose(
         () => {
+          this.aiAbort?.abort();
           this.panel = undefined;
         },
         null,
@@ -106,6 +139,8 @@ export class SettingsController implements vscode.Disposable {
       );
     } else this.panel.reveal(vscode.ViewColumn.One);
     await this.publish();
+    if (['environment', 'basic', 'coding', 'assistance'].includes(tab ?? ''))
+      void this.panel?.webview.postMessage({ type: 'settingsTab', tab });
     void this.workspace.submissions?.refreshAccount();
   }
   private async receive(raw: unknown) {
@@ -116,6 +151,10 @@ export class SettingsController implements vscode.Disposable {
       );
     const message = parsed.data;
     if (message.type === 'ready') return this.publish();
+    if (message.type === 'saveTranslationSettings') {
+      await this.ai.saveTranslationOptions(message.options);
+      return this.publish();
+    }
     if (this.busy) throw new Error('Settings operation in progress.');
     this.error = undefined;
     this.notice = undefined;
@@ -129,20 +168,58 @@ export class SettingsController implements vscode.Disposable {
     await this.publish();
     try {
       if (
+        message.type === 'saveAI' ||
+        message.type === 'testAI' ||
+        message.type === 'forgetAIKey'
+      ) {
+        this.aiNotice = undefined;
+        this.aiResult = undefined;
+        try {
+          if (message.type === 'saveAI') {
+            await this.ai.save(message.config, message.apiKey);
+            this.aiNotice = 'AI settings saved.';
+          } else if (message.type === 'forgetAIKey') {
+            await this.ai.forgetKey();
+            this.aiNotice = 'API key removed.';
+          } else {
+            this.aiAbort = new AbortController();
+            this.aiResult = { status: 'checking' };
+            await this.publish();
+            const key = message.apiKey || (await this.ai.key(message.config));
+            const reply = await this.aiClient.test(message.config, key, this.aiAbort.signal);
+            this.aiResult = { status: 'passed', message: reply };
+          }
+        } catch (error) {
+          this.aiResult = {
+            status: 'failed',
+            message: error instanceof Error ? error.message : String(error),
+          };
+        } finally {
+          this.aiAbort = undefined;
+        }
+      } else if (
         message.type === 'signIn' ||
         message.type === 'signOut' ||
         message.type === 'refreshAccount'
       ) {
         const submissions = this.workspace.submissions;
         if (!submissions) throw new Error(t('Submission client is unavailable.'));
-        if (message.type === 'signIn') await submissions.signIn();
-        else if (message.type === 'signOut') await submissions.signOut();
+        if (message.type === 'signIn') {
+          try {
+            await submissions.signIn();
+          } catch {
+            /* Shared account state displays login failures in the account card. */
+          }
+        } else if (message.type === 'signOut') await submissions.signOut();
         else await submissions.refreshAccount();
       } else if (message.type === 'setLocale') {
         await vscode.workspace
           .getConfiguration('cfide')
           .update('ui.language', message.locale, vscode.ConfigurationTarget.Global);
       } else if (message.type === 'saveSettings') {
+        const account = this.workspace.submissions?.accountState;
+        if (account?.status === 'signedIn' && account.handle)
+          message.values.handle = account.handle;
         if (!vscode.workspace.isTrusted)
           throw new Error('Trust this workspace before changing execution settings.');
         if (message.scope !== this.scope)
@@ -228,6 +305,8 @@ export class SettingsController implements vscode.Disposable {
         ];
       }),
     ) as SettingsValues;
+    const account = this.workspace.submissions?.accountState;
+    if (account?.status === 'signedIn' && account.handle) values.handle = account.handle;
     const defaultTemplates = { cpp: '', python: '' };
     const templatePreviews = { cpp: '', python: '' };
     const templateWarnings: SettingsState['templateWarnings'] = {};
@@ -253,6 +332,8 @@ export class SettingsController implements vscode.Disposable {
       }
     }
     const state: SettingsState = {
+      translationOptions: this.ai.translationOptions(),
+      ai: { ...(await this.ai.state()), result: this.aiResult, notice: this.aiNotice },
       account: this.workspace.submissions?.accountState ?? { status: 'signedOut' },
       locale: currentLocale(),
       preference: config.get<LocalePreference>('ui.language', 'auto'),
@@ -275,6 +356,7 @@ export class SettingsController implements vscode.Disposable {
     this.notice = undefined;
   }
   dispose() {
+    this.aiAbort?.abort();
     this.panel?.dispose();
     this.disposables.forEach((d) => d.dispose());
   }

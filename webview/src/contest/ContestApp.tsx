@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage, ContestViewState } from '../../../src/shared/contest-protocol';
-import {
-  submissionLabel,
-  maxDownloadAttempts,
-  problemAttemptState,
-} from '../../../src/domain/contest';
+import { submissionLabel } from '../../../src/domain/contest';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
 
 export function ContestApp() {
   const { locale, t } = useI18n();
   const [state, setState] = useState<ContestViewState>();
-  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings'>('prepare');
+  const [tab, setTab] = useState<'submissions' | 'rankings'>('rankings');
   const [search, setSearch] = useState('');
   const [clock, setClock] = useState(Date.now()),
     [offset, setOffset] = useState(0);
@@ -19,7 +15,8 @@ export function ContestApp() {
     const listener = (event: MessageEvent<ContestHostMessage>) => {
       if (event.data.type === 'contestState') {
         setState(event.data.state);
-        if (event.data.state.section) setTab(event.data.state.section);
+        if (event.data.state.section && event.data.state.section !== 'prepare')
+          setTab(event.data.state.section);
         setOffset(event.data.state.serverNow - Date.now());
       }
     };
@@ -50,7 +47,16 @@ export function ContestApp() {
     <main className="contest-center">
       <header className="center-header">
         <div>
-          <h1>{t('Your contest workspace')}</h1>
+          <h1>
+            {t('Your contest workspace')}{' '}
+            {contest && (
+              <span className="contest-time-label">
+                {contest.phase === 'FINISHED' || (countdown <= 0 && contest.phase !== 'BEFORE')
+                  ? t('FINISHED')
+                  : `${t(contest.phase === 'BEFORE' ? 'Starts in' : 'Remaining')} ${duration(countdown)}`}
+              </span>
+            )}
+          </h1>
         </div>
         <button disabled={disabled} onClick={() => send({ type: 'addContest' })}>
           ＋ {t('Add contest')}
@@ -108,21 +114,9 @@ export function ContestApp() {
                 {record.archived ? ' · ' + t('Archived') : ''}
               </p>
             </div>
-            <div className="countdown">
-              <small>
-                {t(
-                  contest.phase === 'FINISHED'
-                    ? 'Contest ended'
-                    : contest.startTimeSeconds && now < contest.startTimeSeconds * 1000
-                      ? 'Starts in'
-                      : 'Remaining',
-                )}
-              </small>
-              <strong>{duration(countdown)}</strong>
-            </div>
           </section>
           <nav className="tabs" aria-label={t('Contest sections')}>
-            {(['prepare', 'submissions', 'rankings'] as const).map((value) => (
+            {(['submissions', 'rankings'] as const).map((value) => (
               <button
                 className={tab === value ? '' : 'secondary'}
                 key={value}
@@ -133,7 +127,6 @@ export function ContestApp() {
               >
                 {t(
                   {
-                    prepare: 'Problems & preparation',
                     submissions: 'Public submissions',
                     rankings: 'Rankings',
                   }[value],
@@ -141,77 +134,6 @@ export function ContestApp() {
               </button>
             ))}
           </nav>
-          {tab === 'prepare' && (
-            <>
-              <div
-                className="contest-problem-list"
-                role="list"
-                aria-label={t('Problems & preparation')}
-              >
-                {record.problems.map((problem) => {
-                  const attempt = problemAttemptState(state.submissions, problem.index);
-                  const status = t(
-                    {
-                      untried: 'Not attempted',
-                      attempted: 'Attempted, not passed',
-                      passed: 'Passed',
-                    }[attempt],
-                  );
-                  return (
-                    <div role="listitem" key={problem.index}>
-                      <button
-                        className="contest-problem-row"
-                        disabled={disabled}
-                        title={`${status} · ${problem.index} · ${problem.name}`}
-                        onClick={() =>
-                          send({ type: 'openProblem', contestId: id, index: problem.index })
-                        }
-                      >
-                        <span
-                          className={`problem-attempt-icon ${attempt}`}
-                          role="img"
-                          aria-label={status}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.3"
-                            aria-hidden="true"
-                          >
-                            <circle cx="8" cy="8" r="6" />
-                            {attempt === 'passed' ? (
-                              <path d="m4.8 8 2.1 2.1 4.3-4.3" />
-                            ) : attempt === 'attempted' ? (
-                              <path d="m5.8 5.8 4.4 4.4m0-4.4-4.4 4.4" />
-                            ) : (
-                              <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
-                            )}
-                          </svg>
-                        </span>
-                        <span className="contest-problem-title">
-                          {problem.index} · {problem.name}
-                        </span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              {!record.problems.length && (
-                <p>
-                  {t(
-                    contest.phase === 'BEFORE'
-                      ? 'Problem names will appear when Codeforces releases them.'
-                      : record.retryCount >= maxDownloadAttempts
-                        ? 'Problem download failed after multiple attempts.'
-                        : 'Downloading problems, please wait…',
-                  )}
-                </p>
-              )}
-            </>
-          )}
           {tab === 'submissions' && (
             <>
               <div className="actions">

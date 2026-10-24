@@ -2,7 +2,6 @@
   "command.cfide.openSettings": "AC-Stride: 設定",
   "command.cfide.openContestCenter": "AC-Stride: コンテスト情報を開く",
   "command.cfide.addContest": "AC-Stride: Codeforces コンテストを追加",
-  "command.cfide.openContestProblem": "AC-Stride: コンテストの問題を開く",
   "command.cfide.switchLanguage": "AC-Stride: プログラミング言語を変更",
   "command.cfide.createProblem": "AC-Stride: ローカルの問題を作成",
   "command.cfide.openProblem": "AC-Stride: 問題を開く",
@@ -12,6 +11,8 @@
   "command.cfide.submitSolution": "AC-Stride: ワンクリック提出",
   "command.cfide.signIn": "AC-Stride: Codeforces にログイン",
   "command.cfide.signOut": "AC-Stride: Codeforces からログアウト",
+  "command.cfide.addCodeforcesProblem": "AC-Stride: Codeforces の問題をインポート",
+  "command.cfide.openCodeforcesProblem": "AC-Stride: Codeforces の問題を開く",
   "view.contests": "Codeforces コンテスト",
   "view.practice": "ローカル練習",
   "view.tests": "テスト",
@@ -30,5 +31,6 @@
   "setting.cfide.cpp.compiler": "C++ コンパイラーの実行ファイルまたは絶対パス。",
   "setting.cfide.cpp.args": "コンパイラー引数。シェルを介さずに渡されます。",
   "setting.cfide.run.timeoutMs": "テストごとの制限時間（ミリ秒）",
-  "setting.cfide.cpp.templatePath": "C++ テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。"
+  "setting.cfide.cpp.templatePath": "C++ テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
+  "setting.cfide.solution.defaultLanguage": "新規コンテスト、Codeforces の問題、ローカル練習の既定言語。"
 }

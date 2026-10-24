@@ -105,8 +105,8 @@ describe('multiple contest workspace', () => {
       repo.problems(1234).createProblem('B', 'Second', 'int main(){}'),
     ]);
     expect(await repo.problems(1234).listProblems()).toMatchObject([
-      { id: 'A', language: 'python' },
       { id: 'B', language: 'cpp' },
+      { id: 'A', language: 'python' },
     ]);
   });
   it('isolates identical indices between contests and preserves both languages/custom tests on reimport', async () => {

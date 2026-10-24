@@ -129,7 +129,7 @@ describe('configurable localization', () => {
       manifest.contributes.menus['view/title'].find(
         (c: { command: string }) => c.command === 'cfide.openSettings',
       ).group,
-    ).toBe('navigation@3');
+    ).toBe('navigation');
     expect(manifest.contributes.configuration.properties['cfide.ui.language'].scope).toBe(
       'application',
     );

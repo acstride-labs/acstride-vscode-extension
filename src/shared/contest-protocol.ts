@@ -10,8 +10,17 @@ import {
 import type { Language } from '../domain/models';
 export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
+  z
+    .object({
+      type: z.literal('translateStatement'),
+      contestId: contestIdSchema,
+      index: problemIndexSchema,
+      collection: z.enum(['contest', 'standalone']).optional(),
+    })
+    .strict(),
   z.object({ type: z.literal('addContest') }),
   z.object({ type: z.literal('openSettings') }),
+  z.object({ type: z.literal('openContestDetails'), contestId: contestIdSchema }).strict(),
   z
     .object({
       type: z.literal('contestSection'),
@@ -24,6 +33,7 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('refreshStandings'), contestId: contestIdSchema }),
   z.object({
     type: z.literal('openProblem'),
+    collection: z.enum(['contest', 'standalone']).optional(),
     contestId: contestIdSchema,
     index: problemIndexSchema,
   }),
@@ -53,8 +63,16 @@ export interface ContestViewState {
 }
 export type ContestHostMessage =
   | { type: 'contestState'; state: ContestViewState }
+  | { type: 'contestOverview' }
+  | {
+      type: 'translation';
+      status: 'pending' | 'ready' | 'failed' | 'disabled';
+      html?: string;
+      error?: string;
+    }
   | {
       type: 'statement';
+      collection?: 'contest' | 'standalone';
       contestId: number;
       index: string;
       statement: Statement;

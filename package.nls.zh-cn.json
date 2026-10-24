@@ -2,7 +2,6 @@
   "command.cfide.openSettings": "AC-Stride: 设置",
   "command.cfide.openContestCenter": "AC-Stride: 打开比赛信息",
   "command.cfide.addContest": "AC-Stride: 添加 Codeforces 比赛",
-  "command.cfide.openContestProblem": "AC-Stride: 打开比赛题目",
   "command.cfide.switchLanguage": "AC-Stride: 切换编程语言",
   "command.cfide.createProblem": "AC-Stride: 创建本地题目",
   "command.cfide.openProblem": "AC-Stride: 打开题目",
@@ -12,6 +11,8 @@
   "command.cfide.submitSolution": "AC-Stride: 一键提交",
   "command.cfide.signIn": "AC-Stride: 登录 Codeforces",
   "command.cfide.signOut": "AC-Stride: 退出 Codeforces 登录",
+  "command.cfide.addCodeforcesProblem": "AC-Stride: 导入 Codeforces 题目",
+  "command.cfide.openCodeforcesProblem": "AC-Stride: 打开 Codeforces 题目",
   "view.contests": "Codeforces 比赛",
   "view.practice": "本地练习",
   "view.tests": "测试",
@@ -30,5 +31,6 @@
   "setting.cfide.cpp.compiler": "C++ 编译器可执行文件或绝对路径。",
   "setting.cfide.cpp.args": "编译器参数，不经过 Shell 执行。",
   "setting.cfide.run.timeoutMs": "单个用例时限（毫秒）",
-  "setting.cfide.cpp.templatePath": "可选的 C++ 模板绝对路径，支持 ${PROBLEM_ID}。"
+  "setting.cfide.cpp.templatePath": "可选的 C++ 模板绝对路径，支持 ${PROBLEM_ID}。",
+  "setting.cfide.solution.defaultLanguage": "新导入比赛、Codeforces 题目和本地练习所用的默认编程语言。"
 }

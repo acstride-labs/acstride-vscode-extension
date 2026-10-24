@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.12.5",
+  "version": "0.13.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,8 @@
   ],
   "activationEvents": [
     "workspaceContains:.cfide/workspace.json",
-    "workspaceContains:.cfide/contests.json"
+    "workspaceContains:.cfide/contests.json",
+    "workspaceContains:.cfide/standalone.json"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -58,7 +59,8 @@
       },
       {
         "command": "cfide.createProblem",
-        "title": "%command.cfide.createProblem%"
+        "title": "%command.cfide.createProblem%",
+        "icon": "$(add)"
       },
       {
         "command": "cfide.openProblem",
@@ -88,6 +90,15 @@
       {
         "command": "cfide.signOut",
         "title": "%command.cfide.signOut%"
+      },
+      {
+        "command": "cfide.addCodeforcesProblem",
+        "title": "%command.cfide.addCodeforcesProblem%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "cfide.openCodeforcesProblem",
+        "title": "%command.cfide.openCodeforcesProblem%"
       }
     ],
     "viewsContainers": {
@@ -103,24 +114,11 @@
       "cfide": [
         {
           "id": "cfide.contests",
-          "name": "%view.contests%"
-        },
-        {
-          "id": "cfide.problems",
-          "name": "%view.practice%"
+          "name": "AC-Stride",
+          "canToggleVisibility": false
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "cfide.contests",
-        "contents": "%welcome.contests%"
-      },
-      {
-        "view": "cfide.problems",
-        "contents": "%welcome.practice%"
-      }
-    ],
     "menus": {
       "editor/title": [
         {
@@ -131,23 +129,26 @@
       ],
       "view/title": [
         {
-          "command": "cfide.addContest",
+          "command": "cfide.openSettings",
           "when": "view == cfide.contests",
-          "group": "navigation@1"
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cfide.addContest",
+          "when": "view == cfide.contests && viewItem == cfide.contestGroup",
+          "group": "inline"
         },
         {
-          "command": "cfide.openSettings",
-          "when": "view == cfide.contests || view == cfide.problems",
-          "group": "navigation@3"
+          "command": "cfide.addCodeforcesProblem",
+          "when": "view == cfide.contests && viewItem == cfide.standaloneGroup",
+          "group": "inline"
         },
         {
           "command": "cfide.createProblem",
-          "when": "view == cfide.problems",
-          "group": "navigation"
-        },
-        {
-          "command": "cfide.refresh",
-          "when": "view == cfide.problems"
+          "when": "view == cfide.contests && viewItem == cfide.localGroup",
+          "group": "inline"
         }
       ]
     },
@@ -250,6 +251,15 @@
           "default": "",
           "scope": "machine-overridable",
           "description": "%setting.cfide.cpp.templatePath%"
+        },
+        "cfide.solution.defaultLanguage": {
+          "type": "string",
+          "enum": [
+            "cpp",
+            "python"
+          ],
+          "default": "cpp",
+          "description": "%setting.cfide.solution.defaultLanguage%"
         }
       }
     }

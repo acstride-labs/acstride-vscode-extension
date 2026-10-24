@@ -3,7 +3,6 @@
     "cfide.openSettings": "Settings",
     "cfide.openContestCenter": "Open Contest Center",
     "cfide.addContest": "Add Codeforces contest",
-    "cfide.openContestProblem": "Open Contest Problem",
     "cfide.switchLanguage": "Switch Solution Language",
     "cfide.createProblem": "Create Local Problem",
     "cfide.openProblem": "Open Problem",
@@ -12,7 +11,9 @@
     "cfide.refresh": "Refresh Problems",
     "cfide.submitSolution": "One-click submit",
     "cfide.signIn": "Sign in to Codeforces",
-    "cfide.signOut": "Sign out of Codeforces"
+    "cfide.signOut": "Sign out of Codeforces",
+    "cfide.addCodeforcesProblem": "Import Codeforces problem",
+    "cfide.openCodeforcesProblem": "Open Codeforces problem"
   },
   "settings": {
     "cfide.cpp.templateCode": "Initial C++ code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.",
@@ -25,6 +26,7 @@
     "cfide.cpp.compiler": "C++ compiler executable or absolute path.",
     "cfide.cpp.args": "Compiler arguments, passed without a shell.",
     "cfide.run.timeoutMs": "Time limit per test (ms)",
-    "cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+    "cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}.",
+    "cfide.solution.defaultLanguage": "Default programming language for newly imported contests, Codeforces problems and local practice."
   }
 }

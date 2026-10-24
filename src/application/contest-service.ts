@@ -26,11 +26,30 @@ export class ContestService {
     private reader: ProblemReader,
     private template: (language: Language, index: string) => Promise<string>,
     private changed: (id: number) => void = () => {},
+    private downloaded: (id: number, index: string, statement: Statement) => void = () => {},
   ) {}
   async add(id: number, language: Language) {
     const record = await this.repository.add(await this.api.contest(id), language);
     this.changed(id);
     return record;
+  }
+  async addProblem(id: number, index: string, language: Language) {
+    if (this.repository.collection !== 'standalone')
+      throw new Error('Single problems require a standalone repository.');
+    const existingRecord = (await this.repository.list()).find((r) => r.contest.id === id);
+    const record =
+      existingRecord ?? (await this.repository.add(await this.api.contest(id), language));
+    if (record.contest.phase === 'BEFORE')
+      throw new Error('This problem has not been released by Codeforces.');
+    await this.repository.update(id, (r) => {
+      if (!r.problems.some((p) => p.index === index))
+        r.problems.push({ index, name: index, ready: false, downloadAttempts: 0, nextRetryAt: 0 });
+    });
+    const store = this.repository.problems(id);
+    const existing = (await store.listProblems()).find((p) => p.id === index);
+    if (!existing)
+      await store.createProblem(index, index, await this.template(language, index), language);
+    this.changed(id);
   }
   async ensureSolution(id: number, index: string) {
     const record = await this.repository.get(id);
@@ -103,7 +122,10 @@ export class ContestService {
       )
         return;
       // A known problem can download independently of an unavailable leaderboard.
-      if (!onlyIndex || !record.problems.some((p) => p.index === onlyIndex)) {
+      if (
+        this.repository.collection !== 'standalone' &&
+        (!onlyIndex || !record.problems.some((p) => p.index === onlyIndex))
+      ) {
         const board = await this.api.standings(id);
         await this.repository.saveStandings(id, board);
         await this.repository.update(id, (r) => {
@@ -138,8 +160,18 @@ export class ContestService {
           const parsed = await this.reader.problem(id, problem.index, this.repository.assets(id));
           if (this.stopped) return;
           const store = this.repository.problems(id);
+          if (this.repository.collection === 'standalone') {
+            const title =
+              parsed.statement.title.replace(/^[A-Za-z][0-9]*[.．]\s*/, '').slice(0, 200) ||
+              problem.index;
+            await store.renameProblem(problem.index, title);
+            await this.repository.update(id, (r) => {
+              r.problems.find((p) => p.index === problem.index)!.name = title;
+            });
+          }
           await store.importSamples(problem.index, parsed.samples);
           await this.repository.saveStatement(id, problem.index, parsed.statement);
+          this.downloaded(id, problem.index, parsed.statement);
           await this.repository.update(id, (r) => {
             const p = r.problems.find((p) => p.index === problem.index)!;
             p.ready = true;
@@ -222,7 +254,8 @@ export class ContestService {
         const discover =
           (!record.problems.length && record.retryCount < maxDownloadAttempts) ||
           (refresh && record.contest.phase === 'CODING');
-        if (discover) await this.sync(record.contest.id);
+        if (discover && this.repository.collection !== 'standalone')
+          await this.sync(record.contest.id);
         else
           for (const problem of record.problems) {
             if (

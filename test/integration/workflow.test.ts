@@ -27,7 +27,9 @@ describe('local C++ workflow', () => {
     await store.saveTest('A', { id: 'custom-1', input: '2 3', expected: '6' });
     await store.saveTest('A', { id: 'run-only', input: '4 7' });
     const restored = new FileWorkspaceStore(store.root);
-    expect(await restored.listProblems()).toEqual([{ id: 'A', title: 'Sum', language: 'cpp' }]);
+    expect(await restored.listProblems()).toEqual([
+      { id: 'A', title: 'Sum', language: 'cpp', importedAt: expect.any(Number) },
+    ]);
     const result = await new RunTests(restored, new CppRunner()).execute(
       'A',
       { command: process.env.CXX || 'g++', args: ['-std=c++20'], timeoutMs: 1000 },

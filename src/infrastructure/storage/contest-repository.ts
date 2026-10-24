@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { importTimestamp } from './import-order';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -21,17 +22,35 @@ const registrySchema = z.object({
 });
 export class ContestRepository {
   private writes: Promise<unknown> = Promise.resolve();
-  constructor(readonly root: string) {}
+  constructor(
+    readonly root: string,
+    readonly collection: 'contest' | 'standalone' = 'contest',
+  ) {}
+  private registryPath() {
+    return path.join(
+      this.root,
+      '.cfide',
+      this.collection === 'standalone' ? 'standalone.json' : 'contests.json',
+    );
+  }
   private exclusive<T>(fn: () => Promise<T>): Promise<T> {
     const next = this.writes.then(fn);
     this.writes = next.catch(() => {});
     return next;
   }
   contestRoot(id: number) {
-    return path.join(this.root, 'contests', String(contestIdSchema.parse(id)));
+    return path.join(
+      this.root,
+      this.collection === 'standalone' ? 'codeforces-problems' : 'contests',
+      String(contestIdSchema.parse(id)),
+    );
   }
   problems(id: number) {
-    return new FileWorkspaceStore(this.contestRoot(id), id);
+    return new FileWorkspaceStore(
+      this.contestRoot(id),
+      id,
+      this.collection === 'standalone' ? 'standalone' : undefined,
+    );
   }
   assets(id: number) {
     return this.metadata(id, 'statements/assets');
@@ -55,7 +74,7 @@ export class ContestRepository {
   }
   async list(): Promise<ContestRecord[]> {
     const registry = registrySchema.parse(
-      await this.read(path.join(this.root, '.cfide', 'contests.json'), {
+      await this.read(this.registryPath(), {
         schemaVersion: 1,
         contests: [],
       }),
@@ -65,6 +84,10 @@ export class ContestRepository {
   async get(id: number): Promise<ContestRecord> {
     const saved = await this.read<unknown>(this.metadata(id, 'contest.json'), null);
     const record = contestRecordSchema.parse(saved);
+    if (record.importedAt === undefined) {
+      const stat = await fs.stat(this.contestRoot(id)).catch(() => undefined);
+      record.importedAt = stat?.birthtimeMs || stat?.mtimeMs || record.updatedAt;
+    }
     // Legacy per-contest retry counters must not exhaust the new per-problem cycle.
     if (saved && typeof saved === 'object' && 'autoDownload' in saved) {
       record.retryCount = 0;
@@ -84,7 +107,7 @@ export class ContestRepository {
   }
   async add(contest: Contest, language: Language) {
     return this.exclusive(async () => {
-      const file = path.join(this.root, '.cfide', 'contests.json');
+      const file = this.registryPath();
       const registry = registrySchema.parse(
         await this.read(file, { schemaVersion: 1, contests: [] }),
       );
@@ -95,6 +118,7 @@ export class ContestRepository {
         defaultLanguage: language,
         archived: false,
         problems: [],
+        importedAt: importTimestamp(),
         updatedAt: Date.now(),
         retryCount: 0,
         nextRetryAt: 0,

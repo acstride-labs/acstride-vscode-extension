@@ -2,7 +2,6 @@
   "command.cfide.openSettings": "AC-Stride: Settings",
   "command.cfide.openContestCenter": "AC-Stride: Open contest info",
   "command.cfide.addContest": "AC-Stride: Add Codeforces contest",
-  "command.cfide.openContestProblem": "AC-Stride: Open Contest Problem",
   "command.cfide.switchLanguage": "AC-Stride: Switch Solution Language",
   "command.cfide.createProblem": "AC-Stride: Create Local Problem",
   "command.cfide.openProblem": "AC-Stride: Open Problem",
@@ -12,6 +11,8 @@
   "command.cfide.submitSolution": "AC-Stride: One-click submit",
   "command.cfide.signIn": "AC-Stride: Sign in to Codeforces",
   "command.cfide.signOut": "AC-Stride: Sign out of Codeforces",
+  "command.cfide.addCodeforcesProblem": "AC-Stride: Import Codeforces problem",
+  "command.cfide.openCodeforcesProblem": "AC-Stride: Open Codeforces problem",
   "view.contests": "Codeforces Contests",
   "view.practice": "Local Practice",
   "view.tests": "Tests",
@@ -30,5 +31,6 @@
   "setting.cfide.cpp.compiler": "C++ compiler executable or absolute path.",
   "setting.cfide.cpp.args": "Compiler arguments, passed without a shell.",
   "setting.cfide.run.timeoutMs": "Time limit per test (ms)",
-  "setting.cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}."
+  "setting.cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}.",
+  "setting.cfide.solution.defaultLanguage": "Default programming language for newly imported contests, Codeforces problems and local practice."
 }

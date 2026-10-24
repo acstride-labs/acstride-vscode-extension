@@ -4,7 +4,10 @@ export interface Problem {
   title: string;
   language: Language;
   contestId?: number;
+  collection?: 'standalone';
+  importedAt?: number;
 }
+export type ProblemTarget = Pick<Problem, 'id' | 'language' | 'contestId' | 'collection'>;
 export interface TestCase {
   id: string;
   input: string;

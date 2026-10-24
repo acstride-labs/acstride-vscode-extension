@@ -1,9 +1,11 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { importTimestamp } from './import-order';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { WorkspaceStore } from '../../application/ports/workspace-store';
 import type { Language, Problem, TestCase } from '../../domain/models';
+import { newestImportedFirst } from '../../domain/contest';
 import { languages } from '../../domain/languages';
 const identifier = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/);
 const manifestSchema = z.object({
@@ -14,6 +16,7 @@ const manifestSchema = z.object({
       id: identifier,
       title: z.string().max(200),
       language: z.enum(['cpp', 'python']).default('cpp'),
+      importedAt: z.number().optional(),
     }),
   ),
 });
@@ -37,6 +40,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
   constructor(
     readonly root: string,
     readonly contestId?: number,
+    readonly collection?: 'standalone',
   ) {}
   private manifestPath() {
     return path.join(this.root, '.cfide', 'workspace.json');
@@ -64,10 +68,38 @@ export class FileWorkspaceStore implements WorkspaceStore {
     await fs.writeFile(temp, value, 'utf8');
     await fs.rename(temp, file);
   }
+  private decorate(problem: {
+    id: string;
+    title: string;
+    language: Language;
+    importedAt?: number;
+  }): Problem {
+    return {
+      ...problem,
+      ...(this.contestId ? { contestId: this.contestId } : {}),
+      ...(this.collection ? { collection: this.collection } : {}),
+    };
+  }
   async listProblems(): Promise<Problem[]> {
-    return (await this.manifest()).problems.map((p) =>
-      this.contestId ? { ...p, contestId: this.contestId } : p,
+    const problems = await Promise.all(
+      (await this.manifest()).problems.map(async (problem) => {
+        if (problem.importedAt === undefined) {
+          const stat = await fs.stat(path.join(this.root, problem.id)).catch(() => undefined);
+          problem.importedAt = stat?.birthtimeMs || stat?.mtimeMs || 0;
+        }
+        return this.decorate(problem);
+      }),
     );
+    return newestImportedFirst(problems);
+  }
+  async renameProblem(id: string, title: string) {
+    await this.exclusive(async () => {
+      const manifest = await this.manifest();
+      const problem = manifest.problems.find((p) => p.id === id);
+      if (!problem) throw new Error('Unknown problem.');
+      problem.title = z.string().min(1).max(200).parse(title);
+      await this.atomic(this.manifestPath(), JSON.stringify(manifest, null, 2));
+    });
   }
   async createProblem(id: string, title: string, source: string, language: Language = 'cpp') {
     return this.exclusive(async () => {
@@ -81,10 +113,13 @@ export class FileWorkspaceStore implements WorkspaceStore {
       await fs.mkdir(folder); // Do not adopt or overwrite an existing user directory.
       if (this.contestId) await fs.mkdir(path.join(folder, 'solutions'));
       await fs.writeFile(this.sourcePath(id, language), source, { flag: 'wx' });
-      const problem = { id, title: z.string().min(1).max(200).parse(title), language };
+      const importedAt = importTimestamp(
+        Math.max(0, ...manifest.problems.map((p) => p.importedAt ?? 0)),
+      );
+      const problem = { id, title: z.string().min(1).max(200).parse(title), language, importedAt };
       manifest.problems.push(problem);
       await this.atomic(this.manifestPath(), JSON.stringify(manifest, null, 2));
-      return this.contestId ? { ...problem, contestId: this.contestId } : problem;
+      return this.decorate(problem);
     });
   }
   async selectLanguage(id: string, language: Language, template: string) {
@@ -100,7 +135,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
       }
       problem.language = language;
       await this.atomic(this.manifestPath(), JSON.stringify(manifest, null, 2));
-      return this.contestId ? { ...problem, contestId: this.contestId } : problem;
+      return this.decorate(problem);
     });
   }
   private testsPath(id: string, testId?: string) {
