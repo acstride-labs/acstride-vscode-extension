@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.2
+
+- Show ranking and submission refresh progress and refresh notices beside their refresh controls instead of above the contest heading. Add busy indicators, including the problem rail refresh, with reduced-motion support.
+
 ## 0.15.1
 
 - Color contest problem buttons green for accepted submissions and red for attempted problems without acceptance. Add a submission refresh action below the last problem, using the configured tracking handle.

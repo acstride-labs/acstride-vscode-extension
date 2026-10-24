@@ -52,6 +52,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private rankMode: 'all' | 'nearby' | 'search' = 'all';
   private rankSearch = '';
   private busy?: string;
+  private refreshing?: 'submissions' | 'rankings';
   private errorMessage?: string;
   private section: 'prepare' | 'submissions' | 'rankings' = 'prepare';
   private backgroundErrors = new Map<string, string>();
@@ -479,12 +480,20 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (message.type === 'openProblem')
       return this.openProblem(message.contestId, message.index, message.collection ?? 'contest');
     if (message.type === 'refreshStatus')
-      return this.task(t('Refreshing submissions…'), () => this.refreshStatus(message.contestId));
+      return this.task(
+        t('Refreshing submissions…'),
+        () => this.refreshStatus(message.contestId),
+        'submissions',
+      );
     if (message.type === 'refreshStandings')
-      return this.task(t('Refreshing official rankings…'), async () => {
-        await service.refreshBoard(message.contestId);
-        this.backgroundErrors.delete(`${message.contestId}/rankings`);
-      });
+      return this.task(
+        t('Refreshing official rankings…'),
+        async () => {
+          await service.refreshBoard(message.contestId);
+          this.backgroundErrors.delete(`${message.contestId}/rankings`);
+        },
+        'rankings',
+      );
   }
   private async openProblem(
     id: number,
@@ -860,6 +869,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         rankingsUpdatedAt: board?.fetchedAt ?? 0,
         rankMode: this.rankMode,
         busy: this.busy,
+        refreshing: this.refreshing,
         error: this.errorMessage,
         serverNow: Date.now(),
       };
@@ -872,15 +882,21 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.report(error, false);
     }
   }
-  private async task(label: string, fn: () => Promise<unknown>) {
+  private async task(
+    label: string,
+    fn: () => Promise<unknown>,
+    refreshing?: 'submissions' | 'rankings',
+  ) {
     if (this.busy) throw new Error('Another contest operation is in progress.');
     this.busy = label;
+    this.refreshing = refreshing;
     this.errorMessage = undefined;
     await this.publish();
     try {
       await fn();
     } finally {
       this.busy = undefined;
+      this.refreshing = undefined;
       await this.publish();
     }
   }

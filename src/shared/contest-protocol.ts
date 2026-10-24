@@ -54,6 +54,7 @@ export interface ContestViewState {
   rankTotal: number;
   rankMode: 'all' | 'nearby' | 'search';
   busy?: string;
+  refreshing?: 'submissions' | 'rankings';
   error?: string;
   refreshNotice?: string;
   serverNow: number;

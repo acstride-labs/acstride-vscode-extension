@@ -1,4 +1,4 @@
-import { RefreshButton } from './RefreshButton';
+import { RefreshButton, RefreshFeedback } from './RefreshButton';
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage, ContestViewState } from '../../../src/shared/contest-protocol';
 import { submissionLabel } from '../../../src/domain/contest';
@@ -34,6 +34,8 @@ export function ContestApp() {
   const now = clock + offset,
     id = state?.selectedId,
     disabled = !!state?.busy;
+  const refreshingSubmissions = state?.refreshing === 'submissions';
+  const refreshingRankings = state?.refreshing === 'rankings';
   const countdown = contest?.startTimeSeconds
     ? (contest.startTimeSeconds * 1000 > now
         ? contest.startTimeSeconds * 1000
@@ -51,12 +53,9 @@ export function ContestApp() {
           {t(state.error)}
         </pre>
       )}
-      {state?.refreshNotice && (
-        <p className="refresh-notice" role="status">
-          {t(state.refreshNotice)}
-        </p>
+      {state?.busy && !refreshingSubmissions && !refreshingRankings && (
+        <p role="status">{t(state.busy)}</p>
       )}
-      {state?.busy && <p role="status">{t(state.busy)}</p>}
       {!record && (
         <section className="card">
           <h2>{t('Start with a contest link')}</h2>
@@ -117,8 +116,13 @@ export function ContestApp() {
                 </small>
                 <RefreshButton
                   label={t('Refresh submissions')}
+                  busy={refreshingSubmissions}
                   disabled={disabled || !state.watchHandle}
                   onClick={() => send({ type: 'refreshStatus', contestId: id })}
+                />
+                <RefreshFeedback
+                  message={refreshingSubmissions ? t(state.busy!) : undefined}
+                  notice={state.refreshNotice ? t(state.refreshNotice) : undefined}
                 />
               </div>
               <div className="table-scroll">
@@ -197,8 +201,13 @@ export function ContestApp() {
                 </span>
                 <RefreshButton
                   label={t('Refresh rankings')}
+                  busy={refreshingRankings}
                   disabled={disabled}
                   onClick={() => send({ type: 'refreshStandings', contestId: id })}
+                />
+                <RefreshFeedback
+                  message={refreshingRankings ? t(state.busy!) : undefined}
+                  notice={state.refreshNotice ? t(state.refreshNotice) : undefined}
                 />
               </p>
               <div className="table-scroll">

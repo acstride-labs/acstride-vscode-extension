@@ -89,3 +89,26 @@ it('keeps background timeout notices scoped to their section and clears them aft
   await host.poll();
   expect(host.backgroundErrors.has('2261/rankings')).toBe(false);
 });
+
+it('keeps refresh identity independent of translated labels and clears it after failure', async () => {
+  const controller = Object.create(ContestController.prototype) as any;
+  const snapshots: unknown[] = [];
+  controller.publish = async () =>
+    snapshots.push({ busy: controller.busy, refreshing: controller.refreshing });
+  await controller.task('正在刷新官方排名…', async () => {}, 'rankings');
+  expect(snapshots).toEqual([
+    { busy: '正在刷新官方排名…', refreshing: 'rankings' },
+    { busy: undefined, refreshing: undefined },
+  ]);
+  await expect(
+    controller.task(
+      '正在刷新提交记录…',
+      async () => {
+        throw new Error('timeout');
+      },
+      'submissions',
+    ),
+  ).rejects.toThrow('timeout');
+  expect(controller.refreshing).toBeUndefined();
+  expect(controller.busy).toBeUndefined();
+});

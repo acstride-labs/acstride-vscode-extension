@@ -62,7 +62,12 @@ export function ContestPage() {
         ))}
         {record && (
           <RefreshButton
-            label={t('Refresh submissions')}
+            label={t(
+              state?.refreshing === 'submissions'
+                ? (state.busy ?? 'Refreshing submissions…')
+                : 'Refresh submissions',
+            )}
+            busy={state?.refreshing === 'submissions'}
             disabled={!!state?.busy || !state?.watchHandle}
             onClick={() => send({ type: 'refreshStatus', contestId: record.contest.id })}
           />
