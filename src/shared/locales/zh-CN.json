@@ -313,5 +313,14 @@
   "Submission result is being verified. Do not submit again.": "正在核对提交结果，请勿重复提交。",
   "Codeforces {problem}: {verdict} (#{submissionId})": "Codeforces {problem}：{verdict}（#{submissionId}）",
   "Submission client is unavailable.": "提交客户端不可用。",
-  "Source changed while preparing submission. Save and try again.": "准备提交期间代码发生了变化，请保存后重试。"
+  "Source changed while preparing submission. Save and try again.": "准备提交期间代码发生了变化，请保存后重试。",
+  "Copy code and open submission": "复制代码并跳转提交",
+  "Sign in on the Settings page to enable one-click submission.": "请先在设置页面登录后使用一键提交。",
+  "Go to sign in": "去登录",
+  "Codeforces account": "Codeforces 账号",
+  "Checking Codeforces login…": "正在检查 Codeforces 登录状态…",
+  "Signed in as {handle}": "已登录：{handle}",
+  "Not signed in": "未登录",
+  "Refresh login status": "刷新登录状态",
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "登录后可使用一键提交。网站验证可能导致登录失败，仍可复制代码并前往官网提交。"
 }

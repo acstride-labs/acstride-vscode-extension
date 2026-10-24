@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { HostMessage, WebviewRequest } from '../../src/shared/protocol';
+import type { AccountState, HostMessage, WebviewRequest } from '../../src/shared/protocol';
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
 import { completeResults, resultTone, retainResults } from './test-state';
 import { send } from './bridge';
@@ -10,6 +10,7 @@ import { SettingsApp } from './settings/SettingsApp';
 import { useI18n } from './i18n';
 import './styles.css';
 function App() {
+  const [account, setAccount] = useState<AccountState>({ status: 'checking' });
   const [submitting, setSubmitting] = useState(false);
   const { t } = useI18n();
   const [problem, setProblem] = useState<Problem>();
@@ -35,6 +36,10 @@ function App() {
   useEffect(() => {
     const receive = (event: MessageEvent<HostMessage>) => {
       const m = event.data;
+      if (m.type === 'accountState') {
+        setAccount(m.account);
+        return;
+      }
       if (m.type === 'submitting') {
         setSubmitting(m.submitting);
         return;
@@ -119,14 +124,44 @@ function App() {
           ▶ {t('Run all tests')}
         </button>
         {problem?.contestId && (
-          <button
-            className="secondary"
-            disabled={running || submitting}
-            title={t('One-click submit')}
-            onClick={() => send({ type: 'submitSource', target: problem })}
-          >
-            {t(submitting ? 'Preparing submission…' : 'One-click submit')}
-          </button>
+          <>
+            <button
+              className="secondary"
+              disabled={submitting}
+              onClick={() => send({ type: 'copySource', target: problem })}
+            >
+              {t('Copy code and open submission')}
+            </button>
+            <span
+              className="submission-action"
+              tabIndex={account.status !== 'signedIn' ? 0 : undefined}
+              title={
+                account.status === 'signedIn'
+                  ? t('One-click submit')
+                  : t('Sign in on the Settings page to enable one-click submission.')
+              }
+            >
+              <button
+                className="secondary"
+                disabled={running || submitting || account.status !== 'signedIn'}
+                onClick={() => send({ type: 'submitSource', target: problem })}
+              >
+                {t(submitting ? 'Preparing submission…' : 'One-click submit')}
+              </button>
+            </span>
+            {account.status !== 'signedIn' && (
+              <span className="submission-login-hint">
+                {t(
+                  account.status === 'checking'
+                    ? 'Checking Codeforces login…'
+                    : 'Sign in on the Settings page to enable one-click submission.',
+                )}{' '}
+                <button className="text-link" onClick={() => send({ type: 'openLogin' })}>
+                  {t('Go to sign in')}
+                </button>
+              </span>
+            )}
+          </>
         )}
         {running && (
           <button className="secondary" onClick={() => send({ type: 'stop' })}>

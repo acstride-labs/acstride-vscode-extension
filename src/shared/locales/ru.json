@@ -313,5 +313,14 @@
   "Submission result is being verified. Do not submit again.": "Результат отправки проверяется. Не отправляйте повторно.",
   "Codeforces {problem}: {verdict} (#{submissionId})": "Codeforces {problem}: {verdict} (#{submissionId})",
   "Submission client is unavailable.": "Клиент отправки недоступен.",
-  "Source changed while preparing submission. Save and try again.": "Код изменился во время подготовки отправки. Сохраните и повторите."
+  "Source changed while preparing submission. Save and try again.": "Код изменился во время подготовки отправки. Сохраните и повторите.",
+  "Copy code and open submission": "Копировать код и открыть отправку",
+  "Sign in on the Settings page to enable one-click submission.": "Войдите в настройках для отправки одним нажатием.",
+  "Go to sign in": "Войти",
+  "Codeforces account": "Аккаунт Codeforces",
+  "Checking Codeforces login…": "Проверка входа в Codeforces…",
+  "Signed in as {handle}": "Выполнен вход: {handle}",
+  "Not signed in": "Вход не выполнен",
+  "Refresh login status": "Обновить статус входа",
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "Войдите для отправки одним нажатием. Проверка сайта может помешать входу; код можно скопировать и отправить на Codeforces."
 }

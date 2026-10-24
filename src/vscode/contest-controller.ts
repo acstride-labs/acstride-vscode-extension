@@ -74,6 +74,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
     });
     const submissions = new SubmissionController(context, this.cfTool);
+    workspace.submissions = submissions;
+    this.disposables.push(submissions.onAccountChanged(() => workspace.publishAccount()));
     workspace.submitHandler = (snapshot) => submissions.submit(snapshot);
     this.disposables.push(
       submissions,

@@ -49,6 +49,51 @@ export function SettingsApp() {
           <h1>{t('Settings')}</h1>
         </div>
       </header>
+      <section className="card settings-section" id="codeforces-account">
+        <h2>{t('Codeforces account')}</h2>
+        <p role="status">
+          {!state || state.account.status === 'checking'
+            ? t('Checking Codeforces login…')
+            : state.account.status === 'signedIn'
+              ? t('Signed in as {handle}', { handle: state.account.handle ?? '' })
+              : t('Not signed in')}
+        </p>
+        {state?.account.error && (
+          <p className="error" role="alert">
+            {t(state.account.error)}
+          </p>
+        )}
+        <div className="actions">
+          {state?.account.status === 'signedIn' ? (
+            <button
+              className="secondary"
+              disabled={disabled}
+              onClick={() => send({ type: 'signOut' })}
+            >
+              {t('Sign out of Codeforces')}
+            </button>
+          ) : (
+            <button
+              disabled={disabled || state?.account.status === 'checking'}
+              onClick={() => send({ type: 'signIn' })}
+            >
+              {t('Sign in to Codeforces')}
+            </button>
+          )}
+          <button
+            className="secondary"
+            disabled={disabled || state?.account.status === 'checking'}
+            onClick={() => send({ type: 'refreshAccount' })}
+          >
+            {t('Refresh login status')}
+          </button>
+        </div>
+        <small>
+          {t(
+            'Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.',
+          )}
+        </small>
+      </section>
       <section className="card settings-section environment-section">
         <div className="card-title">
           <h2>{t('Programming environments')}</h2>

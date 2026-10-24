@@ -49,6 +49,7 @@ function fixture(pending: unknown[] = []) {
     createdAt: new Date().toISOString(),
   };
   const tool = {
+    forgetSession: vi.fn(async () => {}),
     account: vi.fn(async () => ({ handle: 'tester', authenticated: true })),
     login: vi.fn(async () => ({ handle: 'tester', stored: true })),
     languages: vi.fn(async () => [
@@ -134,12 +135,18 @@ it('restores unresolved receipts after restart without sending or watching an un
   expect(f.tool.watch).not.toHaveBeenCalled();
   await expect(f.manager.submit(f.snapshot)).rejects.toThrow('still being verified');
 });
-it('prompts for a private password only when there is no session and never persists credentials', async () => {
+it('signs in explicitly with a private native password and publishes sign-in/sign-out state', async () => {
   const f = fixture();
   f.tool.account.mockRejectedValue(new CfToolError('session_unavailable', 'missing'));
   ui.input.mockResolvedValueOnce('tester').mockResolvedValueOnce('private-password');
   ui.warning.mockResolvedValue(undefined);
-  await f.manager.submit(f.snapshot);
+  const changed = vi.fn();
+  f.manager.onAccountChanged(changed);
+  await f.manager.signIn();
+  expect(f.manager.accountState).toEqual({ status: 'signedIn', handle: 'tester' });
+  await f.manager.signOut();
+  expect(f.manager.accountState).toEqual({ status: 'signedOut' });
+  expect(changed).toHaveBeenCalledTimes(4);
   expect(ui.input.mock.calls[1][0]).toMatchObject({ password: true });
   expect(f.tool.login).toHaveBeenCalledWith('tester', 'private-password');
   expect(JSON.stringify(f.saved())).not.toContain('private-password');
@@ -199,4 +206,45 @@ it('coalesces repeated submission clicks while the confirmation flow is running'
   const f = fixture();
   await Promise.all([f.manager.submit(f.snapshot), f.manager.submit(f.snapshot)]);
   expect(f.tool.submit).toHaveBeenCalledOnce();
+});
+
+it('requires settings login rather than opening credentials from the submit action', async () => {
+  const f = fixture();
+  f.tool.account.mockRejectedValue(new CfToolError('session_unavailable', 'missing'));
+  await expect(f.manager.submit(f.snapshot)).rejects.toThrow('Settings page');
+  expect(f.manager.accountState).toEqual({ status: 'signedOut', error: undefined });
+  expect(ui.input).not.toHaveBeenCalled();
+  expect(f.tool.submit).not.toHaveBeenCalled();
+});
+it('does not treat a failed verification or expired session as logged in', async () => {
+  const f = fixture();
+  await f.manager.refreshAccount();
+  expect(f.manager.accountState.status).toBe('signedIn');
+  f.tool.account.mockRejectedValue(
+    new CfToolError('verification_required', 'Website verification required'),
+  );
+  await f.manager.refreshAccount();
+  expect(f.manager.accountState).toEqual({
+    status: 'signedOut',
+    error: 'Website verification required',
+  });
+});
+it('keeps failed logins disabled and does not publish credentials', async () => {
+  const f = fixture();
+  ui.input.mockResolvedValueOnce('tester').mockResolvedValueOnce('private-password');
+  f.tool.login.mockRejectedValue(
+    new CfToolError('verification_required', 'Website verification required'),
+  );
+  await expect(f.manager.signIn()).rejects.toThrow('Website verification');
+  expect(f.manager.accountState.status).toBe('signedOut');
+  expect(JSON.stringify(f.manager.accountState)).not.toContain('private-password');
+});
+
+it('restores login state when the native login prompt is cancelled', async () => {
+  const f = fixture();
+  await f.manager.refreshAccount();
+  ui.input.mockResolvedValueOnce(undefined);
+  await f.manager.signIn();
+  expect(f.manager.accountState).toEqual({ status: 'signedIn', handle: 'tester' });
+  expect(f.tool.login).not.toHaveBeenCalled();
 });

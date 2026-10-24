@@ -581,3 +581,26 @@ button:focus-visible,
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
 }
+
+.submission-action {
+  display: inline-flex;
+}
+.submission-action button:disabled {
+  pointer-events: none;
+}
+.submission-login-hint {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+button.text-link {
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  padding: 0;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+button.text-link:hover {
+  color: var(--vscode-textLink-activeForeground);
+  background: transparent;
+}

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CfToolClient, CfToolError } from '../infrastructure/codeforces/cf-tool-client';
 import type { Problem } from '../domain/models';
 import { submissionLabel } from '../domain/contest';
+import type { AccountState } from '../shared/protocol';
 import { t } from './localization';
 
 export interface SubmissionSnapshot {
@@ -25,6 +26,50 @@ type Pending = z.infer<typeof pendingSchema>;
 const storageKey = 'cfide.pendingSubmissions';
 
 export class SubmissionController implements vscode.Disposable {
+  accountState: AccountState = { status: 'checking' };
+  private accountListeners = new Set<() => void>();
+  private refreshing?: Promise<void>;
+  private accountBusy = false;
+  onAccountChanged(listener: () => void) {
+    this.accountListeners.add(listener);
+    return {
+      dispose: () => {
+        this.accountListeners.delete(listener);
+      },
+    };
+  }
+  private setAccount(account: AccountState) {
+    this.accountState = account;
+    for (const listener of this.accountListeners) listener();
+  }
+  refreshAccount() {
+    if (this.accountBusy) return Promise.resolve();
+    if (this.refreshing) return this.refreshing;
+    this.setAccount({ status: 'checking' });
+    this.refreshing = this.tool
+      .account()
+      .then(
+        (account) => {
+          this.setAccount({ status: 'signedIn', handle: account.handle });
+        },
+        (error) => {
+          this.setAccount({
+            status: 'signedOut',
+            error:
+              error instanceof CfToolError &&
+              ['not_authenticated', 'session_unavailable', 'invalid_session'].includes(error.code)
+                ? undefined
+                : error instanceof Error
+                  ? error.message
+                  : String(error),
+          });
+        },
+      )
+      .finally(() => {
+        this.refreshing = undefined;
+      });
+    return this.refreshing;
+  }
   private preparing = false;
   private pending: Pending[];
   private tracking = new Set<string>();
@@ -48,25 +93,60 @@ export class SubmissionController implements vscode.Disposable {
     return this.writes;
   }
   async signIn() {
-    const username = await vscode.window.showInputBox({
-      title: t('Sign in to Codeforces'),
-      prompt: t('Codeforces username'),
-      ignoreFocusOut: true,
-    });
-    if (!username) return;
-    const password = await vscode.window.showInputBox({
-      title: t('Sign in to Codeforces'),
-      prompt: t('Codeforces password'),
-      password: true,
-      ignoreFocusOut: true,
-    });
-    if (!password) return;
-    const account = await this.tool.login(username, password);
-    this.poll();
-    return account;
+    if (this.accountBusy) return;
+    this.accountBusy = true;
+    await this.refreshing;
+    const previous = this.accountState;
+    this.setAccount({ status: 'checking' });
+    try {
+      const username = await vscode.window.showInputBox({
+        title: t('Sign in to Codeforces'),
+        prompt: t('Codeforces username'),
+        ignoreFocusOut: true,
+      });
+      if (!username) {
+        this.setAccount(previous.status === 'checking' ? { status: 'signedOut' } : previous);
+        return;
+      }
+      const password = await vscode.window.showInputBox({
+        title: t('Sign in to Codeforces'),
+        prompt: t('Codeforces password'),
+        password: true,
+        ignoreFocusOut: true,
+      });
+      if (!password) {
+        this.setAccount(previous.status === 'checking' ? { status: 'signedOut' } : previous);
+        return;
+      }
+      const account = await this.tool.login(username, password);
+      this.setAccount({ status: 'signedIn', handle: account.handle });
+      this.poll();
+      return account;
+    } catch (error) {
+      this.setAccount({
+        status: 'signedOut',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    } finally {
+      this.accountBusy = false;
+    }
   }
   async signOut() {
-    await this.tool.forgetSession();
+    if (this.accountBusy) return;
+    this.accountBusy = true;
+    await this.refreshing;
+    const previous = this.accountState;
+    this.setAccount({ status: 'checking' });
+    try {
+      await this.tool.forgetSession();
+      this.setAccount({ status: 'signedOut' });
+    } catch (error) {
+      this.setAccount(previous);
+      throw error;
+    } finally {
+      this.accountBusy = false;
+    }
   }
   async submit(snapshot: SubmissionSnapshot) {
     if (this.preparing) return;
@@ -82,20 +162,10 @@ export class SubmissionController implements vscode.Disposable {
       );
     this.preparing = true;
     try {
-      let account;
-      try {
-        account = await this.tool.account();
-      } catch (error) {
-        if (
-          !(error instanceof CfToolError) ||
-          !['not_authenticated', 'session_unavailable', 'login_failed', 'invalid_session'].includes(
-            error.code,
-          )
-        )
-          throw error;
-        account = await this.signIn();
-        if (!account) return;
-      }
+      await this.refreshAccount();
+      if (this.accountState.status !== 'signedIn')
+        throw new Error(t('Sign in on the Settings page to enable one-click submission.'));
+      const account = { handle: this.accountState.handle! };
       const offered = await this.tool.languages(problem.contestId);
       const choices = offered.filter((language) =>
         problem.language === 'python'
@@ -213,5 +283,6 @@ export class SubmissionController implements vscode.Disposable {
   dispose() {
     this.stopped = true;
     clearInterval(this.timer);
+    this.accountListeners.clear();
   }
 }

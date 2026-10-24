@@ -1,3 +1,4 @@
+import type { AccountState } from './protocol';
 import { z } from 'zod';
 import { locales, type Locale, type LocalePreference } from './i18n';
 const args = z.array(z.string().max(10000)).max(100);
@@ -30,6 +31,9 @@ export const settingsKeys = {
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
+  z.object({ type: z.literal('signIn') }).strict(),
+  z.object({ type: z.literal('signOut') }).strict(),
+  z.object({ type: z.literal('refreshAccount') }).strict(),
   z.object({ type: z.literal('setLocale'), locale: z.enum(['auto', ...locales]) }).strict(),
   z.object({ type: z.literal('settingsScope'), scope: z.enum(['user', 'workspace']) }).strict(),
   z
@@ -48,6 +52,7 @@ export interface EnvironmentResult {
   message?: string;
 }
 export interface SettingsState {
+  account: AccountState;
   locale: Locale;
   preference: LocalePreference;
   scope: 'user' | 'workspace';

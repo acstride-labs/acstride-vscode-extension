@@ -12,7 +12,7 @@ import { RunTests } from '../application/run-tests';
 import { requestSchema, type HostMessage } from '../shared/protocol';
 import { webviewHtml } from './webview-html';
 import { postLocale, t } from './localization';
-import type { SubmissionSnapshot } from './submission-controller';
+import type { SubmissionController, SubmissionSnapshot } from './submission-controller';
 
 export class WorkspaceController implements vscode.Disposable, vscode.TreeDataProvider<Problem> {
   private changes = new vscode.EventEmitter<Problem | undefined>();
@@ -26,6 +26,13 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   private busy = false;
   private dirtyTests = false;
   private submitting = false;
+  submissions?: SubmissionController;
+  publishAccount() {
+    this.send({
+      type: 'accountState',
+      account: this.submissions?.accountState ?? { status: 'signedOut' },
+    });
+  }
   submitHandler?: (snapshot: SubmissionSnapshot) => Promise<void>;
   private mutation: Promise<unknown> = Promise.resolve();
   private disposables: vscode.Disposable[] = [];
@@ -332,6 +339,13 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const assets = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview');
     view.webview.options = { enableScripts: true, localResourceRoots: [assets] };
     view.webview.html = webviewHtml(view.webview, this.context.extensionUri, 'tests');
+    view.onDidChangeViewState(
+      (event) => {
+        if (event.webviewPanel.visible) void this.submissions?.refreshAccount();
+      },
+      null,
+      this.disposables,
+    );
     view.onDidDispose(
       () => {
         this.abort?.abort();
@@ -361,6 +375,14 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           void this.switchLanguage().catch((e) => this.error(e));
           return;
         }
+        if (message.type === 'openLogin') {
+          void vscode.commands.executeCommand('cfide.openSettings');
+          return;
+        }
+        if (message.type === 'copySource') {
+          void this.copySource(message.target).catch((e) => this.error(e));
+          return;
+        }
         if (message.type === 'submitSource') {
           void this.submitSolution(message.target).catch((e) => this.error(e));
           return;
@@ -369,6 +391,8 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         this.mutation = this.mutation
           .then(async () => {
             if (message.type === 'ready') {
+              this.publishAccount();
+              void this.submissions?.refreshAccount();
               postLocale(this.view?.webview);
               await this.state();
               return;
@@ -432,6 +456,18 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         target.language !== this.current?.language)
     )
       throw new Error('Problem or language changed. Retry from the updated toolbar.');
+  }
+  async copySource(target: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+    this.ensureTarget(target);
+    const { source, problem } = await this.snapshot();
+    if (!problem.contestId) throw new Error(t('Only Codeforces problems can be submitted.'));
+    this.ensureTarget(target);
+    await vscode.env.clipboard.writeText(source);
+    await vscode.env.openExternal(
+      vscode.Uri.parse(
+        `https://codeforces.com/contest/${problem.contestId}/submit?problemIndex=${encodeURIComponent(problem.id)}`,
+      ),
+    );
   }
   async submitSolution(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
     this.ensureTarget(target);

@@ -51,6 +51,11 @@ const values = {
 function fixture() {
   const contests = { saveContestOptions: vi.fn(async () => {}) };
   const workspace = {
+    submissions: {
+      signIn: vi.fn(async () => {}),
+      signOut: vi.fn(async () => {}),
+      refreshAccount: vi.fn(async () => {}),
+    },
     checkEnvironment: vi.fn(async (_language?: string, _notify?: boolean) => {}),
   };
   const controller = new SettingsController(
@@ -195,4 +200,15 @@ describe('settings persistence adapter', () => {
     ).rejects.toThrow('Invalid settings');
     expect(mock.updates).toEqual([]);
   });
+});
+
+it('routes settings login, logout and refresh to the shared account without changing user settings', async () => {
+  const f = fixture();
+  await f.receive({ type: 'signIn' });
+  await f.receive({ type: 'signOut' });
+  await f.receive({ type: 'refreshAccount' });
+  expect(f.workspace.submissions.signIn).toHaveBeenCalledOnce();
+  expect(f.workspace.submissions.signOut).toHaveBeenCalledOnce();
+  expect(f.workspace.submissions.refreshAccount).toHaveBeenCalledOnce();
+  expect(mock.updates).toEqual([]);
 });

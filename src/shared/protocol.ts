@@ -6,6 +6,11 @@ export const problemTargetSchema = z.object({
   language: z.enum(['cpp', 'python']),
   contestId: z.number().int().positive().optional(),
 });
+export interface AccountState {
+  status: 'checking' | 'signedIn' | 'signedOut';
+  handle?: string;
+  error?: string;
+}
 export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('draftState'), dirty: z.boolean() }),
@@ -22,9 +27,12 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('stop') }),
   z.object({ type: z.literal('switchLanguage') }),
   z.object({ type: z.literal('submitSource'), target: problemTargetSchema }),
+  z.object({ type: z.literal('copySource'), target: problemTargetSchema }),
+  z.object({ type: z.literal('openLogin') }).strict(),
 ]);
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =
+  | { type: 'accountState'; account: AccountState }
   | { type: 'state'; problem: Problem; tests: TestCase[] }
   | { type: 'submitting'; submitting: boolean }
   | { type: 'running'; running: boolean; testId?: string }

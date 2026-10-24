@@ -26,6 +26,10 @@ export class SettingsController implements vscode.Disposable {
     private workspace: WorkspaceController,
   ) {}
   register() {
+    const subscription = this.workspace.submissions?.onAccountChanged(() => {
+      void this.publish();
+    });
+    if (subscription) this.disposables.push(subscription);
     this.disposables.push(
       vscode.commands.registerCommand('cfide.openSettings', () => this.open()),
       vscode.workspace.onDidChangeConfiguration((event) => {
@@ -76,6 +80,13 @@ export class SettingsController implements vscode.Disposable {
         this.context.extensionUri,
         'settings',
       );
+      this.panel.onDidChangeViewState(
+        (event) => {
+          if (event.webviewPanel.visible) void this.workspace.submissions?.refreshAccount();
+        },
+        null,
+        this.disposables,
+      );
       this.panel.onDidDispose(
         () => {
           this.panel = undefined;
@@ -95,6 +106,7 @@ export class SettingsController implements vscode.Disposable {
       );
     } else this.panel.reveal(vscode.ViewColumn.One);
     await this.publish();
+    void this.workspace.submissions?.refreshAccount();
   }
   private async receive(raw: unknown) {
     const parsed = settingsRequestSchema.safeParse(raw);
@@ -116,7 +128,17 @@ export class SettingsController implements vscode.Disposable {
     this.busy = true;
     await this.publish();
     try {
-      if (message.type === 'setLocale') {
+      if (
+        message.type === 'signIn' ||
+        message.type === 'signOut' ||
+        message.type === 'refreshAccount'
+      ) {
+        const submissions = this.workspace.submissions;
+        if (!submissions) throw new Error(t('Submission client is unavailable.'));
+        if (message.type === 'signIn') await submissions.signIn();
+        else if (message.type === 'signOut') await submissions.signOut();
+        else await submissions.refreshAccount();
+      } else if (message.type === 'setLocale') {
         await vscode.workspace
           .getConfiguration('cfide')
           .update('ui.language', message.locale, vscode.ConfigurationTarget.Global);
@@ -231,6 +253,7 @@ export class SettingsController implements vscode.Disposable {
       }
     }
     const state: SettingsState = {
+      account: this.workspace.submissions?.accountState ?? { status: 'signedOut' },
       locale: currentLocale(),
       preference: config.get<LocalePreference>('ui.language', 'auto'),
       scope: this.scope,

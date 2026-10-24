@@ -103,6 +103,33 @@ describe('selected source and automatic saving', () => {
       );
     });
   }
+  for (const language of ['cpp', 'python'] as const) {
+    it(`copies the saved selected ${language} buffer and opens its official submission page without signing in`, async () => {
+      const { controller, store, problem } = await fixture(language);
+      const file = store.sourcePath('A', language);
+      mock.documents.set(file, {
+        isDirty: true,
+        save: async () => {
+          await fs.writeFile(file, 'fresh solution');
+          return true;
+        },
+      });
+      await controller.copySource(problem);
+      expect(mock.clipboard).toHaveBeenCalledWith('fresh solution');
+      expect(mock.external).toHaveBeenCalledWith(
+        'https://codeforces.com/contest/7/submit?problemIndex=A',
+      );
+      expect(controller.submitHandler).not.toHaveBeenCalled();
+    });
+  }
+  it('refuses stale copy targets without copying or opening a browser', async () => {
+    const { controller, problem } = await fixture('cpp');
+    await expect(controller.copySource({ ...problem, contestId: 8 })).rejects.toThrow(
+      'language changed',
+    );
+    expect(mock.clipboard).not.toHaveBeenCalled();
+    expect(mock.external).not.toHaveBeenCalled();
+  });
   it('refuses a stale language or contest target before submitting a different file', async () => {
     const { controller, problem } = await fixture('cpp');
     await expect(controller.submitSolution({ ...problem, language: 'python' })).rejects.toThrow(

@@ -313,5 +313,14 @@
   "Submission result is being verified. Do not submit again.": "提出結果を確認中です。再提出しないでください。",
   "Codeforces {problem}: {verdict} (#{submissionId})": "Codeforces {problem}：{verdict}（#{submissionId}）",
   "Submission client is unavailable.": "提出クライアントを利用できません。",
-  "Source changed while preparing submission. Save and try again.": "提出準備中にコードが変更されました。保存して再試行してください。"
+  "Source changed while preparing submission. Save and try again.": "提出準備中にコードが変更されました。保存して再試行してください。",
+  "Copy code and open submission": "コードをコピーして提出ページを開く",
+  "Sign in on the Settings page to enable one-click submission.": "設定ページでログインするとワンクリック提出が使えます。",
+  "Go to sign in": "ログインへ",
+  "Codeforces account": "Codeforces アカウント",
+  "Checking Codeforces login…": "Codeforces のログイン状態を確認中…",
+  "Signed in as {handle}": "ログイン中：{handle}",
+  "Not signed in": "未ログイン",
+  "Refresh login status": "ログイン状態を更新",
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "ログインするとワンクリック提出が使えます。サイト認証でログインできない場合も、コードをコピーして公式サイトから提出できます。"
 }
