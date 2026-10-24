@@ -1,16 +1,6 @@
-import { Tabs } from './ui/Tabs';
-import {
-  Field,
-  VscodeBadge,
-  VscodeButton,
-  VscodeCheckbox,
-  VscodeTextarea,
-  checkedOf,
-  valueOf,
-} from './ui';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { AccountState, HostMessage } from '../../src/shared/protocol';
+import type { AccountState, HostMessage, WebviewRequest } from '../../src/shared/protocol';
 import type { Problem, TestCase, TestResult } from '../../src/domain/models';
 import { completeResults, resultTone, retainResults } from './test-state';
 import { send } from './bridge';
@@ -119,41 +109,41 @@ function App() {
   return (
     <main className="tests-pane">
       <div className="test-toolbar">
-        <VscodeButton
-          secondary
+        <button
+          className="secondary"
           disabled={running || anyDirty || !problem}
           title={t('Switch language')}
           onClick={() => send({ type: 'switchLanguage' })}
         >
           {problem?.language === 'python' ? 'Python 3' : 'C++'} ▾
-        </VscodeButton>
-        <VscodeButton
+        </button>
+        <button
           disabled={running || anyDirty || !problem}
           onClick={() => problem && send({ type: 'run', target: problem })}
         >
           ▶ {t('Run all tests')}
-        </VscodeButton>
+        </button>
         {problem?.contestId && (
           <>
-            <VscodeButton
-              secondary
+            <button
+              className="secondary"
               disabled={submitting}
               onClick={() => send({ type: 'copySource', target: problem })}
             >
               {t('Copy code and open submission')}
-            </VscodeButton>
+            </button>
             <span
               className="submission-action"
               tabIndex={account.status !== 'signedIn' ? 0 : undefined}
               aria-describedby={account.status !== 'signedIn' ? 'submission-login-hint' : undefined}
             >
-              <VscodeButton
-                secondary
+              <button
+                className="secondary"
                 disabled={running || submitting || account.status !== 'signedIn'}
                 onClick={() => send({ type: 'submitSource', target: problem })}
               >
                 {t(submitting ? 'Preparing submission…' : 'One-click submit')}
-              </VscodeButton>
+              </button>
               {account.status !== 'signedIn' && (
                 <span className="submission-help-icon" aria-hidden="true">
                   ?
@@ -166,20 +156,74 @@ function App() {
                       ? 'Checking Codeforces login…'
                       : 'Sign in on the Settings page to enable one-click submission.',
                   )}{' '}
-                  <VscodeButton className="text-link" onClick={() => send({ type: 'openLogin' })}>
+                  <button className="text-link" onClick={() => send({ type: 'openLogin' })}>
                     {t('Go to sign in')}
-                  </VscodeButton>
+                  </button>
                 </span>
               )}
             </span>
           </>
         )}
         {running && (
-          <VscodeButton secondary onClick={() => send({ type: 'stop' })}>
+          <button className="secondary" onClick={() => send({ type: 'stop' })}>
             ■ {t('Stop')}
-          </VscodeButton>
+          </button>
         )}
         <span role="status">{t(notice)}</span>
+      </div>
+      <div className="test-tabs" role="tablist" aria-label={t('Tests')}>
+        {tests.map((test, index) => (
+          <button
+            key={test.id}
+            id={`tab-${test.id}`}
+            role="tab"
+            aria-selected={activeId === test.id}
+            aria-controls={`case-${test.id}`}
+            className={`test-tab ${resultTone(results[test.id])}`}
+            title={results[test.id]?.verdict ?? test.id}
+            tabIndex={activeId === test.id ? 0 : -1}
+            onKeyDown={(event) => {
+              const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+              if (!step && event.key !== 'Home' && event.key !== 'End') return;
+              event.preventDefault();
+              const target =
+                tests[
+                  event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? tests.length - 1
+                      : (index + step + tests.length) % tests.length
+                ];
+              setActiveId(target.id);
+              document.getElementById(`tab-${target.id}`)?.focus();
+            }}
+            onClick={() => setActiveId(test.id)}
+          >
+            {results[test.id]
+              ? resultTone(results[test.id]) === 'pass'
+                ? '✓ '
+                : resultTone(results[test.id]) === 'fail'
+                  ? '✕ '
+                  : '— '
+              : ''}
+            {t('Case {number}', { number: index + 1 })}
+            {dirtyTests[test.id] ? ' •' : ''}
+          </button>
+        ))}
+        <button
+          className="secondary add-test"
+          disabled={running || !problem}
+          aria-label={t('Add test')}
+          title={t('Add test')}
+          onClick={() =>
+            send({
+              type: 'saveTest',
+              test: { id: `custom-${Date.now()}`, input: '', expected: '' },
+            })
+          }
+        >
+          ＋
+        </button>
       </div>
       {error && (
         <pre className="error" role="alert">
@@ -189,64 +233,25 @@ function App() {
       {tests.length === 0 && (
         <p>{t('No tests yet. Add an input and optionally an expected output.')}</p>
       )}
-      <Tabs
-        className="test-tabs"
-        label={t('Tests')}
-        value={activeId}
-        onChange={setActiveId}
-        actions={
-          <VscodeButton
-            secondary
-            className="add-test"
-            disabled={running || !problem}
-            aria-label={t('Add test')}
-            title={t('Add test')}
-            onClick={() =>
-              send({
-                type: 'saveTest',
-                test: { id: `custom-${Date.now()}`, input: '', expected: '' },
-              })
-            }
-          >
-            ＋
-          </VscodeButton>
-        }
-        items={tests.map((test, index) => ({
-          value: test.id,
-          contentKey: `${problem?.collection ?? 'contest'}/${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`,
-          className: resultTone(results[test.id]),
-          label: (
-            <>
-              {results[test.id]
-                ? resultTone(results[test.id]) === 'pass'
-                  ? '✓ '
-                  : resultTone(results[test.id]) === 'fail'
-                    ? '✕ '
-                    : '— '
-                : ''}
-              {t('Case {number}', { number: index + 1 })}
-              {dirtyTests[test.id] ? ' •' : ''}
-            </>
-          ),
-          content: (
-            <TestCard
-              key={`${problem?.collection ?? 'contest'}/${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
-              test={test}
-              problem={problem}
-              result={results[test.id]}
-              running={running}
-              anyDirty={anyDirty}
-              onDirty={onDirty}
-            />
-          ),
-        }))}
-      />
+      {tests.map((test) => (
+        <TestCard
+          key={`${problem?.collection ?? 'contest'}/${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
+          active={activeId === test.id}
+          test={test}
+          problem={problem}
+          result={results[test.id]}
+          running={running}
+          anyDirty={anyDirty}
+          onDirty={onDirty}
+        />
+      ))}
     </main>
   );
 }
 function TestCard({
   test,
   problem,
+  active,
   result,
   running,
   anyDirty,
@@ -254,6 +259,7 @@ function TestCard({
 }: {
   test: TestCase;
   problem?: Problem;
+  active: boolean;
   result?: TestResult;
   running: boolean;
   anyDirty: boolean;
@@ -276,47 +282,54 @@ function TestCard({
     onDirty(test.id, dirty);
   }, [test.id, dirty, onDirty]);
   return (
-    <section className="test-case">
+    <section
+      className="test-case"
+      id={`case-${test.id}`}
+      role="tabpanel"
+      aria-labelledby={`tab-${test.id}`}
+      hidden={!active}
+    >
       <div className="case-status">
         {test.readOnly && <small>{t('Official sample')}</small>}
         {result && (
-          <VscodeBadge className={resultTone(result)}>
+          <span className={`badge ${resultTone(result)}`}>
             {result.verdict} · {result.durationMs} ms
-          </VscodeBadge>
+          </span>
         )}
       </div>
       <div className="columns">
-        <Field>
+        <label>
           {t('Input')}
-          <VscodeTextarea
-            monospace
-            label={t('{id} input', { id: test.id })}
+          <textarea
+            aria-label={t('{id} input', { id: test.id })}
             disabled={running || test.readOnly}
             value={input}
-            onInput={(e) => setInput(valueOf(e))}
+            onChange={(e) => setInput(e.target.value)}
             spellCheck={false}
           />
-        </Field>
-        <Field>
-          <VscodeCheckbox
-            disabled={running || test.readOnly}
-            checked={check}
-            onChange={(e) => setCheck(checkedOf(e))}
-            label={t('Expected output')}
-          />
-          <VscodeTextarea
-            monospace
-            label={t('{id} expected output', { id: test.id })}
+        </label>
+        <label>
+          <span>
+            <input
+              type="checkbox"
+              disabled={running || test.readOnly}
+              checked={check}
+              onChange={(e) => setCheck(e.target.checked)}
+            />{' '}
+            {t('Expected output')}
+          </span>
+          <textarea
+            aria-label={t('{id} expected output', { id: test.id })}
             disabled={running || test.readOnly || !check}
             value={expected}
-            onInput={(e) => setExpected(valueOf(e))}
+            onChange={(e) => setExpected(e.target.value)}
             spellCheck={false}
           />
-        </Field>
+        </label>
       </div>
       <div className="actions">
         {!test.readOnly && (
-          <VscodeButton
+          <button
             disabled={running || !dirty}
             onClick={() =>
               send({
@@ -326,23 +339,23 @@ function TestCard({
             }
           >
             {dirty ? t('Save changes') : t('Saved')}
-          </VscodeButton>
+          </button>
         )}
-        <VscodeButton
-          secondary
+        <button
+          className="secondary"
           disabled={running || anyDirty}
           onClick={() => problem && send({ type: 'run', testId: test.id, target: problem })}
         >
           {t('Run test')}
-        </VscodeButton>
+        </button>
         {!test.readOnly && (
-          <VscodeButton
-            secondary
+          <button
+            className="secondary"
             disabled={running}
             onClick={() => send({ type: 'deleteTest', testId: test.id })}
           >
             {t('Delete')}
-          </VscodeButton>
+          </button>
         )}
         {dirty && <small>{t('Unsaved changes')}</small>}
       </div>

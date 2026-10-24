@@ -1,4 +1,3 @@
-import { VscodeButton } from '../ui';
 import React, { useEffect, useRef, useState } from 'react';
 import renderMathInElement from 'katex/contrib/auto-render';
 import 'katex/dist/katex.min.css';
@@ -14,14 +13,7 @@ export function StatementView() {
     html?: string;
     error?: string;
   }>();
-  const [data, setData] = useState<
-    Extract<
-      ContestHostMessage,
-      {
-        type: 'statement';
-      }
-    >
-  >();
+  const [data, setData] = useState<Extract<ContestHostMessage, { type: 'statement' }>>();
   const content = useRef<HTMLDivElement>(null),
     key = useRef('');
   const scroll = useRef(new Map<string, number>());
@@ -83,9 +75,8 @@ export function StatementView() {
               tabIndex={!translationEnabled ? 0 : undefined}
               aria-describedby={!translationEnabled ? 'translation-disabled-hint' : undefined}
             >
-              <VscodeButton
-                secondary
-                className="translation-toggle"
+              <button
+                className="secondary translation-toggle"
                 title={
                   translationEnabled
                     ? t(translated ? 'Show original' : 'AI statement translation')
@@ -118,16 +109,13 @@ export function StatementView() {
                 >
                   <path d="M2 4h9M6.5 2v2M4 4c.5 4 3 6 6 8M9 4c-.5 4-3 7-7 9M10 17l4-10 4 10M11.5 14h5" />
                 </svg>
-              </VscodeButton>
+              </button>
               {!translationEnabled && (
                 <span className="translation-hint" id="translation-disabled-hint">
                   {t('Enable AI statement translation in AI assistance to use this feature.')}{' '}
-                  <VscodeButton
-                    className="text-link"
-                    onClick={() => send({ type: 'openAiSettings' })}
-                  >
+                  <button className="text-link" onClick={() => send({ type: 'openAiSettings' })}>
                     {t('Go to AI assistance settings')}
-                  </VscodeButton>
+                  </button>
                 </span>
               )}
             </span>
@@ -143,7 +131,7 @@ export function StatementView() {
                 ? t(translation.error ?? '')
                 : t('Translating, please wait…')}
               {translation?.status === 'failed' && (
-                <VscodeButton
+                <button
                   onClick={() =>
                     data &&
                     send({
@@ -155,7 +143,7 @@ export function StatementView() {
                   }
                 >
                   {t('Retry')}
-                </VscodeButton>
+                </button>
               )}
             </p>
           )}

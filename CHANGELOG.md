@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1
+
+- Revert the VSCode Elements migration and restore the previous React controls and styles. Preserve automatic translation settings saves and all features available before the migration. Remove the Elements dependencies and adapter components.
+
 ## 0.14.0
 
 - Adopt VSCode Elements throughout settings, contest navigation, statement actions and local tests. Use its React adapters for controls, accessible labels, tabs, badges and tables; preserve automatic translation saves, interactive hover guidance and independent test drafts.

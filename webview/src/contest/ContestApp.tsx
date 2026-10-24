@@ -1,22 +1,9 @@
-import { Tabs } from '../ui/Tabs';
-import {
-  VscodeBadge,
-  VscodeProgressRing,
-  VscodeButton,
-  VscodeTable,
-  VscodeTableBody,
-  VscodeTableCell,
-  VscodeTableHeader,
-  VscodeTableHeaderCell,
-  VscodeTableRow,
-  VscodeTextfield,
-  valueOf,
-} from '../ui';
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage, ContestViewState } from '../../../src/shared/contest-protocol';
 import { submissionLabel } from '../../../src/domain/contest';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
+
 export function ContestApp() {
   const { locale, t } = useI18n();
   const [state, setState] = useState<ContestViewState>();
@@ -68,12 +55,7 @@ export function ContestApp() {
           {t(state.refreshNotice)}
         </p>
       )}
-      {state?.busy && (
-        <p role="status" className="loading-status">
-          <VscodeProgressRing />
-          {t(state.busy)}
-        </p>
-      )}
+      {state?.busy && <p role="status">{t(state.busy)}</p>}
       {!record && (
         <section className="card">
           <h2>{t('Start with a contest link')}</h2>
@@ -91,11 +73,11 @@ export function ContestApp() {
             <div>
               <h1>
                 {contest.name}
-                <VscodeBadge className="contest-time-label">
+                <span className="contest-time-label">
                   {contest.phase === 'FINISHED' || (countdown <= 0 && contest.phase !== 'BEFORE')
                     ? t('FINISHED')
                     : `${t(contest.phase === 'BEFORE' ? 'Starts in' : 'Remaining')} ${duration(countdown)}`}
-                </VscodeBadge>
+                </span>
               </h1>
               <p>
                 #{id}
@@ -104,180 +86,175 @@ export function ContestApp() {
               </p>
             </div>
           </section>
-          <Tabs
-            value={tab}
-            onChange={(value) => {
-              setTab(value);
-              send({ type: 'contestSection', section: value });
-            }}
-            label={t('Contest sections')}
-            items={[
-              {
-                value: 'submissions',
-                label: t('Public submissions'),
-                content: (
-                  <>
-                    <div className="actions">
-                      <small>
-                        {state.watchHandle
-                          ? t('Tracking {handle}', { handle: state.watchHandle })
-                          : t('Set a public handle in Settings to track submissions.')}{' '}
-                        · {updated(state.submissionsUpdatedAt)}
-                      </small>
-                      <RefreshButton
-                        label={t('Refresh submissions')}
-                        disabled={disabled || !state.watchHandle}
-                        onClick={() => send({ type: 'refreshStatus', contestId: id })}
-                      />
-                    </div>
-                    <div className="table-scroll">
-                      <VscodeTable borderedRows>
-                        <VscodeTableHeader slot="header">
-                          <VscodeTableRow>
-                            {[
-                              'ID',
-                              'Problem',
-                              'Language',
-                              'Verdict',
-                              'Tests',
-                              'Time',
-                              'Memory',
-                            ].map((key) => (
-                              <VscodeTableHeaderCell key={key}>{t(key)}</VscodeTableHeaderCell>
-                            ))}
-                          </VscodeTableRow>
-                        </VscodeTableHeader>
-                        <VscodeTableBody slot="body">
-                          {state.submissions.map((s) => (
-                            <VscodeTableRow key={s.id}>
-                              <VscodeTableCell>{s.id}</VscodeTableCell>
-                              <VscodeTableCell>{s.problem.index}</VscodeTableCell>
-                              <VscodeTableCell>{s.programmingLanguage}</VscodeTableCell>
-                              <VscodeTableCell>{t(submissionLabel(s))}</VscodeTableCell>
-                              <VscodeTableCell>
-                                {t(s.testset ?? '')} · {s.passedTestCount ?? 0}
-                              </VscodeTableCell>
-                              <VscodeTableCell>{s.timeConsumedMillis ?? '—'} ms</VscodeTableCell>
-                              <VscodeTableCell>
-                                {s.memoryConsumedBytes === undefined
-                                  ? '—'
-                                  : `${Math.round(s.memoryConsumedBytes / 1024)} KB`}
-                              </VscodeTableCell>
-                            </VscodeTableRow>
-                          ))}
-                        </VscodeTableBody>
-                      </VscodeTable>
-                    </div>
-                  </>
-                ),
-              },
-              {
-                value: 'rankings',
-                label: t('Rankings'),
-                content: (
-                  <>
-                    <div className="actions">
-                      <VscodeButton
-                        secondary
-                        onClick={() => send({ type: 'rankFilter', mode: 'all', search: '' })}
+          <nav className="tabs" aria-label={t('Contest sections')}>
+            {(['submissions', 'rankings'] as const).map((value) => (
+              <button
+                className={tab === value ? '' : 'secondary'}
+                key={value}
+                onClick={() => {
+                  setTab(value);
+                  send({ type: 'contestSection', section: value });
+                }}
+              >
+                {t(
+                  {
+                    submissions: 'Public submissions',
+                    rankings: 'Rankings',
+                  }[value],
+                )}
+              </button>
+            ))}
+          </nav>
+          {tab === 'submissions' && (
+            <>
+              <div className="actions">
+                <small>
+                  {state.watchHandle
+                    ? t('Tracking {handle}', { handle: state.watchHandle })
+                    : t('Set a public handle in Settings to track submissions.')}{' '}
+                  · {updated(state.submissionsUpdatedAt)}
+                </small>
+                <RefreshButton
+                  label={t('Refresh submissions')}
+                  disabled={disabled || !state.watchHandle}
+                  onClick={() => send({ type: 'refreshStatus', contestId: id })}
+                />
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {['ID', 'Problem', 'Language', 'Verdict', 'Tests', 'Time', 'Memory'].map(
+                        (key) => (
+                          <th key={key}>{t(key)}</th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.submissions.map((s) => (
+                      <tr key={s.id}>
+                        <td>{s.id}</td>
+                        <td>{s.problem.index}</td>
+                        <td>{s.programmingLanguage}</td>
+                        <td>{t(submissionLabel(s))}</td>
+                        <td>
+                          {t(s.testset ?? '')} · {s.passedTestCount ?? 0}
+                        </td>
+                        <td>{s.timeConsumedMillis ?? '—'} ms</td>
+                        <td>
+                          {s.memoryConsumedBytes === undefined
+                            ? '—'
+                            : `${Math.round(s.memoryConsumedBytes / 1024)} KB`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          {tab === 'rankings' && (
+            <>
+              <div className="actions">
+                <button
+                  className="secondary"
+                  onClick={() => send({ type: 'rankFilter', mode: 'all', search: '' })}
+                >
+                  {t('Top 100')}
+                </button>
+                <button
+                  className="secondary"
+                  disabled={!state.watchHandle}
+                  onClick={() => send({ type: 'rankFilter', mode: 'nearby', search: '' })}
+                >
+                  {t('Near tracked handle')}
+                </button>
+              </div>
+              <form
+                className="actions"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  send({ type: 'rankFilter', mode: 'search', search });
+                }}
+              >
+                <input
+                  aria-label={t('Search ranked handle')}
+                  placeholder={t('Search handle')}
+                  value={search}
+                  maxLength={64}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <button className="secondary" type="submit">
+                  {t('Search')}
+                </button>
+              </form>
+              <p className="contest-update-line">
+                <span>
+                  {updated(state.rankingsUpdatedAt)} ·{' '}
+                  {t('{count} participants', { count: state.rankTotal })}
+                </span>
+                <RefreshButton
+                  label={t('Refresh rankings')}
+                  disabled={disabled}
+                  onClick={() => send({ type: 'refreshStandings', contestId: id })}
+                />
+              </p>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {['Rank', 'Handle', 'Points', 'Penalty'].map((key) => (
+                        <th key={key}>{t(key)}</th>
+                      ))}
+                      {state.rankProblemIndices.map((index) => (
+                        <th key={index}>{index}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.rows.map((row, i) => (
+                      <tr
+                        className={
+                          row.handles.some(
+                            (h) => h.toLowerCase() === state.watchHandle?.toLowerCase(),
+                          )
+                            ? 'my-rank'
+                            : ''
+                        }
+                        key={`${row.handles.join('/')}-${i}`}
                       >
-                        {t('Top 100')}
-                      </VscodeButton>
-                      <VscodeButton
-                        secondary
-                        disabled={!state.watchHandle}
-                        onClick={() => send({ type: 'rankFilter', mode: 'nearby', search: '' })}
-                      >
-                        {t('Near tracked handle')}
-                      </VscodeButton>
-                    </div>
-                    <form
-                      className="actions"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        send({ type: 'rankFilter', mode: 'search', search });
-                      }}
-                    >
-                      <VscodeTextfield
-                        label={t('Search ranked handle')}
-                        placeholder={t('Search handle')}
-                        value={String(search)}
-                        maxLength={64}
-                        onInput={(e) => setSearch(valueOf(e))}
-                      />
-                      <VscodeButton secondary type="submit">
-                        {t('Search')}
-                      </VscodeButton>
-                    </form>
-                    <p className="contest-update-line">
-                      <span>
-                        {updated(state.rankingsUpdatedAt)} ·{' '}
-                        {t('{count} participants', { count: state.rankTotal })}
-                      </span>
-                      <RefreshButton
-                        label={t('Refresh rankings')}
-                        disabled={disabled}
-                        onClick={() => send({ type: 'refreshStandings', contestId: id })}
-                      />
-                    </p>
-                    <div className="table-scroll">
-                      <VscodeTable borderedRows>
-                        <VscodeTableHeader slot="header">
-                          <VscodeTableRow>
-                            {['Rank', 'Handle', 'Points', 'Penalty'].map((key) => (
-                              <VscodeTableHeaderCell key={key}>{t(key)}</VscodeTableHeaderCell>
-                            ))}
-                            {state.rankProblemIndices.map((index) => (
-                              <VscodeTableHeaderCell key={index}>{index}</VscodeTableHeaderCell>
-                            ))}
-                          </VscodeTableRow>
-                        </VscodeTableHeader>
-                        <VscodeTableBody slot="body">
-                          {state.rows.map((row, i) => (
-                            <VscodeTableRow
-                              className={
-                                row.handles.some(
-                                  (h) => h.toLowerCase() === state.watchHandle?.toLowerCase(),
-                                )
-                                  ? 'my-rank'
-                                  : ''
-                              }
-                              key={`${row.handles.join('/')}-${i}`}
-                            >
-                              <VscodeTableCell>{row.rank}</VscodeTableCell>
-                              <VscodeTableCell>{row.handles.join(', ')}</VscodeTableCell>
-                              <VscodeTableCell>{row.points}</VscodeTableCell>
-                              <VscodeTableCell>{row.penalty}</VscodeTableCell>
-                              {row.problemResults.map((p, j) => (
-                                <VscodeTableCell
-                                  key={j}
-                                  title={t('{type} · {count} rejected attempts', {
-                                    type: t(p.type),
-                                    count: p.rejectedAttemptCount,
-                                  })}
-                                >
-                                  {p.points || '—'}
-                                  {p.rejectedAttemptCount ? ` (${p.rejectedAttemptCount})` : ''}
-                                  {p.type === 'PRELIMINARY' && p.points > 0 ? ' *' : ''}
-                                </VscodeTableCell>
-                              ))}
-                            </VscodeTableRow>
-                          ))}
-                        </VscodeTableBody>
-                      </VscodeTable>
-                    </div>
-                    {!state.rows.length && (
-                      <p>
-                        {t(
-                          'No rows available for this filter. Standings may be unavailable before the start or hidden/frozen by Codeforces.',
-                        )}
-                      </p>
-                    )}
-                  </>
-                ),
-              },
-            ]}
-          />
+                        <td>{row.rank}</td>
+                        <td>{row.handles.join(', ')}</td>
+                        <td>{row.points}</td>
+                        <td>{row.penalty}</td>
+                        {row.problemResults.map((p, j) => (
+                          <td
+                            key={j}
+                            title={t('{type} · {count} rejected attempts', {
+                              type: t(p.type),
+                              count: p.rejectedAttemptCount,
+                            })}
+                          >
+                            {p.points || '—'}
+                            {p.rejectedAttemptCount ? ` (${p.rejectedAttemptCount})` : ''}
+                            {p.type === 'PRELIMINARY' && p.points > 0 ? ' *' : ''}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!state.rows.length && (
+                <p>
+                  {t(
+                    'No rows available for this filter. Standings may be unavailable before the start or hidden/frozen by Codeforces.',
+                  )}
+                </p>
+              )}
+            </>
+          )}
         </>
       )}
     </main>
@@ -287,6 +264,7 @@ function duration(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
+
 function RefreshButton({
   label,
   disabled,
@@ -297,10 +275,9 @@ function RefreshButton({
   onClick: () => void;
 }) {
   return (
-    <VscodeButton
+    <button
       type="button"
-      secondary
-      className="contest-refresh-icon"
+      className="secondary contest-refresh-icon"
       disabled={disabled}
       title={label}
       aria-label={label}
@@ -317,6 +294,6 @@ function RefreshButton({
       >
         <path d="M13.5 6A5.5 5.5 0 0 0 3 5M2.5 10A5.5 5.5 0 0 0 13 11M3 1.5V5h3.5M13 14.5V11H9.5" />
       </svg>
-    </VscodeButton>
+    </button>
   );
 }

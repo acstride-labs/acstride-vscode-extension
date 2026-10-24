@@ -9,18 +9,18 @@ The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compati
 with existing installations. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.14 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.13 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
-- Multiple contest folders, independent problems, countdowns and incremental downloads when problems are released. The sidebar groups Codeforces contests, independent Codeforces problems and local practice; each contest opens one tab combining its overview and a problem-switching rail.
+- Multiple contest folders, independent problems, countdowns and incremental downloads when problems are released. The sidebar groups Codeforces contests, independent Codeforces problems and local practice; each contest opens a compact problem list with official attempt-state icons.
 - Public statements with sanitized HTML, local math rendering, supported image caching and official samples.
 - Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
 - One-click submission with an official-language picker and a native confirmation dialog showing the account, problem, language and file. Receipt reconciliation binds notifications to an exact submission ID; pretests and final acceptance remain distinct.
 - Compact case tabs: verified passes are green, all abnormal verdicts are red; run-only results stay neutral. Single-case runs preserve other results and switching tabs preserves unsaved test drafts.
-- Configurable four-language interface, live switching and a separate settings page built with VSCode Elements. Translation switches and target language save immediately; prompt edits save after a short pause or on blur.
+- Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
 Public downloads and rankings remain anonymous. One-click submission uses CF Tool's **experimental** session/submission commands only after explicit user action and confirmation. Sign in from the **Codeforces account** section at the top of **Settings**, using native VS Code username/password inputs; only CF Tool receives credentials via stdin, and it stores the resulting session in the OS keyring. The extension never stores passwords or imports browser cookies. Use **AC-Stride: Sign in to Codeforces** to reconnect and **Sign out of Codeforces** to remove the local session.
 
