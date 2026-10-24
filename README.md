@@ -2,7 +2,7 @@
 
 Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
 [VS Code extension](https://github.com/acstride-labs/codeforces-workbench),
-[Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
+[Codeforces CLI](https://github.com/acstride-labs/codeforces-client), and
 [product website](https://github.com/acstride-labs/acstride-web).
 
 The public Marketplace extension identity is `acstride.cfide`. Previous development VSIXs used `cfide-dev.cfide`; uninstall that development extension before installing the public release. The `cfide.*` settings namespace and `.cfide` workspace data remain compatible. Build environment variables retain their `CFIDE_` prefix.
