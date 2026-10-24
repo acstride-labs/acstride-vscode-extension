@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.5
+
+- Remove the redundant Python downloader note and show Java/Kotlin-specific setup guidance for the selected language.
+
+- Keep save validation and persistence errors inside the sticky settings action area so failures remain visible while scrolling.
+- Consolidate language compiler/interpreter and runtime options into one card with a language selector. Preserve independent unsaved drafts and the existing explicit-save workflow.
+
 ## 0.15.4
 
 - Add a localized link beside the contest ID to open the current contest on Codeforces in the external browser.

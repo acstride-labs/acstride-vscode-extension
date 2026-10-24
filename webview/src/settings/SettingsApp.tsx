@@ -16,6 +16,7 @@ export function SettingsApp() {
   const [state, setState] = useState<SettingsState>();
   const [values, setValues] = useState<SettingsValues>();
   const [templateLanguage, setTemplateLanguage] = useState<Language>('cpp');
+  const [executionLanguage, setExecutionLanguage] = useState<Language>('cpp');
   const [templateDrafts, setTemplateDrafts] = useState({
     cpp: '',
     python: '',
@@ -110,7 +111,7 @@ export function SettingsApp() {
           </button>
         ))}
       </nav>
-      {state?.error && (
+      {state?.error && !dirty && (
         <p className="error" role="alert">
           {t(state.error)}
         </p>
@@ -438,98 +439,116 @@ export function SettingsApp() {
                   </small>
                 )}
               </section>
-              {(['java', 'kotlin'] as const).map((language) => (
-                <section className="card settings-section" key={language}>
-                  <h2>{languages[language].label}</h2>
-                  <label>
-                    {t('Compiler')}
-                    <input
-                      required
-                      value={values[`${language}Compiler`]}
-                      onChange={(e) => update(`${language}Compiler`, e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    {t('Compiler arguments (JSON array)')}
-                    <input
-                      value={jvmArgs[`${language}Args`] || '[]'}
-                      onChange={(e) => {
-                        setJvmArgs((d) => ({ ...d, [`${language}Args`]: e.target.value }));
-                        setDirty(true);
-                      }}
-                    />
-                  </label>
-                  <label>
-                    {t('JVM runtime')}
-                    <input
-                      required
-                      value={values[`${language}Runtime`]}
-                      onChange={(e) => update(`${language}Runtime`, e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    {t('JVM arguments (JSON array)')}
-                    <input
-                      value={jvmArgs[`${language}RuntimeArgs`] || '[]'}
-                      onChange={(e) => {
-                        setJvmArgs((d) => ({ ...d, [`${language}RuntimeArgs`]: e.target.value }));
-                        setDirty(true);
-                      }}
-                    />
-                  </label>
-                  <small>
-                    {t(
-                      'Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().',
-                    )}
-                  </small>
-                </section>
-              ))}
               <section className="card settings-section">
-                <h2>C++</h2>
+                <h2>{t('Compiler and runtime settings')}</h2>
                 <label>
-                  {t('Compiler')}
-                  <input
-                    required
-                    value={values.compiler}
-                    onChange={(e) => update('compiler', e.target.value)}
-                  />
+                  {t('Language')}
+                  <select
+                    value={executionLanguage}
+                    onChange={(e) => setExecutionLanguage(e.target.value as Language)}
+                  >
+                    {languageIds.map((language) => (
+                      <option key={language} value={language}>
+                        {languages[language].label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-                <label>
-                  {t('Compiler arguments (JSON array)')}
-                  <input
-                    value={cppArgs}
-                    onChange={(e) => {
-                      setCppArgs(e.target.value);
-                      setDirty(true);
-                    }}
-                  />
-                </label>
-              </section>
-              <section className="card settings-section">
-                <h2>Python</h2>
-                <label>
-                  {t('Solution interpreter')}
-                  <input
-                    required
-                    value={values.interpreter}
-                    onChange={(e) => update('interpreter', e.target.value)}
-                  />
-                </label>
-                <label>
-                  {t('Interpreter arguments (JSON array)')}
-                  <input
-                    value={pythonArgs}
-                    onChange={(e) => {
-                      setPythonArgs(e.target.value);
-                      setDirty(true);
-                    }}
-                  />
-                </label>
-                <p>
-                  {t(
-                    'The solution interpreter is separate from the built-in downloader. Blank template paths use bundled defaults.',
-                  )}
-                </p>
+                {executionLanguage === 'java' || executionLanguage === 'kotlin' ? (
+                  <>
+                    <label>
+                      {t('Compiler')}
+                      <input
+                        required
+                        value={values[`${executionLanguage}Compiler`]}
+                        onChange={(e) => update(`${executionLanguage}Compiler`, e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      {t('Compiler arguments (JSON array)')}
+                      <input
+                        value={jvmArgs[`${executionLanguage}Args`] || '[]'}
+                        onChange={(e) => {
+                          setJvmArgs((d) => ({
+                            ...d,
+                            [`${executionLanguage}Args`]: e.target.value,
+                          }));
+                          setDirty(true);
+                        }}
+                      />
+                    </label>
+                    <label>
+                      {t('JVM runtime')}
+                      <input
+                        required
+                        value={values[`${executionLanguage}Runtime`]}
+                        onChange={(e) => update(`${executionLanguage}Runtime`, e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      {t('JVM arguments (JSON array)')}
+                      <input
+                        value={jvmArgs[`${executionLanguage}RuntimeArgs`] || '[]'}
+                        onChange={(e) => {
+                          setJvmArgs((d) => ({
+                            ...d,
+                            [`${executionLanguage}RuntimeArgs`]: e.target.value,
+                          }));
+                          setDirty(true);
+                        }}
+                      />
+                    </label>
+                    <small>
+                      {t(
+                        executionLanguage === 'java'
+                          ? 'Java requires a JDK. Java solutions must use class Main.'
+                          : 'Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main().',
+                      )}
+                    </small>
+                  </>
+                ) : executionLanguage === 'cpp' ? (
+                  <>
+                    <label>
+                      {t('Compiler')}
+                      <input
+                        required
+                        value={values.compiler}
+                        onChange={(e) => update('compiler', e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      {t('Compiler arguments (JSON array)')}
+                      <input
+                        value={cppArgs}
+                        onChange={(e) => {
+                          setCppArgs(e.target.value);
+                          setDirty(true);
+                        }}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label>
+                      {t('Solution interpreter')}
+                      <input
+                        required
+                        value={values.interpreter}
+                        onChange={(e) => update('interpreter', e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      {t('Interpreter arguments (JSON array)')}
+                      <input
+                        value={pythonArgs}
+                        onChange={(e) => {
+                          setPythonArgs(e.target.value);
+                          setDirty(true);
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
               </section>
               <section className="card settings-section">
                 <h2>{t('Local execution')}</h2>
@@ -555,20 +574,22 @@ export function SettingsApp() {
           )}
         </div>
         {values && state && dirty && (
-          <div className="actions settings-save-actions">
-            <button type="submit" disabled={disabled || !state.trusted}>
-              {t('Save settings')}
-            </button>
-            <button type="button" className="secondary" disabled={disabled} onClick={reset}>
-              {t('Discard changes')}
-            </button>
-            <small>{t('Unsaved changes')}</small>
+          <div className="settings-save-actions">
+            <div className="actions">
+              <button type="submit" disabled={disabled || !state.trusted}>
+                {t('Save settings')}
+              </button>
+              <button type="button" className="secondary" disabled={disabled} onClick={reset}>
+                {t('Discard changes')}
+              </button>
+              <small>{t('Unsaved changes')}</small>
+            </div>
+            {(error || state.error) && (
+              <p className="error" role="alert">
+                {t(error || state.error!)}
+              </p>
+            )}
           </div>
-        )}
-        {error && (
-          <p className="error" role="alert">
-            {t(error)}
-          </p>
         )}
         {state && !state.trusted && (
           <p className="error">{t('Trust this workspace before changing execution settings.')}</p>

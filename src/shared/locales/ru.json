@@ -123,7 +123,6 @@
   "Solution interpreter": "Интерпретатор Python",
   "Interpreter arguments (JSON array)": "Аргументы интерпретатора (JSON-массив)",
   "Python template path": "Путь к шаблону Python",
-  "The solution interpreter is separate from the built-in downloader. Blank template paths use bundled defaults.": "Этот Python запускает ваши решения. Встроенный загрузчик использует отдельную среду.",
   "Local execution": "Локальное выполнение",
   "Time limit per test (ms)": "Лимит времени на тест (мс)",
   "Arguments are passed without a shell. Save settings before checking the active environment.": "Аргументы передаются без оболочки. Перед проверкой активной среды сохраните настройки.",
@@ -409,10 +408,12 @@
   "This restores the default prompt and saves it immediately.": "Промпт по умолчанию будет восстановлен и сразу сохранён.",
   "JVM runtime": "Среда выполнения JVM",
   "JVM arguments (JSON array)": "Аргументы JVM (массив JSON)",
-  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Для Java установите JDK, для Kotlin также нужен компилятор Kotlin. В Java используйте класс Main, в Kotlin — функцию main().",
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Необязательный полный путь к шаблону Java; поддерживается ${PROBLEM_ID}.",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Начальный код новых решений на Java. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется.",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Необязательный полный путь к шаблону Kotlin; поддерживается ${PROBLEM_ID}.",
   "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Начальный код новых решений на Kotlin. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется.",
-  "Open on Codeforces": "Открыть на Codeforces"
+  "Open on Codeforces": "Открыть на Codeforces",
+  "Compiler and runtime settings": "Настройки компиляции и запуска",
+  "Java requires a JDK. Java solutions must use class Main.": "Для Java требуется JDK. Решение должно содержать класс Main.",
+  "Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main().": "Для Kotlin требуются JDK и компилятор Kotlin. Решение должно содержать функцию main()."
 }

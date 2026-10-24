@@ -123,7 +123,6 @@
   "Solution interpreter": "Python 解释器",
   "Interpreter arguments (JSON array)": "解释器参数（JSON 数组）",
   "Python template path": "Python 模板路径",
-  "The solution interpreter is separate from the built-in downloader. Blank template paths use bundled defaults.": "这里的 Python 用来运行你的代码，与内置下载器无关。",
   "Local execution": "本地运行",
   "Time limit per test (ms)": "单个用例时限（毫秒）",
   "Arguments are passed without a shell. Save settings before checking the active environment.": "参数不经过 Shell 执行。检查当前生效环境前，请先保存设置。",
@@ -409,10 +408,12 @@
   "This restores the default prompt and saves it immediately.": "这会恢复默认 Prompt 并立即保存。",
   "JVM runtime": "JVM 运行命令",
   "JVM arguments (JSON array)": "JVM 参数（JSON 数组）",
-  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Java 需要安装 JDK，Kotlin 还需要安装 Kotlin 编译器。Java 请使用 Main 类，Kotlin 请定义 main() 函数。",
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "可选的 Java 模板绝对路径，支持 ${PROBLEM_ID}。",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新建 Java 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "可选的 Kotlin 模板绝对路径，支持 ${PROBLEM_ID}。",
   "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新建 Kotlin 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。",
-  "Open on Codeforces": "在 Codeforces 打开"
+  "Open on Codeforces": "在 Codeforces 打开",
+  "Compiler and runtime settings": "编译与运行设置",
+  "Java requires a JDK. Java solutions must use class Main.": "Java 需要安装 JDK，解答请使用 Main 类。",
+  "Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main().": "Kotlin 需要安装 JDK 和 Kotlin 编译器，解答请定义 main() 函数。"
 }

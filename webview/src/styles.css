@@ -668,8 +668,19 @@ button.contest-problem-row:hover {
 .settings-save-actions {
   position: sticky;
   bottom: 0;
+  z-index: 10;
   padding: 12px 0;
   background: var(--vscode-editor-background);
+}
+
+.settings-save-actions .actions {
+  margin-top: 0;
+}
+.settings-save-actions .error {
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+  max-height: 30vh;
+  overflow-y: auto;
 }
 
 .contest-file-content {

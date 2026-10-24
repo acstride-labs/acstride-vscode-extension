@@ -123,7 +123,6 @@
   "Solution interpreter": "Python インタープリター",
   "Interpreter arguments (JSON array)": "インタープリター引数（JSON 配列）",
   "Python template path": "Python テンプレートのパス",
-  "The solution interpreter is separate from the built-in downloader. Blank template paths use bundled defaults.": "この Python は解答コードの実行に使います。内蔵ダウンローダーとは別です。",
   "Local execution": "ローカル実行",
   "Time limit per test (ms)": "テストごとの制限時間（ミリ秒）",
   "Arguments are passed without a shell. Save settings before checking the active environment.": "引数はシェルを介さずに渡されます。有効な実行環境を確認する前に設定を保存してください。",
@@ -409,10 +408,12 @@
   "This restores the default prompt and saves it immediately.": "既定のプロンプトに戻し、すぐに保存します。",
   "JVM runtime": "JVM 実行コマンド",
   "JVM arguments (JSON array)": "JVM 引数（JSON 配列）",
-  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Java には JDK、Kotlin には追加で Kotlin コンパイラが必要です。Java は Main クラス、Kotlin は main() 関数を使用してください。",
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Java テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Java 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Kotlin テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
   "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Kotlin 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
-  "Open on Codeforces": "Codeforces で開く"
+  "Open on Codeforces": "Codeforces で開く",
+  "Compiler and runtime settings": "コンパイルと実行の設定",
+  "Java requires a JDK. Java solutions must use class Main.": "Java には JDK が必要です。解答では Main クラスを使用してください。",
+  "Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main().": "Kotlin には JDK と Kotlin コンパイラが必要です。解答では main() 関数を定義してください。"
 }

@@ -123,7 +123,6 @@
   "Solution interpreter": "Python interpreter",
   "Interpreter arguments (JSON array)": "Interpreter arguments (JSON array)",
   "Python template path": "Python template path",
-  "The solution interpreter is separate from the built-in downloader. Blank template paths use bundled defaults.": "This Python runs your solutions; the built-in downloader uses its own runtime.",
   "Local execution": "Local execution",
   "Time limit per test (ms)": "Time limit per test (ms)",
   "Arguments are passed without a shell. Save settings before checking the active environment.": "Arguments are passed without a shell. Save settings before checking the active environment.",
@@ -409,10 +408,12 @@
   "This restores the default prompt and saves it immediately.": "This restores the default prompt and saves it immediately.",
   "JVM runtime": "JVM runtime",
   "JVM arguments (JSON array)": "JVM arguments (JSON array)",
-  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().",
   "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Optional absolute path to a Java template; supports ${PROBLEM_ID}.",
   "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Java code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
   "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.",
   "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Kotlin code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
-  "Open on Codeforces": "Open on Codeforces"
+  "Open on Codeforces": "Open on Codeforces",
+  "Compiler and runtime settings": "Compiler and runtime settings",
+  "Java requires a JDK. Java solutions must use class Main.": "Java requires a JDK. Java solutions must use class Main.",
+  "Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main().": "Kotlin requires a JDK and the Kotlin compiler. Kotlin solutions must define main()."
 }
