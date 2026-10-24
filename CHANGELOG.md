@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2
+
+- Rename the local test panel to Workbench across all four interface languages.
+
 ## 0.14.1
 
 - Revert the VSCode Elements migration and restore the previous React controls and styles. Preserve automatic translation settings saves and all features available before the migration. Remove the Elements dependencies and adapter components.

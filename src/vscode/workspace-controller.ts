@@ -79,7 +79,7 @@ export class WorkspaceController implements vscode.Disposable {
       }),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (!event.affectsConfiguration('cfide.ui.language')) return;
-        if (this.view) this.view.title = t('Tests');
+        if (this.view) this.view.title = t('Workbench');
         postLocale(this.view?.webview);
         this.changes.fire(undefined);
       }),
@@ -265,7 +265,7 @@ export class WorkspaceController implements vscode.Disposable {
     if (!this.view) {
       const view = vscode.window.createWebviewPanel(
         'cfide.tests',
-        t('Tests'),
+        t('Workbench'),
         { viewColumn: testsColumn, preserveFocus: true },
         { enableScripts: true, retainContextWhenHidden: true },
       );

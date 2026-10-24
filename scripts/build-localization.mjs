@@ -27,8 +27,8 @@ for (const [locale, suffix] of [
   values['view.contests'] = text('Codeforces Contests');
   values['view.codeforcesProblems'] = text('Codeforces Problems');
   values['view.practice'] = text('Local Practice');
-  values['view.tests'] = text('Tests');
-  values['view.testPanel'] = 'AC-Stride · ' + text('Tests');
+  values['view.tests'] = text('Workbench');
+  values['view.testPanel'] = 'AC-Stride · ' + text('Workbench');
   values['welcome.contests'] =
     text('Prepare a contest before it starts.') +
     '\n[' +
