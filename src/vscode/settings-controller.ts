@@ -22,6 +22,8 @@ export class SettingsController implements vscode.Disposable {
   private aiNotice?: string;
   private aiAbort?: AbortController;
   private panel?: vscode.WebviewPanel;
+  private panelReady = false;
+  private requestedTab?: string;
   private disposables: vscode.Disposable[] = [];
   private scope: 'user' | 'workspace' = 'user';
   private busy = false;
@@ -96,7 +98,11 @@ export class SettingsController implements vscode.Disposable {
     );
   }
   private async open(tab?: string) {
+    this.requestedTab = ['environment', 'basic', 'coding', 'assistance'].includes(tab ?? '')
+      ? tab
+      : undefined;
     if (!this.panel) {
+      this.panelReady = false;
       this.panel = vscode.window.createWebviewPanel(
         'cfide.settings',
         t('AC-Stride · Settings'),
@@ -123,6 +129,8 @@ export class SettingsController implements vscode.Disposable {
         () => {
           this.aiAbort?.abort();
           this.panel = undefined;
+          this.panelReady = false;
+          this.requestedTab = undefined;
         },
         null,
         this.disposables,
@@ -139,9 +147,14 @@ export class SettingsController implements vscode.Disposable {
       );
     } else this.panel.reveal(vscode.ViewColumn.One);
     await this.publish();
-    if (['environment', 'basic', 'coding', 'assistance'].includes(tab ?? ''))
-      void this.panel?.webview.postMessage({ type: 'settingsTab', tab });
+    await this.flushNavigation();
     void this.workspace.submissions?.refreshAccount();
+  }
+  private async flushNavigation() {
+    if (!this.panelReady || !this.panel || !this.requestedTab) return;
+    const tab = this.requestedTab;
+    const delivered = await this.panel.webview.postMessage({ type: 'settingsTab', tab });
+    if (delivered && this.requestedTab === tab) this.requestedTab = undefined;
   }
   private async receive(raw: unknown) {
     const parsed = settingsRequestSchema.safeParse(raw);
@@ -150,7 +163,12 @@ export class SettingsController implements vscode.Disposable {
         'Invalid settings. Check handle, executable paths, argument arrays and timeout (100–60000 ms).',
       );
     const message = parsed.data;
-    if (message.type === 'ready') return this.publish();
+    if (message.type === 'ready') {
+      this.panelReady = true;
+      await this.publish();
+      await this.flushNavigation();
+      return;
+    }
     if (message.type === 'saveAiCacheSettings') {
       await this.ai.saveCacheOptions(message.options);
       await this.aiClient.configureCache(message.options);

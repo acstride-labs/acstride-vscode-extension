@@ -120,14 +120,6 @@ export function StatementView() {
               )}
             </span>
           </div>
-          <button
-            className="secondary"
-            disabled={!data}
-            onClick={() => send({ type: 'switchLanguage' })}
-            title={t('Switch language')}
-          >
-            {data?.language === 'python' ? 'Python 3' : 'C++'} ▾
-          </button>
         </header>
         <div className="statement-scroll" ref={viewport}>
           {data?.statement.imageWarning && (

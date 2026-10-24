@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.5
+
+- Move submission refresh to a small icon after tracking/update metadata, sharing the ranking refresh control and preserving its disabled state when no handle is configured.
+- Queue settings-tab navigation until the webview is ready, so AI translation guidance opens AI assistance correctly on first use and in existing settings panels.
+- Remove the language selector from the statement toolbar; keep language switching in the test panel and editor command.
+
 ## 0.13.4
 
 - Simplify the contest overview by removing its duplicate heading, add button, contest picker and redundant phase/type text. Keep one compact status label beside the contest name and move ranking refresh to a small icon beside update metadata. Remove unused picker messages and clock styles.

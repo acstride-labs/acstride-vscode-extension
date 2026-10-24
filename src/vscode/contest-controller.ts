@@ -472,8 +472,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.rankSearch = message.search;
       return this.publish();
     }
-    if (message.type === 'switchLanguage')
-      return vscode.commands.executeCommand('cfide.switchLanguage');
     this.trust();
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
@@ -592,7 +590,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             else if (message.type === 'openContestDetails')
               await this.openCenter(message.contestId).catch((e) => this.report(e));
             else if (message.type === 'translateStatement') await this.showTranslation(message);
-            else if (message.type === 'switchLanguage' || message.type === 'openAiSettings')
+            else if (message.type === 'openAiSettings')
               await this.handleMessage(message).catch((e) => this.report(e));
             return;
           }

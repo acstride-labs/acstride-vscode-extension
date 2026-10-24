@@ -27,7 +27,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
       section: z.enum(['prepare', 'submissions', 'rankings']),
     })
     .strict(),
-  z.object({ type: z.literal('switchLanguage') }),
   z.object({ type: z.literal('refreshStatus'), contestId: contestIdSchema }),
   z.object({ type: z.literal('refreshStandings'), contestId: contestIdSchema }),
   z.object({

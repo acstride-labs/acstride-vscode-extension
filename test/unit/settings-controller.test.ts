@@ -9,6 +9,7 @@ const mock = vi.hoisted(() => ({
   updates: [] as { key: string; value: unknown; target: number }[],
 }));
 vi.mock('vscode', () => ({
+  ViewColumn: { One: 1 },
   ConfigurationTarget: { Global: 1, Workspace: 2 },
   env: { language: 'en' },
   workspace: {
@@ -67,6 +68,7 @@ function fixture() {
     workspace as unknown as WorkspaceController,
   );
   return {
+    controller,
     contests,
     workspace,
     syncHandle: () =>
@@ -246,4 +248,32 @@ it('leaves a manually configured tracking handle editable when signed out', asyn
   await f.syncHandle();
   expect(mock.user.get('codeforces.handle')).toBe('manual');
   expect(mock.updates).toEqual([]);
+});
+
+it('delivers a requested settings tab only after the webview is ready', async () => {
+  const f = fixture();
+  const controller = f.controller as any;
+  const postMessage = vi.fn(async () => true);
+  controller.panel = { reveal: vi.fn(), webview: { postMessage } };
+  vi.spyOn(controller, 'publish').mockResolvedValue(undefined);
+  await controller.open('assistance');
+  expect(postMessage).not.toHaveBeenCalled();
+  await f.receive({ type: 'ready' });
+  expect(postMessage).toHaveBeenCalledExactlyOnceWith({ type: 'settingsTab', tab: 'assistance' });
+});
+it('navigates an already ready settings panel immediately without replaying old navigation', async () => {
+  const f = fixture();
+  const controller = f.controller as any;
+  const postMessage = vi.fn(async () => true);
+  controller.panel = { reveal: vi.fn(), webview: { postMessage } };
+  vi.spyOn(controller, 'publish').mockResolvedValue(undefined);
+  await f.receive({ type: 'ready' });
+  await controller.open('environment');
+  await controller.open('assistance');
+  expect(postMessage.mock.calls).toEqual([
+    [{ type: 'settingsTab', tab: 'environment' }],
+    [{ type: 'settingsTab', tab: 'assistance' }],
+  ]);
+  await f.receive({ type: 'ready' });
+  expect(postMessage).toHaveBeenCalledTimes(2);
 });
