@@ -142,3 +142,58 @@ it('does not cache semantically invalid assistant output so retry reaches the mo
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+it.each([true, false])(
+  'limits AI requests to ten and releases slots after success or failure (cache=%s)',
+  async (enabled) => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'ai-concurrency-'));
+    const cache = new AiRequestCache(path.join(dir, 'cache.json'), {
+      ...defaultAiCacheOptions,
+      enabled,
+    });
+    const gates = new Map<
+      number,
+      { resolve: (value: string) => void; reject: (error: Error) => void }
+    >();
+    let active = 0,
+      peak = 0;
+    let cleaning = false;
+    const started: number[] = [];
+    const settled = Promise.allSettled(
+      Array.from({ length: 12 }, (_, index) =>
+        cache.request(input(`job-${index}`), async () => {
+          started.push(index);
+          active++;
+          peak = Math.max(peak, active);
+          try {
+            if (cleaning) return 'cleanup';
+            return await new Promise<string>((resolve, reject) => {
+              gates.set(index, { resolve, reject });
+            });
+          } finally {
+            active--;
+          }
+        }),
+      ),
+    );
+    try {
+      await vi.waitFor(() => expect(started).toHaveLength(10));
+      expect(active).toBe(10);
+      gates.get(0)!.resolve('done');
+      await vi.waitFor(() => expect(started).toHaveLength(11));
+      gates.get(1)!.reject(new Error('offline'));
+      await vi.waitFor(() => expect(started).toHaveLength(12));
+      for (let index = 2; index < 12; index++) gates.get(index)!.resolve('done');
+      const results = await settled;
+      expect(peak).toBe(10);
+      expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(11);
+      expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    } finally {
+      cleaning = true;
+      cache.dispose();
+      for (const gate of gates.values()) gate.resolve('cleanup');
+      await settled;
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);

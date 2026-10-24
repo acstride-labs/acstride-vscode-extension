@@ -62,14 +62,15 @@ export class AiRequestCache {
     }
   }
   private async execute(run: (signal: AbortSignal) => Promise<string>) {
-    if (this.running >= 2) await new Promise<void>((resolve) => this.waiters.push(resolve));
-    this.running++;
+    if (this.running >= 10) await new Promise<void>((resolve) => this.waiters.push(resolve));
+    else this.running++;
     try {
       this.abort.signal.throwIfAborted();
       return await run(this.abort.signal);
     } finally {
-      this.running--;
-      this.waiters.shift()?.();
+      const next = this.waiters.shift();
+      if (next) next();
+      else this.running--;
     }
   }
   private bytes(entry: Entry) {

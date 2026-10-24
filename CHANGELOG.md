@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1
+
+- Increase the shared AI request concurrency limit from two to ten, including when caching is disabled. Queued requests continue when a running request completes or fails.
+
 ## 0.17.0
 
 - Use a persistent read-only CF Tool session and reusable anonymous transport connections. Import contests from a lightweight problem list rather than the full leaderboard.
