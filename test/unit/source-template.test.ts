@@ -15,7 +15,7 @@ afterEach(async () => {
   );
 });
 async function fixture() {
-  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-template-'));
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-template-'));
   folders.push(folder);
   const bundled = path.join(folder, 'builtin'),
     file = path.join(folder, 'legacy');

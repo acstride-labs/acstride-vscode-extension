@@ -13,7 +13,7 @@ const config = {
   timeoutMs: 2000,
 };
 async function workspace() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-python-test-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-python-test-'));
   folders.push(root);
   return new FileWorkspaceStore(root);
 }
@@ -52,13 +52,13 @@ describe('Python workflow', () => {
   });
   it('opens legacy C++ workspaces without modifying their manifest', async () => {
     const store = await workspace();
-    await fs.mkdir(path.join(store.root, '.cfide'));
+    await fs.mkdir(path.join(store.root, '.codeforces-workbench'));
     const manifest = JSON.stringify({ schemaVersion: 1, problems: [{ id: 'A', title: 'Legacy' }] });
-    await fs.writeFile(path.join(store.root, '.cfide', 'workspace.json'), manifest);
+    await fs.writeFile(path.join(store.root, '.codeforces-workbench', 'workspace.json'), manifest);
     expect(await store.listProblems()).toEqual([
       { id: 'A', title: 'Legacy', language: 'cpp', importedAt: 0 },
     ]);
-    expect(await fs.readFile(path.join(store.root, '.cfide', 'workspace.json'), 'utf8')).toBe(
+    expect(await fs.readFile(path.join(store.root, '.codeforces-workbench', 'workspace.json'), 'utf8')).toBe(
       manifest,
     );
     await store.createProblem('B', 'Python', 'print(1)', 'python');
@@ -91,7 +91,7 @@ describe('Python workflow', () => {
       runner.run(
         source,
         [{ id: 't', input: '' }],
-        { ...config, command: 'cfide-missing-python' },
+        { ...config, command: 'codeforces-workbench-missing-python' },
         new AbortController().signal,
       ),
     ).rejects.toThrow('Cannot start');

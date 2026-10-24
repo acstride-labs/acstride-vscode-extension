@@ -29,7 +29,7 @@ export class ContestRepository {
   private registryPath() {
     return path.join(
       this.root,
-      '.cfide',
+      '.codeforces-workbench',
       this.collection === 'standalone' ? 'standalone.json' : 'contests.json',
     );
   }
@@ -56,7 +56,7 @@ export class ContestRepository {
     return this.metadata(id, 'statements/assets');
   }
   private metadata(id: number, file: string) {
-    return path.join(this.contestRoot(id), '.cfide', file);
+    return path.join(this.contestRoot(id), '.codeforces-workbench', file);
   }
   private async read<T>(file: string, fallback: T): Promise<T> {
     try {

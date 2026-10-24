@@ -5,7 +5,7 @@ import {
   SubmissionController,
   type SubmissionSnapshot,
 } from '../../src/vscode/submission-controller';
-import { CfToolError, type CfToolClient } from '../../src/infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientError, type CodeforcesClientClient } from '../../src/infrastructure/codeforces/codeforces-client';
 const ui = vi.hoisted(() => ({
   warning: vi.fn(),
   info: vi.fn(),
@@ -86,7 +86,7 @@ function fixture(pending: unknown[] = []) {
     source,
     assertCurrent: vi.fn(),
   };
-  const manager = new SubmissionController(context, tool as unknown as CfToolClient);
+  const manager = new SubmissionController(context, tool as unknown as CodeforcesClientClient);
   managers.push(manager);
   return { manager, tool, snapshot, receipt, hash, update, saved: () => saved };
 }
@@ -137,7 +137,7 @@ it('restores unresolved receipts after restart without sending or watching an un
 });
 it('signs in explicitly with a private native password and publishes sign-in/sign-out state', async () => {
   const f = fixture();
-  f.tool.account.mockRejectedValue(new CfToolError('session_unavailable', 'missing'));
+  f.tool.account.mockRejectedValue(new CodeforcesClientError('session_unavailable', 'missing'));
   ui.input.mockResolvedValueOnce('tester').mockResolvedValueOnce('private-password');
   ui.warning.mockResolvedValue(undefined);
   const changed = vi.fn();
@@ -210,7 +210,7 @@ it('coalesces repeated submission clicks while the confirmation flow is running'
 
 it('requires settings login rather than opening credentials from the submit action', async () => {
   const f = fixture();
-  f.tool.account.mockRejectedValue(new CfToolError('session_unavailable', 'missing'));
+  f.tool.account.mockRejectedValue(new CodeforcesClientError('session_unavailable', 'missing'));
   await expect(f.manager.submit(f.snapshot)).rejects.toThrow('Settings page');
   expect(f.manager.accountState).toEqual({ status: 'signedOut', error: undefined });
   expect(ui.input).not.toHaveBeenCalled();
@@ -221,7 +221,7 @@ it('does not treat a failed verification or expired session as logged in', async
   await f.manager.refreshAccount();
   expect(f.manager.accountState.status).toBe('signedIn');
   f.tool.account.mockRejectedValue(
-    new CfToolError('verification_required', 'Website verification required'),
+    new CodeforcesClientError('verification_required', 'Website verification required'),
   );
   await f.manager.refreshAccount();
   expect(f.manager.accountState).toEqual({
@@ -234,7 +234,7 @@ it('keeps failed logins disabled and does not publish credentials', async () => 
   const f = fixture();
   ui.input.mockResolvedValueOnce('tester').mockResolvedValueOnce('private-password');
   f.tool.login.mockRejectedValue(
-    new CfToolError('verification_required', 'Website verification required'),
+    new CodeforcesClientError('verification_required', 'Website verification required'),
   );
   await expect(f.manager.signIn()).rejects.toThrow('Website verification');
   expect(f.manager.accountState.status).toBe('signedOut');

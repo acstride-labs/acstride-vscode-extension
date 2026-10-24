@@ -33,16 +33,16 @@ for (const [locale, suffix] of [
     text('Prepare a contest before it starts.') +
     '\n[' +
     text('Add contest') +
-    '](command:cfide.addContest)\n[' +
+    '](command:codeforcesWorkbench.addContest)\n[' +
     text('Open Contest Center') +
-    '](command:cfide.openContestCenter)\n[' +
+    '](command:codeforcesWorkbench.openContestCenter)\n[' +
     text('Open Settings') +
-    '](command:cfide.openSettings)';
+    '](command:codeforcesWorkbench.openSettings)';
   values['welcome.practice'] =
     text('Create a C++ or Python problem to get started.') +
     '\n[' +
     text('Create Local Problem') +
-    '](command:cfide.createProblem)';
+    '](command:codeforcesWorkbench.createProblem)';
   values['trust.description'] = text(
     'Reading problems is supported; compiling and running requires a trusted workspace.',
   );
@@ -56,11 +56,11 @@ for (const [locale, suffix] of [
     if (!Object.hasOwn(english, source))
       throw new Error('Missing English setting resource: ' + key);
     values[token] = text(source);
-    if (key === 'cfide.ui.language')
+    if (key === 'codeforcesWorkbench.ui.language')
       values[token + '.markdown'] =
         '[' +
         text('Open AC-Stride settings panel') +
-        '](command:cfide.openSettings)\n\n' +
+        '](command:codeforcesWorkbench.openSettings)\n\n' +
         text(source);
   }
   await fs.writeFile(

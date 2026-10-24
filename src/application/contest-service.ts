@@ -221,7 +221,7 @@ export class ContestService {
           handlers,
         );
       } else {
-        // Compatibility for readers without streaming; production uses CF Tool's FIFO scheduler.
+        // Compatibility for readers without streaming; production uses Codeforces Client's FIFO scheduler.
         for (const problem of pending) {
           if (this.stopped) return;
           try {

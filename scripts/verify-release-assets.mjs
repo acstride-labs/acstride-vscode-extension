@@ -9,7 +9,7 @@ const preRelease = process.env.RELEASE_PRE_RELEASE === 'true';
 validateRelease(manifest, process.env.RELEASE_TAG || '', preRelease);
 const folder = process.argv[2] || 'release-assets';
 const targets = ['darwin-arm64', 'darwin-x64', 'linux-x64', 'win32-x64'];
-const names = targets.map((t) => `ac-stride-${manifest.version}-${t}.vsix`);
+const names = targets.map((t) => `codeforces-workbench-${manifest.version}-${t}.vsix`);
 const actual = (await readdir(folder)).filter((name) => name.endsWith('.vsix')).sort();
 if (JSON.stringify(actual) !== JSON.stringify([...names].sort()))
   throw new Error('Expected exactly four platform packages.');

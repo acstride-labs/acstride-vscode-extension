@@ -4,11 +4,11 @@ import os from 'node:os';
 import { promises as fs } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { root, hostTarget, cleanEnvironment, hashes } from './downloader-common.mjs';
-import { verifyCfTool } from './verify-cf-tool.mjs';
+import { verifyCodeforcesClient } from './verify-codeforces-client.mjs';
 
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
-const archive = path.join(root, `ac-stride-${manifest.version}-${hostTarget()}.vsix`);
-const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-vsix-test-'));
+const archive = path.join(root, `codeforces-workbench-${manifest.version}-${hostTarget()}.vsix`);
+const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-vsix-test-'));
 try {
   let platformManifest = '';
   const names = [];
@@ -24,7 +24,7 @@ try {
           names.push(name);
           if (
             (!name.startsWith('extension/resources/downloader/') &&
-              !name.startsWith('extension/resources/cf-tool/') &&
+              !name.startsWith('extension/resources/codeforces-client/') &&
               !/^extension\/package\.nls(?:\.(?:zh-cn|ru|ja))?\.json$/.test(name) &&
               name !== 'extension.vsixmanifest') ||
             name.endsWith('/')
@@ -79,12 +79,12 @@ try {
       throw new Error(`Missing solution template: ${template}`);
   }
   const bundle = path.join(temp, 'extension', 'resources', 'downloader');
-  await verifyCfTool(path.join(temp, 'extension', 'resources', 'cf-tool'));
+  await verifyCodeforcesClient(path.join(temp, 'extension', 'resources', 'codeforces-client'));
   const embeddedManifest = JSON.parse(
     await fs.readFile(path.join(bundle, 'manifest.json'), 'utf8'),
   );
   const sourcePin = JSON.parse(
-    await fs.readFile(path.join(root, 'packaging', 'cf-tool.json'), 'utf8'),
+    await fs.readFile(path.join(root, 'packaging', 'codeforces-client.json'), 'utf8'),
   );
   if (embeddedManifest.revision !== sourcePin.revision)
     throw new Error('Extracted transport source pin mismatch');
@@ -97,8 +97,8 @@ try {
     throw new Error('VSIX lost or modified bundled downloader files');
   const executable = path.join(
     bundle,
-    'cfide-downloader',
-    process.platform === 'win32' ? 'cfide-downloader.exe' : 'cfide-downloader',
+    'codeforces-workbench-downloader',
+    process.platform === 'win32' ? 'codeforces-workbench-downloader.exe' : 'codeforces-workbench-downloader',
   );
   const result = spawnSync(executable, ['--self-test'], {
     cwd: temp,

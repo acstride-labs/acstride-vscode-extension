@@ -3,7 +3,7 @@
 ## 0.1.0 — First public preview
 
 - Import Codeforces contests and individual problems, or create local practice problems.
-- Download statements and samples automatically, prioritize selected problems, and reuse a persistent CF Tool connection.
+- Download statements and samples automatically, prioritize selected problems, and reuse a persistent Codeforces Client connection.
 - Write C++, Python, Java and Kotlin solutions with configurable templates and environment checks.
 - Run samples and custom tests with output differences, cancellation and execution limits.
 - View submissions, verdicts and standings. Experimental account login and confirmed submission are optional.

@@ -4,7 +4,7 @@ import path from 'node:path';
 export function validateRelease(manifest, tag, preRelease) {
   if (!/^v\d+\.\d+\.\d+$/.test(tag) || tag !== `v${manifest.version}`)
     throw new Error('Release tag must be v<package.json version>, with three numeric components.');
-  if (manifest.publisher !== 'acstride' || manifest.name !== 'cfide')
+  if (manifest.publisher !== 'acstride' || manifest.name !== 'codeforces-workbench')
     throw new Error('Unexpected Marketplace extension identity.');
   if (typeof preRelease !== 'boolean') throw new Error('Release channel must be explicit.');
   const minor = Number(manifest.version.split('.')[1]);

@@ -44,7 +44,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
     readonly collection?: 'standalone',
   ) {}
   private manifestPath() {
-    return path.join(this.root, '.cfide', 'workspace.json');
+    return path.join(this.root, '.codeforces-workbench', 'workspace.json');
   }
   sourcePath(id: string, language: Language = 'cpp') {
     return path.join(

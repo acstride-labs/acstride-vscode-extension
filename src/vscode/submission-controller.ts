@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { CfToolClient, CfToolError } from '../infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientClient, CodeforcesClientError } from '../infrastructure/codeforces/codeforces-client';
 import type { Problem } from '../domain/models';
 import { submissionLabel } from '../domain/contest';
 import type { AccountState } from '../shared/protocol';
@@ -24,7 +24,7 @@ const pendingSchema = z.object({
   lastVerdict: z.string().optional(),
 });
 type Pending = z.infer<typeof pendingSchema>;
-const storageKey = 'cfide.pendingSubmissions';
+const storageKey = 'codeforcesWorkbench.pendingSubmissions';
 
 export class SubmissionController implements vscode.Disposable {
   accountState: AccountState = { status: 'checking' };
@@ -40,7 +40,7 @@ export class SubmissionController implements vscode.Disposable {
     };
   }
   private accountError(error: unknown) {
-    return error instanceof CfToolError && error.code === 'verification_required'
+    return error instanceof CodeforcesClientError && error.code === 'verification_required'
       ? t(
           'Codeforces requires website verification. Sign-in is temporarily unavailable; you can keep using the other features.',
         )
@@ -66,7 +66,7 @@ export class SubmissionController implements vscode.Disposable {
           this.setAccount({
             status: 'signedOut',
             error:
-              error instanceof CfToolError &&
+              error instanceof CodeforcesClientError &&
               ['not_authenticated', 'session_unavailable', 'invalid_session'].includes(error.code)
                 ? undefined
                 : this.accountError(error),
@@ -86,7 +86,7 @@ export class SubmissionController implements vscode.Disposable {
   private timer: ReturnType<typeof setInterval>;
   constructor(
     private context: vscode.ExtensionContext,
-    private tool: CfToolClient,
+    private tool: CodeforcesClientClient,
   ) {
     const parsed = z.array(pendingSchema).safeParse(context.globalState.get(storageKey, []));
     this.pending = parsed.success ? parsed.data : [];

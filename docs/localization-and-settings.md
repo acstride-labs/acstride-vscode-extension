@@ -2,7 +2,7 @@
 
 ## Interaction and ownership
 
-The global settings command is exposed in the contest view toolbar. Each of the three ordered groups has one inline add (`+`) action. `cfide.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice uses the same global Settings page.
+The global settings command is exposed in the contest view toolbar. Each of the three ordered groups has one inline add (`+`) action. `codeforcesWorkbench.openSettings` opens one retained settings tab, independently of Contest Center. It also works without a workspace for selecting the interface language. Local practice uses the same global Settings page.
 
 One contest editor, titled with its contest name, combines an overview/rankings rail button and problem buttons. Its overview contains public submissions and rankings; there is no Problems or per-contest Settings tab. A compact header label shows ended/countdown state. Automatic downloads are always enabled, with bounded per-problem retries and selection-triggered recovery. There is no manual download toggle or button. Saved-HTML import has been removed.
 
@@ -10,7 +10,7 @@ Settings contains:
 
 | Section                                                               | Persistence                                                     |
 | --------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Display language: follow VS Code, English, 简体中文, Русский, 日本語  | Application-level `cfide.ui.language`, user preference          |
+| Display language: follow VS Code, English, 简体中文, Русский, 日本語  | Application-level `codeforcesWorkbench.ui.language`, user preference          |
 | Public handle, C++/Python tools/arguments/templates, local time limit | Explicit user or current-workspace VS Code configuration target |
 | Environment checks                                                    | Diagnostics, not another installer                              |
 
@@ -22,7 +22,7 @@ Settings starts with per-language environment checks. One allowlisted `checkAllE
 
 Starter-code editing uses separate `cpp.templateCode` and `python.templateCode` values at the selected user/workspace scope. Settings shows resolved previews while retaining independent drafts. Inline nonblank code wins over legacy `templatePath`, then the bundled template. Only trusted workspaces may preview configured files. Template files and inline values have size limits; templates are read as text, never evaluated. `${PROBLEM_ID}` substitution happens only when creating a solution. Existing source files are protected by exclusive creation in storage. The editor replaces the old path inputs, not the existing file-based configuration keys.
 
-Run and submit messages include their displayed problem/language identity. Both save the exact source buffer first and reject stale targets. Submission uses native login/language/confirmation dialogs, binds the source hash and confirmed account, and calls only typed CF Tool operations. Pending receipt IDs survive restart; exact-source reconciliation precedes result watching. No credentials/source are stored in the Webview or VS Code tracking state, and no submission is automatically resent.
+Run and submit messages include their displayed problem/language identity. Both save the exact source buffer first and reject stale targets. Submission uses native login/language/confirmation dialogs, binds the source hash and confirmed account, and calls only typed Codeforces Client operations. Pending receipt IDs survive restart; exact-source reconciliation precedes result watching. No credentials/source are stored in the Webview or VS Code tracking state, and no submission is automatically resent.
 
 Write for developers in each locale, not as a literal translation of the resource ID. Chinese uses established terms such as `token`, `Handle`, `Hack`, JSON and API rather than unfamiliar coined equivalents (for example, do not render `token` as “词元”). Use “代码”, “编程语言” and “用例” for source, language selection and local test cases. Russian `токен` and Japanese `トークン` are conventional local technical terms and should not be forcibly replaced with English. Keep error messages short, actionable and accurate; preserve parameters and distinguish official verdicts from local results. Wording regression tests cover the first-mismatch messages in all four locales.
 
@@ -50,7 +50,7 @@ For a wording change, edit the corresponding JSON values and run `npm run build`
 
 The AC-Stride container has three native peer views (contests, independent Codeforces problems, local practice), with no extra root group nodes. All allow visibility toggles through the native container menu. The existing local-practice view ID is reused to avoid duplicating the old view. Each view has one plus action; settings stays in the contest view toolbar because stable VS Code APIs do not expose multi-view container title actions. Import order is based on immutable `importedAt`, with folder creation-time fallback for legacy data.
 
-`cfide.solution.defaultLanguage` is edited alongside code templates. Contest and single-problem imports share `CodeforcesWorkspaces`, `ContestService` and `ContestRepository`; repository collection controls separate registries and file roots. `Problem.collection` is carried through source resolution, restore, test/submit targets and webview identity to prevent two copies of the same Codeforces problem from crossing state.
+`codeforcesWorkbench.solution.defaultLanguage` is edited alongside code templates. Contest and single-problem imports share `CodeforcesWorkspaces`, `ContestService` and `ContestRepository`; repository collection controls separate registries and file roots. `Problem.collection` is carried through source resolution, restore, test/submit targets and webview identity to prevent two copies of the same Codeforces problem from crossing state.
 
 Login errors belong to `SettingsState.account.error`. The settings request handler consumes sign-in rejection because the shared account state already publishes it; it does not duplicate the failure in the general settings-error region.
 

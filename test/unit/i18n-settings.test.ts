@@ -10,19 +10,19 @@ describe('configurable localization', () => {
   it('uses AC-Stride branding while preserving existing extension and workspace identities', async () => {
     const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
     expect(manifest.displayName).toBe('Codeforces Workbench');
-    expect(manifest.name).toBe('cfide');
+    expect(manifest.name).toBe('codeforces-workbench');
     expect(manifest.publisher).toBe('acstride');
     expect(manifest.repository.url).toBe(
       'https://github.com/acstride-labs/codeforces-workbench.git',
     );
-    expect(manifest.activationEvents).toContain('workspaceContains:.cfide/contests.json');
+    expect(manifest.activationEvents).toContain('workspaceContains:.codeforces-workbench/contests.json');
     for (const locale of locales) {
-      expect(Object.values(catalogs[locale]).join('\n')).not.toMatch(/CFIDE|ACStride/);
+      expect(Object.values(catalogs[locale]).join('\n')).not.toMatch(/Codeforces Workbench|ACStride/);
     }
     for (const suffix of ['', '.zh-cn', '.ru', '.ja']) {
       const nls = JSON.parse(await fs.readFile(`package.nls${suffix}.json`, 'utf8'));
       expect(nls['view.testPanel']).toMatch(/^AC-Stride · /);
-      expect(nls['command.cfide.openSettings']).toMatch(/^AC-Stride: /);
+      expect(nls['command.codeforcesWorkbench.openSettings']).toMatch(/^AC-Stride: /);
     }
   });
   it('uses familiar developer terminology and idiomatic mismatch messages', () => {
@@ -122,15 +122,15 @@ describe('configurable localization', () => {
     }
     expect(
       manifest.contributes.commands.find(
-        (c: { command: string }) => c.command === 'cfide.openSettings',
+        (c: { command: string }) => c.command === 'codeforcesWorkbench.openSettings',
       ).icon,
     ).toBe('$(gear)');
     expect(
       manifest.contributes.menus['view/title'].find(
-        (c: { command: string }) => c.command === 'cfide.openSettings',
+        (c: { command: string }) => c.command === 'codeforcesWorkbench.openSettings',
       ).group,
     ).toMatch(/^navigation(?:@\d+)?$/);
-    expect(manifest.contributes.configuration.properties['cfide.ui.language'].scope).toBe(
+    expect(manifest.contributes.configuration.properties['codeforcesWorkbench.ui.language'].scope).toBe(
       'application',
     );
   });

@@ -22,9 +22,9 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
   ) {}
   register() {
     for (const [id, group] of [
-      ['cfide.contests', 'contest'],
-      ['cfide.codeforcesProblems', 'standalone'],
-      ['cfide.problems', 'local'],
+      ['codeforcesWorkbench.contests', 'contest'],
+      ['codeforcesWorkbench.codeforcesProblems', 'standalone'],
+      ['codeforcesWorkbench.problems', 'local'],
     ] as const) {
       const provider: vscode.TreeDataProvider<SidebarNode> = {
         onDidChangeTreeData: this.onDidChangeTreeData,
@@ -52,7 +52,7 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
       this.workspace.onDidChangeTreeData(refresh),
       this.contests.onDidChangeTreeData(refresh),
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration('cfide.ui.language')) refresh();
+        if (event.affectsConfiguration('codeforcesWorkbench.ui.language')) refresh();
       }),
     );
   }
@@ -76,7 +76,7 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
       item.id = `local:${node.problem.id}`;
       item.description = languages[node.problem.language].label;
       item.iconPath = new vscode.ThemeIcon('code');
-      item.command = { command: 'cfide.openProblem', title: t('Open'), arguments: [node.problem] };
+      item.command = { command: 'codeforcesWorkbench.openProblem', title: t('Open'), arguments: [node.problem] };
       return item;
     }
     const problem = node.problem;
@@ -85,7 +85,7 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
     item.iconPath = new vscode.ThemeIcon('code');
     item.tooltip = item.label as string;
     item.command = {
-      command: 'cfide.openCodeforcesProblem',
+      command: 'codeforcesWorkbench.openCodeforcesProblem',
       title: t('Open'),
       arguments: [problem],
     };

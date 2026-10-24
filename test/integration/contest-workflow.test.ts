@@ -13,7 +13,7 @@ afterEach(async () => {
   await Promise.all(folders.splice(0).map((p) => fs.rm(p, { recursive: true, force: true })));
 });
 async function fixture() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-contest-test-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-contest-test-'));
   folders.push(root);
   const repo = new ContestRepository(root);
   const api = {
@@ -238,7 +238,7 @@ it('automatically retries each missing problem four times, persists exhaustion a
 it('ignores old disabled auto-download settings without losing saved workspace data', async () => {
   const { repo, service } = await fixture();
   await service.add(1234, 'cpp');
-  const metadata = path.join(repo.contestRoot(1234), '.cfide', 'contest.json');
+  const metadata = path.join(repo.contestRoot(1234), '.codeforces-workbench', 'contest.json');
   const old = JSON.parse(await fs.readFile(metadata, 'utf8'));
   old.autoDownload = false;
   old.retryCount = 200;

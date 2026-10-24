@@ -17,7 +17,7 @@ export class JvmRunner implements ProgramRunner {
     signal: AbortSignal,
     progress?: (result: TestResult) => void,
   ): Promise<RunResult> {
-    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-jvm-'));
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-jvm-'));
     const result: RunResult = { runId: randomUUID(), results: [] };
     try {
       const snapshot = path.join(folder, this.language === 'java' ? 'Main.java' : 'Main.kt');

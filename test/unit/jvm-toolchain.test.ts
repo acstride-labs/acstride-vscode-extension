@@ -36,7 +36,7 @@ it('keeps compiler arguments and runtime arguments independent', () => {
   expect(config.runtimeArgs).toEqual(['-Xmx256m']);
 });
 it('launches the official Windows Kotlin compiler without a command shell', async () => {
-  const home = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide kotlin & compiler '));
+  const home = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforcesWorkbench kotlin & compiler '));
   folders.push(home);
   await fs.mkdir(path.join(home, 'bin'));
   await fs.mkdir(path.join(home, 'lib'));

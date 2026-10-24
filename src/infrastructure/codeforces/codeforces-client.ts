@@ -16,16 +16,16 @@ const envelope = z.object({
   error: z.object({ code: z.string(), message: z.string(), retryable: z.boolean() }).optional(),
 });
 
-export function cfToolExecutable(root: string, platform = process.platform) {
+export function codeforcesClientExecutable(root: string, platform = process.platform) {
   return path.join(
     root,
     'resources',
-    'cf-tool',
-    platform === 'win32' ? 'acstride-cf.exe' : 'acstride-cf',
+    'codeforces-client',
+    platform === 'win32' ? 'codeforces-client.exe' : 'codeforces-client',
   );
 }
 
-export class CfToolError extends Error {
+export class CodeforcesClientError extends Error {
   constructor(
     readonly code: string,
     message: string,
@@ -50,7 +50,7 @@ const receiptSchema = z.object({
 export type SubmissionReceipt = z.infer<typeof receiptSchema>;
 
 // Typed client operations only. Account commands are invoked explicitly by the host.
-export class CfToolClient {
+export class CodeforcesClientClient {
   private abort = new AbortController();
   private handshake?: Promise<void>;
   private readSession?: ReadSession;
@@ -99,7 +99,7 @@ export class CfToolClient {
       throw new Error(this.formatError('protocol_mismatch'));
     const value = parsed.data;
     if (result.code !== 0 || !value.ok || value.error)
-      throw new CfToolError(
+      throw new CodeforcesClientError(
         value.error?.code ?? 'request_failed',
         this.formatError(value.error?.code ?? 'request_failed'),
         value.data,
@@ -180,7 +180,7 @@ export class CfToolClient {
       throw new Error('Invalid Codeforces problem request.');
     await this.ready();
     if (this.readSession) {
-      let result: Awaited<ReturnType<CfToolClient['problem']>> | undefined;
+      let result: Awaited<ReturnType<CodeforcesClientClient['problem']>> | undefined;
       await this.problems(id, [index], assetsDir, {
         problem: async (_index, value) => {
           result = value;
@@ -290,7 +290,7 @@ export class CfToolClient {
         if (event.type === 'problemError')
           await handlers.error(
             data.index,
-            new CfToolError(
+            new CodeforcesClientError(
               data.error?.code || 'request_failed',
               this.formatError(data.error?.code || 'request_failed'),
             ),
@@ -375,7 +375,7 @@ export class CfToolClient {
         ),
       );
     } catch (error) {
-      if (error instanceof CfToolError && error.code === 'submission_unknown')
+      if (error instanceof CodeforcesClientError && error.code === 'submission_unknown')
         return receiptSchema.parse(error.data);
       throw error;
     }
@@ -387,7 +387,7 @@ export class CfToolClient {
         await this.run(['receipt', 'reconcile', id, '--experimental'], true),
       );
     } catch (error) {
-      if (error instanceof CfToolError && error.code === 'submission_unknown')
+      if (error instanceof CodeforcesClientError && error.code === 'submission_unknown')
         return receiptSchema.parse(error.data);
       throw error;
     }

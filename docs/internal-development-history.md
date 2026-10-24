@@ -8,7 +8,7 @@ These versions were used during development before the first public release. The
 
 ## 0.17.0
 
-- Use a persistent read-only CF Tool session and reusable anonymous transport connections. Import contests from a lightweight problem list rather than the full leaderboard.
+- Use a persistent read-only Codeforces Client session and reusable anonymous transport connections. Import contests from a lightweight problem list rather than the full leaderboard.
 - Download the first problem before starting two ordered consumers for the remaining problems. Show statements and samples immediately, then refresh cached images in the background. Single-problem imports use the same direct stream.
 - Preserve downloaded statements on process interruptions, restart the read session for later requests, and clean up transport processes when the extension closes.
 
@@ -117,20 +117,20 @@ These versions were used during development before the first public release. The
 
 ## 0.11.1
 
-- Update CF Tool to remove fixed response, statement, image and asset-count limits that rejected large public contest data.
+- Update Codeforces Client to remove fixed response, statement, image and asset-count limits that rejected large public contest data.
 - Remove matching CLI-output/statement/asset-count limits from the extension adapter while retaining identity validation, timeouts, cancellation and local-runner output limits.
 
 ## 0.11.0
 
-- Make bundled CF Tool the sole Codeforces client for API reads, statement parsing, samples and official image downloads.
+- Make bundled Codeforces Client the sole Codeforces client for API reads, statement parsing, samples and official image downloads.
 - Remove the direct TypeScript API fallback, old helper client, webpage parser and image downloader. Keep host-side protocol validation, display sanitization, workspace scheduling and C++/Python testing.
-- Move anonymous downloader sources, Python dependency pins and notice collection into CF Tool; build both components from one exact source revision without committing binaries.
-- Add cross-process request pacing in CF Tool, structured problem/asset results, strict local asset mapping and a Webview policy that blocks remote image requests.
-- Preserve existing `.cfide` data, saved statements, code and custom tests.
+- Move anonymous downloader sources, Python dependency pins and notice collection into Codeforces Client; build both components from one exact source revision without committing binaries.
+- Add cross-process request pacing in Codeforces Client, structured problem/asset results, strict local asset mapping and a Webview policy that blocks remote image requests.
+- Preserve existing `.codeforces-workbench` data, saved statements, code and custom tests.
 
 ## 0.10.0
 
-- Bundle ACStride CF Tool at a fixed Git commit for anonymous contest metadata, public submission records and rankings, using versioned JSON, request IDs and strict method/argument validation.
+- Bundle ACStride Codeforces Client at a fixed Git commit for anonymous contest metadata, public submission records and rankings, using versioned JSON, request IDs and strict method/argument validation.
 - Keep login, cookies and automatic submission out of the extension; the CLI's opt-in account/submission experiment is not enabled through the editor bridge.
 - Preserve the existing curl_cffi statement downloader, C++/Python execution, directory layout and user code/tests.
 - Build Go binaries and dependency/runtime notices in developer/CI workflows only. Verify source pin, platform, hashes, protocol and standalone startup before packaging and again after extracting the final VSIX. No end-user Go installation or runtime downloads.

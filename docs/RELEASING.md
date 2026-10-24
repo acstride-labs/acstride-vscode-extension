@@ -3,12 +3,11 @@
 ## Identity and public versions
 
 - Publisher: `acstride` (display name AC-Stride).
-- Extension: `cfide`; Marketplace identity: `acstride.cfide`.
+- Extension: `codeforces-workbench`; Marketplace identity: `acstride.codeforces-workbench`.
 - First public preview: `0.1.0`, tag `v0.1.0`.
 - Odd minor versions are pre-release; even minor versions are stable. Examples: `0.1.1` preview, `0.2.0` stable.
 - Do not use `-alpha`/`-beta` suffixes in package.json. Mark the GitHub Release as pre-release and use Alpha/Beta in its title.
 - Internal 0.2–0.17 milestones are preserved in `internal-development-history.md`; they were not public releases.
-- Previous local installs used `cfide-dev.cfide`. The new publisher is a distinct extension identity; remove the old development install before installing the public one. Existing `.cfide` data and `cfide.*` settings remain compatible.
 
 ## One-time Marketplace authentication
 

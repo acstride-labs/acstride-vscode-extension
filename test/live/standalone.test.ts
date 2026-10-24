@@ -5,17 +5,17 @@ import os from 'node:os';
 import { ContestService } from '../../src/application/contest-service';
 import { RunTests } from '../../src/application/run-tests';
 import { ContestRepository } from '../../src/infrastructure/storage/contest-repository';
-import { CfToolClient, cfToolExecutable } from '../../src/infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientClient, codeforcesClientExecutable } from '../../src/infrastructure/codeforces/codeforces-client';
 import { CodeforcesApi } from '../../src/infrastructure/codeforces/api-client';
 import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
 import { PythonRunner } from '../../src/infrastructure/execution/python-runner';
 // Public read-only smoke test: no credentials, registration or submission.
-it.skipIf(process.env.CFIDE_LIVE !== '1')(
-  'imports a real standalone problem through CF Tool and runs its official sample',
+it.skipIf(process.env.CODEFORCES_WORKBENCH_LIVE !== '1')(
+  'imports a real standalone problem through Codeforces Client and runs its official sample',
   async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'acstride-single-live-'));
     const queue = new RequestQueue();
-    const tool = new CfToolClient(cfToolExecutable(path.resolve('.')));
+    const tool = new CodeforcesClientClient(codeforcesClientExecutable(path.resolve('.')));
     try {
       const api = new CodeforcesApi(queue, (method, params) => tool.call(method, params));
       const repo = new ContestRepository(root, 'standalone');

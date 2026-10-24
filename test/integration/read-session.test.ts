@@ -12,7 +12,7 @@ afterEach(async () => {
   );
 });
 async function fixture() {
-  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-read-session-'));
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-read-session-'));
   folders.push(folder);
   const script = path.join(folder, 'server.mjs');
   await fs.writeFile(

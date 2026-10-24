@@ -6,14 +6,14 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
-import { CfToolClient, cfToolExecutable } from '../../src/infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientClient, codeforcesClientExecutable } from '../../src/infrastructure/codeforces/codeforces-client';
 
 // Real product route only. Never authenticates, registers or submits.
-describe.skipIf(process.env.CFIDE_LIVE !== '1')('live CF Tool client integration', () => {
+describe.skipIf(process.env.CODEFORCES_WORKBENCH_LIVE !== '1')('live Codeforces Client client integration', () => {
   it('reads metadata, submissions, standings and imports real statements/samples through the bundled CLI', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'acstride-client-live-'));
     const queue = new RequestQueue();
-    const tool = new CfToolClient(cfToolExecutable(path.resolve('.')));
+    const tool = new CodeforcesClientClient(codeforcesClientExecutable(path.resolve('.')));
     try {
       const api = new CodeforcesApi(queue, (method, params) => tool.call(method, params));
       expect((await api.contest(1)).id).toBe(1);

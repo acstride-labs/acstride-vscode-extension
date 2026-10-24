@@ -1,5 +1,5 @@
 {
-  "name": "cfide",
+  "name": "codeforces-workbench",
   "displayName": "Codeforces Workbench",
   "description": "Import Codeforces contests and problems, write solutions, run tests, and track submissions in VS Code.",
   "version": "0.1.0",
@@ -21,9 +21,9 @@
     "workspace"
   ],
   "activationEvents": [
-    "workspaceContains:.cfide/workspace.json",
-    "workspaceContains:.cfide/contests.json",
-    "workspaceContains:.cfide/standalone.json"
+    "workspaceContains:.codeforces-workbench/workspace.json",
+    "workspaceContains:.codeforces-workbench/contests.json",
+    "workspaceContains:.codeforces-workbench/standalone.json"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -35,95 +35,95 @@
   "contributes": {
     "commands": [
       {
-        "command": "cfide.openSettings",
-        "title": "%command.cfide.openSettings%",
+        "command": "codeforcesWorkbench.openSettings",
+        "title": "%command.codeforcesWorkbench.openSettings%",
         "icon": "$(gear)"
       },
       {
-        "command": "cfide.openContestCenter",
-        "title": "%command.cfide.openContestCenter%",
+        "command": "codeforcesWorkbench.openContestCenter",
+        "title": "%command.codeforcesWorkbench.openContestCenter%",
         "icon": {
           "light": "resources/icons/trophy-light.svg",
           "dark": "resources/icons/trophy-dark.svg"
         }
       },
       {
-        "command": "cfide.addContest",
-        "title": "%command.cfide.addContest%",
+        "command": "codeforcesWorkbench.addContest",
+        "title": "%command.codeforcesWorkbench.addContest%",
         "icon": "$(add)"
       },
       {
-        "command": "cfide.switchLanguage",
-        "title": "%command.cfide.switchLanguage%",
+        "command": "codeforcesWorkbench.switchLanguage",
+        "title": "%command.codeforcesWorkbench.switchLanguage%",
         "icon": "$(code)"
       },
       {
-        "command": "cfide.createProblem",
-        "title": "%command.cfide.createProblem%",
+        "command": "codeforcesWorkbench.createProblem",
+        "title": "%command.codeforcesWorkbench.createProblem%",
         "icon": "$(add)"
       },
       {
-        "command": "cfide.openProblem",
-        "title": "%command.cfide.openProblem%"
+        "command": "codeforcesWorkbench.openProblem",
+        "title": "%command.codeforcesWorkbench.openProblem%"
       },
       {
-        "command": "cfide.runTests",
-        "title": "%command.cfide.runTests%"
+        "command": "codeforcesWorkbench.runTests",
+        "title": "%command.codeforcesWorkbench.runTests%"
       },
       {
-        "command": "cfide.stop",
-        "title": "%command.cfide.stop%"
+        "command": "codeforcesWorkbench.stop",
+        "title": "%command.codeforcesWorkbench.stop%"
       },
       {
-        "command": "cfide.refresh",
-        "title": "%command.cfide.refresh%"
+        "command": "codeforcesWorkbench.refresh",
+        "title": "%command.codeforcesWorkbench.refresh%"
       },
       {
-        "command": "cfide.submitSolution",
-        "title": "%command.cfide.submitSolution%",
+        "command": "codeforcesWorkbench.submitSolution",
+        "title": "%command.codeforcesWorkbench.submitSolution%",
         "icon": "$(cloud-upload)"
       },
       {
-        "command": "cfide.signIn",
-        "title": "%command.cfide.signIn%"
+        "command": "codeforcesWorkbench.signIn",
+        "title": "%command.codeforcesWorkbench.signIn%"
       },
       {
-        "command": "cfide.signOut",
-        "title": "%command.cfide.signOut%"
+        "command": "codeforcesWorkbench.signOut",
+        "title": "%command.codeforcesWorkbench.signOut%"
       },
       {
-        "command": "cfide.addCodeforcesProblem",
-        "title": "%command.cfide.addCodeforcesProblem%",
+        "command": "codeforcesWorkbench.addCodeforcesProblem",
+        "title": "%command.codeforcesWorkbench.addCodeforcesProblem%",
         "icon": "$(add)"
       },
       {
-        "command": "cfide.openCodeforcesProblem",
-        "title": "%command.cfide.openCodeforcesProblem%"
+        "command": "codeforcesWorkbench.openCodeforcesProblem",
+        "title": "%command.codeforcesWorkbench.openCodeforcesProblem%"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "cfide",
+          "id": "codeforcesWorkbench",
           "title": "AC-Stride",
-          "icon": "resources/icons/cfide.svg"
+          "icon": "resources/icons/codeforces-workbench.svg"
         }
       ]
     },
     "views": {
-      "cfide": [
+      "codeforcesWorkbench": [
         {
-          "id": "cfide.contests",
+          "id": "codeforcesWorkbench.contests",
           "name": "%view.contests%",
           "canToggleVisibility": true
         },
         {
-          "id": "cfide.codeforcesProblems",
+          "id": "codeforcesWorkbench.codeforcesProblems",
           "name": "%view.codeforcesProblems%",
           "canToggleVisibility": true
         },
         {
-          "id": "cfide.problems",
+          "id": "codeforcesWorkbench.problems",
           "name": "%view.practice%",
           "canToggleVisibility": true
         }
@@ -132,37 +132,37 @@
     "menus": {
       "editor/title": [
         {
-          "command": "cfide.switchLanguage",
-          "when": "cfide.sourceActive",
+          "command": "codeforcesWorkbench.switchLanguage",
+          "when": "codeforcesWorkbench.sourceActive",
           "group": "navigation@1"
         }
       ],
       "view/title": [
         {
-          "command": "cfide.addContest",
-          "when": "view == cfide.contests",
+          "command": "codeforcesWorkbench.addContest",
+          "when": "view == codeforcesWorkbench.contests",
           "group": "navigation@1"
         },
         {
-          "command": "cfide.addCodeforcesProblem",
-          "when": "view == cfide.codeforcesProblems",
+          "command": "codeforcesWorkbench.addCodeforcesProblem",
+          "when": "view == codeforcesWorkbench.codeforcesProblems",
           "group": "navigation@1"
         },
         {
-          "command": "cfide.createProblem",
-          "when": "view == cfide.problems",
+          "command": "codeforcesWorkbench.createProblem",
+          "when": "view == codeforcesWorkbench.problems",
           "group": "navigation@1"
         },
         {
-          "command": "cfide.openSettings",
-          "when": "view == cfide.contests",
+          "command": "codeforcesWorkbench.openSettings",
+          "when": "view == codeforcesWorkbench.contests",
           "group": "navigation@2"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "cfide.runTests",
+        "command": "codeforcesWorkbench.runTests",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
         "when": "editorLangId == cpp || editorLangId == python"
@@ -171,7 +171,7 @@
     "configuration": {
       "title": "AC-Stride",
       "properties": {
-        "cfide.ui.language": {
+        "codeforcesWorkbench.ui.language": {
           "type": "string",
           "enum": [
             "auto",
@@ -189,54 +189,54 @@
           ],
           "default": "auto",
           "scope": "application",
-          "description": "%setting.cfide.ui.language%",
+          "description": "%setting.codeforcesWorkbench.ui.language%",
           "order": -1000,
-          "markdownDescription": "%setting.cfide.ui.language.markdown%"
+          "markdownDescription": "%setting.codeforcesWorkbench.ui.language.markdown%"
         },
-        "cfide.codeforces.handle": {
+        "codeforcesWorkbench.codeforces.handle": {
           "type": "string",
           "default": "",
-          "description": "%setting.cfide.codeforces.handle%"
+          "description": "%setting.codeforcesWorkbench.codeforces.handle%"
         },
-        "cfide.python.interpreter": {
+        "codeforcesWorkbench.python.interpreter": {
           "type": "string",
           "default": "python3",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.python.interpreter%"
+          "description": "%setting.codeforcesWorkbench.python.interpreter%"
         },
-        "cfide.python.args": {
+        "codeforcesWorkbench.python.args": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "%setting.cfide.python.args%"
+          "description": "%setting.codeforcesWorkbench.python.args%"
         },
-        "cfide.python.templatePath": {
+        "codeforcesWorkbench.python.templatePath": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.python.templatePath%"
+          "description": "%setting.codeforcesWorkbench.python.templatePath%"
         },
-        "cfide.python.templateCode": {
+        "codeforcesWorkbench.python.templateCode": {
           "type": "string",
           "default": "",
           "maxLength": 1000000,
-          "description": "%setting.cfide.python.templateCode%"
+          "description": "%setting.codeforcesWorkbench.python.templateCode%"
         },
-        "cfide.cpp.templateCode": {
+        "codeforcesWorkbench.cpp.templateCode": {
           "type": "string",
           "default": "",
           "maxLength": 1000000,
-          "description": "%setting.cfide.cpp.templateCode%"
+          "description": "%setting.codeforcesWorkbench.cpp.templateCode%"
         },
-        "cfide.cpp.compiler": {
+        "codeforcesWorkbench.cpp.compiler": {
           "type": "string",
           "default": "g++",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.cpp.compiler%"
+          "description": "%setting.codeforcesWorkbench.cpp.compiler%"
         },
-        "cfide.cpp.args": {
+        "codeforcesWorkbench.cpp.args": {
           "type": "array",
           "items": {
             "type": "string"
@@ -247,22 +247,22 @@
             "-Wall",
             "-Wextra"
           ],
-          "description": "%setting.cfide.cpp.args%"
+          "description": "%setting.codeforcesWorkbench.cpp.args%"
         },
-        "cfide.run.timeoutMs": {
+        "codeforcesWorkbench.run.timeoutMs": {
           "type": "number",
           "default": 2000,
           "minimum": 100,
           "maximum": 60000,
-          "description": "%setting.cfide.run.timeoutMs%"
+          "description": "%setting.codeforcesWorkbench.run.timeoutMs%"
         },
-        "cfide.cpp.templatePath": {
+        "codeforcesWorkbench.cpp.templatePath": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.cpp.templatePath%"
+          "description": "%setting.codeforcesWorkbench.cpp.templatePath%"
         },
-        "cfide.solution.defaultLanguage": {
+        "codeforcesWorkbench.solution.defaultLanguage": {
           "type": "string",
           "enum": [
             "cpp",
@@ -271,87 +271,87 @@
             "kotlin"
           ],
           "default": "cpp",
-          "description": "%setting.cfide.solution.defaultLanguage%"
+          "description": "%setting.codeforcesWorkbench.solution.defaultLanguage%"
         },
-        "cfide.java.compiler": {
+        "codeforcesWorkbench.java.compiler": {
           "type": "string",
           "default": "javac",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.java.compiler%"
+          "description": "%setting.codeforcesWorkbench.java.compiler%"
         },
-        "cfide.java.args": {
+        "codeforcesWorkbench.java.args": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "%setting.cfide.java.args%"
+          "description": "%setting.codeforcesWorkbench.java.args%"
         },
-        "cfide.java.runtime": {
+        "codeforcesWorkbench.java.runtime": {
           "type": "string",
           "default": "java",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.java.runtime%"
+          "description": "%setting.codeforcesWorkbench.java.runtime%"
         },
-        "cfide.java.runtimeArgs": {
+        "codeforcesWorkbench.java.runtimeArgs": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "%setting.cfide.java.runtimeArgs%"
+          "description": "%setting.codeforcesWorkbench.java.runtimeArgs%"
         },
-        "cfide.java.templatePath": {
+        "codeforcesWorkbench.java.templatePath": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.java.templatePath%"
+          "description": "%setting.codeforcesWorkbench.java.templatePath%"
         },
-        "cfide.java.templateCode": {
+        "codeforcesWorkbench.java.templateCode": {
           "type": "string",
           "default": "",
           "maxLength": 1000000,
-          "description": "%setting.cfide.java.templateCode%"
+          "description": "%setting.codeforcesWorkbench.java.templateCode%"
         },
-        "cfide.kotlin.compiler": {
+        "codeforcesWorkbench.kotlin.compiler": {
           "type": "string",
           "default": "kotlinc",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.kotlin.compiler%"
+          "description": "%setting.codeforcesWorkbench.kotlin.compiler%"
         },
-        "cfide.kotlin.args": {
+        "codeforcesWorkbench.kotlin.args": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "%setting.cfide.kotlin.args%"
+          "description": "%setting.codeforcesWorkbench.kotlin.args%"
         },
-        "cfide.kotlin.runtime": {
+        "codeforcesWorkbench.kotlin.runtime": {
           "type": "string",
           "default": "java",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.kotlin.runtime%"
+          "description": "%setting.codeforcesWorkbench.kotlin.runtime%"
         },
-        "cfide.kotlin.runtimeArgs": {
+        "codeforcesWorkbench.kotlin.runtimeArgs": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "%setting.cfide.kotlin.runtimeArgs%"
+          "description": "%setting.codeforcesWorkbench.kotlin.runtimeArgs%"
         },
-        "cfide.kotlin.templatePath": {
+        "codeforcesWorkbench.kotlin.templatePath": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "description": "%setting.cfide.kotlin.templatePath%"
+          "description": "%setting.codeforcesWorkbench.kotlin.templatePath%"
         },
-        "cfide.kotlin.templateCode": {
+        "codeforcesWorkbench.kotlin.templateCode": {
           "type": "string",
           "default": "",
           "maxLength": 1000000,
-          "description": "%setting.cfide.kotlin.templateCode%"
+          "description": "%setting.codeforcesWorkbench.kotlin.templateCode%"
         }
       }
     }
@@ -359,8 +359,8 @@
   "scripts": {
     "build": "node scripts/build-localization.mjs && node esbuild.mjs && vite build",
     "build:downloader": "node scripts/build-downloader.mjs",
-    "build:cf-tool": "node scripts/build-cf-tool.mjs",
-    "verify:cf-tool": "node scripts/verify-cf-tool.mjs",
+    "build:codeforces-client": "node scripts/build-codeforces-client.mjs",
+    "verify:codeforces-client": "node scripts/verify-codeforces-client.mjs",
     "verify:downloader": "node scripts/verify-downloader.mjs",
     "verify:vsix": "node scripts/verify-vsix.mjs",
     "typecheck": "tsc --noEmit && tsc -p webview/tsconfig.json --noEmit",

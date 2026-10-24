@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateRelease } from '../scripts/validate-release.mjs';
-const manifest = { publisher: 'acstride', name: 'cfide', version: '0.1.0' };
+const manifest = { publisher: 'acstride', name: 'codeforces-workbench', version: '0.1.0' };
 test('first public alpha uses numeric version and an explicit pre-release channel', () => {
   assert.deepEqual(validateRelease(manifest, 'v0.1.0', true), {
     version: '0.1.0',
@@ -17,6 +17,8 @@ test('rejects mismatched tags, suffixes, wrong channels and unexpected publisher
     assert.throws(() => validateRelease(manifest, tag, true));
   assert.throws(() => validateRelease(manifest, 'v0.1.0', false));
   assert.throws(() => validateRelease(manifest, 'v0.1.0', undefined));
-  assert.throws(() => validateRelease({ ...manifest, publisher: 'cfide-dev' }, 'v0.1.0', true));
+  assert.throws(() =>
+    validateRelease({ ...manifest, publisher: 'codeforces-workbench-dev' }, 'v0.1.0', true),
+  );
   assert.throws(() => validateRelease({ ...manifest, name: 'different' }, 'v0.1.0', true));
 });

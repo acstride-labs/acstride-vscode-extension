@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { resolveLocale, translate } from '../shared/i18n';
 export function currentLocale() {
   return resolveLocale(
-    vscode.workspace.getConfiguration('cfide').get('ui.language', 'auto'),
+    vscode.workspace.getConfiguration('codeforcesWorkbench').get('ui.language', 'auto'),
     vscode.env.language,
   );
 }
