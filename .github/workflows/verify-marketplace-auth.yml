@@ -1,0 +1,49 @@
+name: Verify Marketplace authentication
+on:
+  workflow_dispatch:
+    inputs:
+      verify_publisher:
+        description: Verify publishing permission after adding the identity to the publisher
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: verify-marketplace-auth
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check identity configuration
+        env:
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: test -n "$CLIENT_ID" && test -n "$TENANT_ID"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Show the Marketplace identity ID (not a credential)
+        run: |
+          identity_id=$(az rest --url 'https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1' --resource 499b84ac-1321-427f-aa17-267ca6975798 --query id --output tsv)
+          [[ "$identity_id" =~ ^[0-9a-fA-F-]{36}$ ]]
+          echo "Marketplace identity ID: $identity_id"
+          echo "Marketplace identity ID: \`$identity_id\`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        if: inputs.verify_publisher
+      - uses: actions/setup-node@v4
+        if: inputs.verify_publisher
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        if: inputs.verify_publisher
+      - name: Verify publisher rights without uploading an extension
+        if: inputs.verify_publisher
+        run: npx --no-install vsce verify-pat acstride --azure-credential
