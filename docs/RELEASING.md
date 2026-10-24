@@ -1,4 +1,4 @@
-# Publishing Codeforces Workbench by AC-Stride
+# Publishing Codeforces Workbench
 
 ## Identity and public versions
 
@@ -23,7 +23,7 @@ Microsoft documents retirement of global Azure DevOps PATs on December 1, 2026. 
 ### Microsoft Entra ID (long-term)
 
 1. Create an Entra application/service principal or managed identity and authorize its Marketplace identity as a Contributor of publisher `acstride`.
-2. Configure a federated credential with issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject `repo:acstride-labs/acstride-vscode-extension:environment:marketplace`.
+2. Configure a federated credential with issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject `repo:acstride-labs/codeforces-workbench:environment:marketplace`.
 3. In environment variables set `MARKETPLACE_AUTH_MODE=entra`, `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`.
 4. The workflow uses `azure/login` with no subscription requirement, then `vsce publish --azure-credential`. No client secret is needed.
 

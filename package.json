@@ -1,13 +1,13 @@
 {
   "name": "cfide",
-  "displayName": "Codeforces Workbench by AC-Stride",
+  "displayName": "Codeforces Workbench",
   "description": "Import Codeforces contests and problems, write solutions, run tests, and track submissions in VS Code.",
   "version": "0.1.0",
   "publisher": "acstride",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/acstride-labs/acstride-vscode-extension.git"
+    "url": "https://github.com/acstride-labs/codeforces-workbench.git"
   },
   "engines": {
     "vscode": "^1.95.0"
@@ -400,7 +400,7 @@
   "icon": "resources/icons/marketplace.png",
   "homepage": "https://acstride.com/en",
   "bugs": {
-    "url": "https://github.com/acstride-labs/acstride-vscode-extension/issues"
+    "url": "https://github.com/acstride-labs/codeforces-workbench/issues"
   },
   "keywords": [
     "codeforces",

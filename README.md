@@ -1,7 +1,7 @@
-# Codeforces Workbench by AC-Stride
+# Codeforces Workbench
 
 Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
-[VS Code extension](https://github.com/acstride-labs/acstride-vscode-extension),
+[VS Code extension](https://github.com/acstride-labs/codeforces-workbench),
 [Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
 [product website](https://github.com/acstride-labs/acstride-web).
 
