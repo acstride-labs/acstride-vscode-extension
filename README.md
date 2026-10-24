@@ -1,4 +1,13 @@
-# CFIDE
+# AC-Stride
+
+Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
+[VS Code extension](https://github.com/acstride-labs/acstride-vscode-extension),
+[Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
+[product website](https://github.com/acstride-labs/acstride-web).
+
+The extension ID, `cfide.*` commands/settings and `.cfide` workspace data remain
+unchanged for compatibility with existing installations. Build environment variables
+retain their `CFIDE_` prefix.
 
 A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.9 adds editable starter-code templates, one-click environment checks and language-bound run/copy actions to the compact answering layout. The public downloader, private Python runtime, curl_cffi and CA certificates are bundled in the platform-specific VSIX: no user-side Python/pip setup or extra downloads.
 
@@ -9,7 +18,7 @@ A Codeforces extension for desktop VS Code, with C++ and Python support and Engl
 - Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
-- Copy solution code and open the matching Codeforces submission page. Paste and submit there yourself; CFIDE does not send solutions.
+- Copy solution code and open the matching Codeforces submission page. Paste and submit there yourself; AC-Stride does not send solutions.
 - Compact case tabs: verified passes are green, all abnormal verdicts are red; run-only results stay neutral. Single-case runs preserve other results and switching tabs preserves unsaved test drafts.
 - Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
@@ -19,16 +28,16 @@ There are **no login, Cookie import, browser connection, automatic submission, r
 
 1. Install the VSIX matching your operating system and CPU using **Extensions: Install from VSIX…**. Build targets are Windows x64, macOS Apple Silicon/Intel and Linux x64 (glibc, Ubuntu 22.04+ baseline); other architectures and Alpine/musl are not supported yet. Marketplace publishing is not configured.
 2. Open a trusted, single local workspace folder. A C++ compiler and/or Python 3 is only required to **run your own solutions**, not to download/read problems.
-3. Open **CFIDE: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
+3. Open **AC-Stride: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
 4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
 5. Open a problem: the square A/B/C… buttons switch problems, with statement on the left, native VS Code editor on the right and tests beneath the code. Resize the dividers as needed. Use the top language control to switch between C++ and Python without discarding either source. Official samples are read-only; **+** adds and selects a custom-case tab.
 6. Beside **Run all**, **Copy code & open submission page** (中文：**复制代码并去提交**) saves and copies the selected language's code, then opens that problem's submission page in your default browser. Paste and submit there yourself. The language switch remains visible in the same toolbar; both run and copy reject stale problem/language requests. Open **Settings** using the sidebar gear and set **My Codeforces handle** to show your submissions and rank. Clear it to disable tracking.
 
-The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; CFIDE never silently downloads components or falls back to installing pip packages.
+The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; AC-Stride never silently downloads components or falls back to installing pip packages.
 
 ### No system Python changes
 
-The private runtime lives only inside CFIDE's extension directory and is launched by absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
+The private runtime lives only inside AC-Stride's extension directory and is launched by absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
 
 This runtime is exclusively for public downloads, not for executing solutions. The solution Python interpreter/compiler remains user-configurable and separate.
 
@@ -38,7 +47,7 @@ Use **Download problems** or a problem's **Refresh problem** action to retry lat
 
 ## Local practice
 
-**CFIDE: Create Local Problem** works independently of Codeforces. Choose C++ or Python and enter an ID/title. The default template sums two integers with a `2 3 → 5` test. Run using the tests pane below the editor or `Cmd+Alt+R` on macOS / `Ctrl+Alt+R` elsewhere. **CFIDE: Switch Solution Language** also works for local practice. Change expected output to `6` to inspect a WA difference.
+**AC-Stride: Create Local Problem** works independently of Codeforces. Choose C++ or Python and enter an ID/title. The default template sums two integers with a `2 3 → 5` test. Run using the tests pane below the editor or `Cmd+Alt+R` on macOS / `Ctrl+Alt+R` elsewhere. **AC-Stride: Switch Solution Language** also works for local practice. Change expected output to `6` to inspect a WA difference.
 
 Local AC is **not official acceptance**. The default checker compares tokens, ignoring whitespace but preserving case and numeric spelling. Uncheck expected output for run-only mode; blank expected output is a real expectation. Memory use is not measured, and wall-clock timings are not Codeforces timings. Local programs execute on your computer: this is **not a security sandbox**. Output is capped at 1 MB per process, compilation at 30 seconds, and each test has a configurable wall-clock limit.
 
@@ -62,9 +71,9 @@ Under **Code templates**, choose C++ or Python on the left and paste starter cod
 - `cfide.cpp.templateCode` / `cfide.python.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
 - `cfide.cpp.templatePath` / `cfide.python.templatePath`: legacy optional template files, used only when inline code is empty.
 
-C++ completion comes from your installed language extension, not CFIDE. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
+C++ completion comes from your installed language extension, not AC-Stride. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
 
-UI text is maintained in four JSON catalogs shared by React and the extension host, with key/parameter checks and English fallback. Native static VS Code command/menu/configuration labels use generated `package.nls*.json` resources and follow VS Code's own display language; CFIDE's live preference controls its pages, tree labels and dynamic notifications. See [the localization/settings design](docs/localization-and-settings.md) for architecture and adding translations.
+UI text is maintained in four JSON catalogs shared by React and the extension host, with key/parameter checks and English fallback. Native static VS Code command/menu/configuration labels use generated `package.nls*.json` resources and follow VS Code's own display language; AC-Stride's live preference controls its pages, tree labels and dynamic notifications. See [the localization/settings design](docs/localization-and-settings.md) for architecture and adding translations.
 
 ## Workspace and migration
 

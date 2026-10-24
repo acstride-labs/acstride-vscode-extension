@@ -26,7 +26,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
   private dirtyTests = false;
   private mutation: Promise<unknown> = Promise.resolve();
   private disposables: vscode.Disposable[] = [];
-  private readonly output = vscode.window.createOutputChannel('CFIDE');
+  private readonly output = vscode.window.createOutputChannel('AC-Stride');
   resolveSource?: (
     source: string,
   ) => Promise<{ store: FileWorkspaceStore; problem: Problem } | undefined>;
@@ -100,7 +100,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
               if (store.sourcePath(p.id, language) === file)
                 resolved = { store, problem: { ...p, language } };
         }
-        if (!resolved) throw new Error('Open a CFIDE solution file first.');
+        if (!resolved) throw new Error('Open an AC-Stride solution file first.');
         if (
           this.current?.id !== resolved.problem.id ||
           this.current?.contestId !== resolved.problem.contestId ||
@@ -402,7 +402,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     const message = error instanceof Error ? error.message : String(error);
     this.output.appendLine(message);
     this.send({ type: 'error', message });
-    void vscode.window.showErrorMessage('CFIDE: ' + t(message));
+    void vscode.window.showErrorMessage('AC-Stride: ' + t(message));
   }
   async snapshot() {
     this.trust();

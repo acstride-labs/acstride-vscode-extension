@@ -32,7 +32,7 @@ Locale resolution: an explicit supported preference wins; otherwise follow VS Co
 
 Both extension-host views/dialogs and React use the same catalogs. Webview HTML starts with a safe resolved `lang` attribute. On configuration changes the host broadcasts a `locale` message; React updates labels without remounting editors/forms or requesting new test state. Unsent test inputs, settings drafts, current tab/search and local test results remain in memory. Host-owned tree titles, notifications, status text and statement placeholders also update. Problem titles/statements, source code, test input/output and raw compiler/interpreter diagnostics are not translated.
 
-VS Code's **static native** command palette/menu labels, welcome content and built-in configuration descriptions use standard `package.nls*.json` localization. They follow the VS Code display language (and its normal reload rules), not CFIDE's independent runtime preference. `scripts/build-localization.mjs` generates these files from the shared catalogs plus `resources/localization/manifest.json`. Do not hand-edit the generated NLS files. This distinction does not require reloading CFIDE's pages when changing its own language.
+VS Code's **static native** command palette/menu labels, welcome content and built-in configuration descriptions use standard `package.nls*.json` localization. They follow the VS Code display language (and its normal reload rules), not AC-Stride's independent runtime preference. `scripts/build-localization.mjs` generates these files from the shared catalogs plus `resources/localization/manifest.json`. Do not hand-edit the generated NLS files. This distinction does not require reloading AC-Stride's pages when changing its own language.
 
 ## Data flow and safeguards
 

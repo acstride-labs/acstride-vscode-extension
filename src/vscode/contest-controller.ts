@@ -129,7 +129,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('cfide.ui.language')) {
           tree.title = t('Codeforces Contests');
-          if (this.dashboard) this.dashboard.title = t('CFIDE · Contest Center');
+          if (this.dashboard) this.dashboard.title = t('AC-Stride · Contest Center');
           postLocale(this.dashboard?.webview);
           postLocale(this.statementPanel?.webview);
           const target = this.statementTarget;
@@ -339,7 +339,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (!this.dashboard) {
       this.dashboard = vscode.window.createWebviewPanel(
         'cfide.contestCenter',
-        t('CFIDE · Contest Center'),
+        t('AC-Stride · Contest Center'),
         vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -445,7 +445,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (!this.statementPanel) {
       this.statementPanel = vscode.window.createWebviewPanel(
         'cfide.statement',
-        t('CFIDE · Statement'),
+        t('AC-Stride · Statement'),
         { viewColumn: vscode.ViewColumn.One, preserveFocus: true },
         {
           enableScripts: true,
@@ -638,7 +638,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private report(error: unknown, notify = true) {
     this.errorMessage = error instanceof Error ? error.message : String(error);
-    if (notify) void vscode.window.showErrorMessage('CFIDE: ' + t(this.errorMessage));
+    if (notify) void vscode.window.showErrorMessage('AC-Stride: ' + t(this.errorMessage));
     if (notify) void this.publish();
   }
   private async updateCountdown() {

@@ -13,7 +13,7 @@ const responseSchema = z.object({
   html: z.string().max(8_000_000),
 });
 const unavailable =
-  'The bundled downloader is unavailable or incompatible. Reinstall the CFIDE VSIX for this system/CPU architecture. No Python or pip setup is required. Saved solutions/tests are unchanged; saved problem HTML can still be imported.';
+  'The bundled downloader is unavailable or incompatible. Reinstall the AC-Stride VSIX for this system/CPU architecture. No Python or pip setup is required. Saved solutions/tests are unchanged; saved problem HTML can still be imported.';
 
 export function downloaderExecutable(extensionRoot: string, platform = process.platform) {
   return path.join(

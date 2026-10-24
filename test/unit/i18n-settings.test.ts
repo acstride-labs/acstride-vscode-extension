@@ -7,6 +7,24 @@ import { settingsRequestSchema, settingsValuesSchema } from '../../src/shared/se
 import { contestRequestSchema } from '../../src/shared/contest-protocol';
 
 describe('configurable localization', () => {
+  it('uses AC-Stride branding while preserving existing extension and workspace identities', async () => {
+    const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
+    expect(manifest.displayName).toBe('AC-Stride');
+    expect(manifest.name).toBe('cfide');
+    expect(manifest.publisher).toBe('cfide-dev');
+    expect(manifest.repository.url).toBe(
+      'https://github.com/acstride-labs/acstride-vscode-extension.git',
+    );
+    expect(manifest.activationEvents).toContain('workspaceContains:.cfide/contests.json');
+    for (const locale of locales) {
+      expect(Object.values(catalogs[locale]).join('\n')).not.toMatch(/CFIDE|ACStride/);
+    }
+    for (const suffix of ['', '.zh-cn', '.ru', '.ja']) {
+      const nls = JSON.parse(await fs.readFile(`package.nls${suffix}.json`, 'utf8'));
+      expect(nls['view.testPanel']).toMatch(/^AC-Stride · /);
+      expect(nls['command.cfide.openSettings']).toMatch(/^AC-Stride: /);
+    }
+  });
   it('uses familiar developer terminology and idiomatic mismatch messages', () => {
     expect(translate('zh-CN', 'First difference at token {token}', { token: 1 })).toBe(
       '第 1 个 token 不一致',

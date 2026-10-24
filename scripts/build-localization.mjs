@@ -23,11 +23,11 @@ for (const [locale, suffix] of [
   };
   const values = {};
   for (const [id, key] of Object.entries(mapping.commands))
-    values['command.' + id] = 'CFIDE: ' + text(key);
+    values['command.' + id] = 'AC-Stride: ' + text(key);
   values['view.contests'] = text('Codeforces Contests');
   values['view.practice'] = text('Local Practice');
   values['view.tests'] = text('Tests');
-  values['view.testPanel'] = 'CFIDE · ' + text('Tests');
+  values['view.testPanel'] = 'AC-Stride · ' + text('Tests');
   values['welcome.contests'] =
     text('Prepare a contest before it starts.') +
     '\n[' +

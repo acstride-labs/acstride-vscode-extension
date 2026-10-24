@@ -63,7 +63,7 @@ export class SettingsController implements vscode.Disposable {
     if (!this.panel) {
       this.panel = vscode.window.createWebviewPanel(
         'cfide.settings',
-        t('CFIDE · Settings'),
+        t('AC-Stride · Settings'),
         vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -148,7 +148,7 @@ export class SettingsController implements vscode.Disposable {
           );
           if (rollback.some((result) => result.status === 'rejected'))
             throw new Error(
-              'Some settings could not be restored. Review CFIDE settings in VS Code.',
+              'Some settings could not be restored. Review AC-Stride settings in VS Code.',
             );
           throw error;
         }
@@ -246,7 +246,7 @@ export class SettingsController implements vscode.Disposable {
       error: this.error,
     };
     if (!this.panel) return;
-    this.panel.title = t('CFIDE · Settings');
+    this.panel.title = t('AC-Stride · Settings');
     postLocale(this.panel.webview);
     void this.panel.webview.postMessage({ type: 'settingsState', state });
     this.notice = undefined;

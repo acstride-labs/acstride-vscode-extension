@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1
+
+- Rename the product to AC-Stride across the extension, four interface languages, native commands, settings, diagnostics and documentation.
+- Update the repository link to AC-Stride Labs and label packaged VSIX files with the new brand.
+- Preserve the extension identity, command/configuration IDs, workspace directories and build environment variables for compatibility.
+
 ## 0.9.0
 
 - Rename the ambiguous copy action to explicitly describe copying code and opening submission; place it immediately after Run all in the tests toolbar and remove duplicate top/editor-title buttons.

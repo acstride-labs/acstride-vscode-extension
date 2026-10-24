@@ -75,7 +75,7 @@ describe('built-in anonymous public downloads', () => {
       f.executor.mockRejectedValue(new Error('ENOENT'));
       expect(await f.client.ready()).toBe(false);
       await expect(f.client.page('/contest/1/problem/A')).rejects.toThrow(
-        'Reinstall the CFIDE VSIX',
+        'Reinstall the AC-Stride VSIX',
       );
       expect(f.executor.mock.calls.every(([command]) => command === f.executable)).toBe(true);
     } finally {
@@ -122,7 +122,7 @@ describe('built-in anonymous public downloads', () => {
       );
       f.executor.mockResolvedValueOnce(successful({ error: 'missing_dependency' }));
       await expect(f.client.page('/contest/1/problem/A')).rejects.toThrow(
-        'Reinstall the CFIDE VSIX',
+        'Reinstall the AC-Stride VSIX',
       );
       f.executor.mockResolvedValueOnce(
         successful({ status: 200, url: 'https://evil.test/', html: statementHtml() }),

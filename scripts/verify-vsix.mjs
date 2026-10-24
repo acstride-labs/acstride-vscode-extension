@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { root, hostTarget, cleanEnvironment, hashes } from './downloader-common.mjs';
 
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
-const archive = path.join(root, `cfide-${manifest.version}-${hostTarget()}.vsix`);
+const archive = path.join(root, `ac-stride-${manifest.version}-${hostTarget()}.vsix`);
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-vsix-test-'));
 try {
   let platformManifest = '';

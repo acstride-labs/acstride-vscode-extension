@@ -126,7 +126,7 @@ export function SettingsApp() {
         </label>
         <p>
           {t(
-            'Applies immediately to CFIDE pages. Problem statements and your code are not translated.',
+            'Applies immediately to AC-Stride pages. Problem statements and your code are not translated.',
           )}
         </p>
       </section>

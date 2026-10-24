@@ -1,13 +1,13 @@
 {
   "name": "cfide",
-  "displayName": "CFIDE — Codeforces IDE",
+  "displayName": "AC-Stride",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jinsuichen/cfide.git"
+    "url": "https://github.com/acstride-labs/acstride-vscode-extension.git"
   },
   "engines": {
     "vscode": "^1.95.0"
@@ -90,7 +90,7 @@
       "activitybar": [
         {
           "id": "cfide",
-          "title": "CFIDE",
+          "title": "AC-Stride",
           "icon": "resources/icons/cfide.svg"
         }
       ]
@@ -161,7 +161,7 @@
       }
     ],
     "configuration": {
-      "title": "CFIDE",
+      "title": "AC-Stride",
       "properties": {
         "cfide.ui.language": {
           "type": "string",

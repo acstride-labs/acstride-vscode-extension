@@ -12,5 +12,5 @@ await run(process.execPath, [
   '--target',
   hostTarget(),
   '--out',
-  `cfide-${manifest.version}-${hostTarget()}.vsix`,
+  `ac-stride-${manifest.version}-${hostTarget()}.vsix`,
 ]);
