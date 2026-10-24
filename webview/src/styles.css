@@ -920,7 +920,7 @@ button.ai-action-button:hover {
 .ai-tooltip:hover::after,
 .ai-tooltip:focus-within::after {
   visibility: visible;
-  transition: visibility 0s linear 1s;
+  transition: visibility 0s linear 300ms;
 }
 .assistant-markdown {
   line-height: 1.7;
@@ -950,7 +950,7 @@ button.ai-action-button:hover {
 .translation-action:hover .translation-hint,
 .translation-action:focus-within .translation-hint {
   visibility: visible;
-  transition: visibility 0s linear 1s;
+  transition: visibility 0s linear 300ms;
 }
 .translation-action:has(.translation-hint)::after {
   display: none;

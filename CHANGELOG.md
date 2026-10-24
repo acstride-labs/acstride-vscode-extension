@@ -2,7 +2,7 @@
 
 ## 0.16.1
 
-- Replace AI badges with lightweight library icons and icon-only actions with localized one-second hover labels.
+- Replace AI badges with lightweight library icons and icon-only actions with localized hover labels.
 - Keep AI dialog titles and close buttons visible while scrolling; expand dialogs within the available editor area. Render AI Debug responses as Markdown.
 - Save translation, hint, debug and solution settings independently in each card, preserving other unsaved drafts.
 - Simplify default prompts and add competitive-programming fast input and buffered output guidance to AI solutions.
