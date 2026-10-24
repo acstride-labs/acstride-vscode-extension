@@ -7,9 +7,11 @@ export const settingsValuesSchema = z
     compiler: z.string().trim().min(1).max(4096),
     cppArgs: args,
     cppTemplate: z.string().max(4096),
+    cppTemplateCode: z.string().max(1_000_000).default(''),
     interpreter: z.string().trim().min(1).max(4096),
     pythonArgs: args,
     pythonTemplate: z.string().max(4096),
+    pythonTemplateCode: z.string().max(1_000_000).default(''),
     timeoutMs: z.number().int().min(100).max(60000),
   })
   .strict();
@@ -19,9 +21,11 @@ export const settingsKeys = {
   compiler: 'cpp.compiler',
   cppArgs: 'cpp.args',
   cppTemplate: 'cpp.templatePath',
+  cppTemplateCode: 'cpp.templateCode',
   interpreter: 'python.interpreter',
   pythonArgs: 'python.args',
   pythonTemplate: 'python.templatePath',
+  pythonTemplateCode: 'python.templateCode',
   timeoutMs: 'run.timeoutMs',
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
@@ -36,7 +40,13 @@ export const settingsRequestSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('checkEnvironment'), language: z.enum(['cpp', 'python']) }),
+  z.object({ type: z.literal('checkAllEnvironments') }).strict(),
 ]);
+export interface EnvironmentResult {
+  status: 'checking' | 'passed' | 'failed';
+  command: string;
+  message?: string;
+}
 export interface SettingsState {
   locale: Locale;
   preference: LocalePreference;
@@ -44,6 +54,10 @@ export interface SettingsState {
   workspaceAvailable: boolean;
   trusted: boolean;
   values: SettingsValues;
+  templatePreviews: { cpp: string; python: string };
+  defaultTemplates: { cpp: string; python: string };
+  templateWarnings: { cpp?: boolean; python?: boolean };
+  environments: { cpp?: EnvironmentResult; python?: EnvironmentResult };
   busy: boolean;
   notice?: string;
   error?: string;

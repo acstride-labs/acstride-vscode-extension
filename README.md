@@ -1,6 +1,6 @@
 # CFIDE
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.8 introduces a compact problem rail, left-hand statement, native code editor on the right and tabbed tests directly beneath the editor. The public downloader, private Python runtime, curl_cffi and CA certificates are bundled in the platform-specific VSIX: no user-side Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.9 adds editable starter-code templates, one-click environment checks and language-bound run/copy actions to the compact answering layout. The public downloader, private Python runtime, curl_cffi and CA certificates are bundled in the platform-specific VSIX: no user-side Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -22,7 +22,7 @@ There are **no login, Cookie import, browser connection, automatic submission, r
 3. Open **CFIDE: Open Contest Center**. The built-in public downloader is ready automatically; there is no setup or installation button.
 4. Add a regular Codeforces contest URL or numeric ID and choose the default language. Keep VS Code running through the start for scheduled imports. Overdue imports resume on reopening; individual failures retry with backoff.
 5. Open a problem: the square A/B/C… buttons switch problems, with statement on the left, native VS Code editor on the right and tests beneath the code. Resize the dividers as needed. Use the top language control to switch between C++ and Python without discarding either source. Official samples are read-only; **+** adds and selects a custom-case tab.
-6. **Copy & submit** (中文：**复制题目**) copies the current solution and opens that problem's submission page in your default browser. Paste and submit there yourself. Open **Settings** using the sidebar gear and set **My Codeforces handle** to show your submissions and rank. Clear it to disable tracking.
+6. Beside **Run all**, **Copy code & open submission page** (中文：**复制代码并去提交**) saves and copies the selected language's code, then opens that problem's submission page in your default browser. Paste and submit there yourself. The language switch remains visible in the same toolbar; both run and copy reject stale problem/language requests. Open **Settings** using the sidebar gear and set **My Codeforces handle** to show your submissions and rank. Clear it to disable tracking.
 
 The built-in anonymous downloader is **not a guarantee against site verification**. No CAPTCHA is solved or bypassed by the extension. Failed downloads do not block local coding/testing or erase saved work. An absent/incompatible bundled executable reports a reinstall-the-correct-VSIX error; CFIDE never silently downloads components or falls back to installing pip packages.
 
@@ -48,6 +48,10 @@ Use the contest sidebar's **+ / trophy / gear** for add / contest info / setting
 
 Choose **User settings** or **This workspace** before editing tool/tracking settings. Workspace settings override user settings; environment checks use the active saved configuration. Save/discard draft changes before switching scope or contest. Language is always an application-level user preference. Archive preserves all local code/tests.
 
+Environment checks are at the top of Settings. **Check all** (自动检测) checks configured C++ compilation/execution and Python execution, continues if one fails, and marks each result separately. It does not install tools, scan arbitrary executables or change your configuration. Passed checks show a green tick; failures have expandable diagnostics. Changing tool configuration clears previous ticks, and checks must be rerun after reloading VS Code.
+
+Under **Code templates**, choose C++ or Python on the left and paste starter code in the editor on the right. Drafts are independent, so switching the language does not lose edits. Save Settings to persist them at the selected user/workspace scope; Restore default fills the built-in template. `${PROBLEM_ID}` inserts the problem index. Templates are used only when creating a new solution file (including the first switch to a language); existing solutions are never replaced. Inline code takes priority over the legacy template-file setting. Empty inline code falls back to that file or the bundled default.
+
 - `cfide.ui.language`: `auto` (follow VS Code), `en`, `zh-CN`, `ru`, `ja`.
 - `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
 - `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
@@ -55,7 +59,8 @@ Choose **User settings** or **This workspace** before editing tool/tracking sett
 - `cfide.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
 - `cfide.python.args`: additional solution interpreter arguments.
 - `cfide.run.timeoutMs`: per-test timeout, default 2000 ms.
-- `cfide.cpp.templatePath` / `cfide.python.templatePath`: optional absolute templates with `${PROBLEM_ID}` substitution.
+- `cfide.cpp.templateCode` / `cfide.python.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
+- `cfide.cpp.templatePath` / `cfide.python.templatePath`: legacy optional template files, used only when inline code is empty.
 
 C++ completion comes from your installed language extension, not CFIDE. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
 

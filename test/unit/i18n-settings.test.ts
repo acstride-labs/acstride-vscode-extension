@@ -13,6 +13,8 @@ describe('configurable localization', () => {
     );
     expect(translate('zh-CN', '(missing token)')).toBe('（缺少 token）');
     expect(Object.values(catalogs['zh-CN']).join('\n')).not.toContain('词元');
+    expect(Object.values(catalogs['zh-CN']).join('\n')).not.toContain('复制题目');
+    expect(translate('zh-CN', 'Copy and submit')).toBe('复制代码并去提交');
     expect(translate('en', 'First difference at token {token}', { token: 2 })).toBe(
       'First mismatch: token 2',
     );

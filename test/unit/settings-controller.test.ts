@@ -50,7 +50,9 @@ const values = {
 };
 function fixture() {
   const contests = { saveContestOptions: vi.fn(async () => {}) };
-  const workspace = { checkEnvironment: vi.fn(async () => {}) };
+  const workspace = {
+    checkEnvironment: vi.fn(async (_language?: string, _notify?: boolean) => {}),
+  };
   const controller = new SettingsController(
     {} as VSCode.ExtensionContext,
     workspace as unknown as WorkspaceController,
@@ -58,6 +60,12 @@ function fixture() {
   return {
     contests,
     workspace,
+    environments: () =>
+      (
+        controller as unknown as {
+          environments: Record<string, { status: string; message?: string }>;
+        }
+      ).environments,
     receive: (message: unknown) =>
       (controller as unknown as { receive(message: unknown): Promise<unknown> }).receive(message),
   };
@@ -71,6 +79,56 @@ beforeEach(() => {
   mock.available = true;
 });
 describe('settings persistence adapter', () => {
+  it('persists independent inline templates at the selected configuration scope', async () => {
+    const f = fixture();
+    await f.receive({
+      type: 'saveSettings',
+      scope: 'user',
+      values: { ...values, cppTemplateCode: '// C++', pythonTemplateCode: '# Python' },
+    });
+    expect(mock.user.get('cpp.templateCode')).toBe('// C++');
+    expect(mock.user.get('python.templateCode')).toBe('# Python');
+    await f.receive({ type: 'settingsScope', scope: 'workspace' });
+    await f.receive({
+      type: 'saveSettings',
+      scope: 'workspace',
+      values: {
+        ...values,
+        cppTemplateCode: '// workspace C++',
+        pythonTemplateCode: '# workspace Python',
+      },
+    });
+    expect(mock.workspace.get('cpp.templateCode')).toBe('// workspace C++');
+    expect(mock.user.get('cpp.templateCode')).toBe('// C++');
+  });
+  it('checks every supported language and keeps each outcome, even if one fails', async () => {
+    const f = fixture();
+    f.workspace.checkEnvironment.mockImplementation(async (language) => {
+      if (language === 'cpp') throw new Error('compiler missing');
+    });
+    await f.receive({ type: 'checkAllEnvironments' });
+    expect(f.workspace.checkEnvironment.mock.calls).toEqual([
+      ['cpp', false],
+      ['python', false],
+    ]);
+    expect(f.environments().cpp.status).toBe('failed');
+    expect(f.environments().cpp.message).toBe('compiler missing');
+    expect(f.environments().python.status).toBe('passed');
+  });
+  it('does not retain a green check if effective tool configuration changes during the check', async () => {
+    const f = fixture();
+    f.workspace.checkEnvironment.mockImplementation(async () => {
+      mock.user.set('cpp.compiler', 'changed');
+    });
+    await f.receive({ type: 'checkAllEnvironments' });
+    expect(f.environments()).toEqual({});
+  });
+  it('blocks environment execution in untrusted workspaces', async () => {
+    const f = fixture();
+    mock.trusted = false;
+    await expect(f.receive({ type: 'checkAllEnvironments' })).rejects.toThrow('Trust');
+    expect(f.workspace.checkEnvironment).not.toHaveBeenCalled();
+  });
   it('persists language globally even in untrusted/no-folder mode and never edits runtime tools', async () => {
     mock.trusted = false;
     mock.available = false;
@@ -91,7 +149,7 @@ describe('settings persistence adapter', () => {
     expect(mock.workspace.get('run.timeoutMs')).toBe(3000);
     expect(mock.user.get('run.timeoutMs')).toBe(2500);
     expect(mock.updates.some((u) => u.key === 'ui.language')).toBe(false);
-    expect(mock.updates.length).toBe(16);
+    expect(mock.updates.length).toBe(20);
   });
   it('validates first and blocks untrusted execution settings, unavailable workspaces and stale scopes', async () => {
     const f = fixture();

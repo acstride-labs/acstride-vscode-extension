@@ -388,7 +388,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (message.type === 'selectContest') return this.select(message.contestId);
     if (message.type === 'switchLanguage')
       return vscode.commands.executeCommand('cfide.switchLanguage');
-    if (message.type === 'copySource') return vscode.commands.executeCommand('cfide.copySolution');
     this.trust();
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
@@ -471,7 +470,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           const parsed = contestRequestSchema.safeParse(raw);
           if (!parsed.success) return;
           if (parsed.data.type !== 'ready') {
-            if (['openProblem', 'copySource', 'switchLanguage'].includes(parsed.data.type))
+            if (['openProblem', 'switchLanguage'].includes(parsed.data.type))
               await this.handleMessage(parsed.data).catch((e) => this.report(e));
             return;
           }

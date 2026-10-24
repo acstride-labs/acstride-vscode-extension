@@ -13,6 +13,8 @@
     "cfide.copySolution": "Copy and submit"
   },
   "settings": {
+    "cfide.cpp.templateCode": "Initial C++ code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.",
+    "cfide.python.templateCode": "Initial Python code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.",
     "cfide.ui.language": "CFIDE interface language. Does not translate problem statements or code.",
     "cfide.codeforces.handle": "Optional public read-only Codeforces handle for submission results and nearby ranking. No account authentication is performed.",
     "cfide.python.interpreter": "Python 3 executable or absolute path. On Windows you may need to set this to python. For virtual environments, use the interpreter's full path.",

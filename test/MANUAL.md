@@ -1,4 +1,13 @@
-# CFIDE 0.8 layout/multilingual/settings acceptance checks
+# CFIDE 0.9 layout/multilingual/settings acceptance checks
+
+## New settings and language-bound actions
+
+0.9 macOS GUI verification on 2026-10-24: Check all ran real C++ compilation/execution and Python execution and showed green checks for `g++` and `python3`. Independent C++/Python template drafts survived switching both ways; the test-only drafts were discarded without saving configuration. The toolbar visibly showed Python 3, Run all, then the renamed copy/navigation button. A run of the existing sum template against contest 2261/A's sample produced the expected WA and the localized message “第 1 个 token 不一致”; this checks the UI, not a correct solution to that problem. Automated tests separately verify unsaved C++/Python buffers are saved, routed to the matching runner/copied source, and protected against stale requests and failed saves.
+
+1. Verify environment checks precede the other Settings sections. Run Check all: C++ and Python should each show checking followed by a green tick or a failure with details. A missing compiler must not prevent checking Python. Changing executable/arguments clears the prior tick; reloading starts unchecked. No tool installation or path rewriting occurs.
+2. In Code templates, choose C++, paste a distinctive initial program, switch to Python and paste a different one. Switch back: neither draft should be lost. Save, reopen Settings and verify both; test separate user/workspace values and default reset. Create new local/contest solutions and verify the corresponding template and `${PROBLEM_ID}` substitution. Existing sources must remain unchanged after template edits or language switching.
+3. Keep the current language visible beside Run all. Leave unsaved C++ edits and run, then switch to Python, leave unsaved edits and run. Verify each buffer is saved and the correct runner/source is used. Repeat with Copy code & open submission page. Saving failure must prevent copying/navigation. A delayed old-language UI request must fail instead of using the new language's file.
+4. Copy/navigation belongs immediately to the right of Run all, not above the statement or in the native editor title. Its Chinese label is 复制代码并去提交 and the tooltip explicitly says no automatic submission. Verify all four locales at a narrow pane width.
 
 ## Answering layout and tabs
 
@@ -39,7 +48,7 @@ The extension has no login, Cookie import, browser connection, in-IDE submission
 3. Add two public regular contests, including one upcoming contest. Verify independent directories, countdown/default language/archive settings and incremental release downloads while VS Code remains open. Closing VS Code stops timers; overdue work resumes after reopening.
 4. Import a real released problem and compare the statement, formula rendering and official samples with the website. Open its C++/Python solutions, verify both sources remain separate and samples/custom tests are shared.
 5. Force a download failure; verify the actual anonymous-download error, preserved code/tests, local solution access and manual retry. Verify saved-HTML import is absent; use the normal retry action.
-6. Use Copy & submit (中文：复制题目), verify the clipboard contains current solution code and the default browser opens that problem’s submission page. Submit manually on the official website; the extension itself must make no submission request.
+6. Use Copy code & open submission page (中文：复制代码并去提交), verify the clipboard contains current solution code and the default browser opens that problem’s submission page. Submit manually on the official website; the extension itself must make no submission request.
 7. Set a public handle; verify official submission verdicts (including pretests vs final tests), cache timestamps, top/nearby/search rankings. Clear the handle and verify private-account ownership is never implied.
 8. Disconnect the network and verify cached statements/results/rankings remain readable with clear stale/failure indications. Archive a contest and verify automatic work pauses.
 

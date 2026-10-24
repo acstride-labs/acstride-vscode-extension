@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0
+
+- Rename the ambiguous copy action to explicitly describe copying code and opening submission; place it immediately after Run all in the tests toolbar and remove duplicate top/editor-title buttons.
+- Keep an explicit current-language switch in the tests toolbar; bind run/copy requests to the displayed contest, problem and language, rejecting stale requests.
+- Automatically save the selected source before running/copying; pass the captured language through execution so metadata changes cannot redirect a run to another source.
+- Add per-language starter-code editors to Settings, with independent C++/Python drafts, default previews/reset, user/workspace persistence and legacy-file compatibility. Never overwrite existing solutions.
+- Place C++/Python environment checks first in Settings, with a Check all action, per-language progress, green success checks and failure details. Clear stale checks when execution configuration changes.
+- Localize all new controls in English, Chinese, Russian and Japanese and add source-selection, autosave, template and environment regression tests.
+
 ## 0.8.1
 
 - Replace literal Chinese terminology with familiar developer wording, including `token`, Handle, code, programming language and test cases.

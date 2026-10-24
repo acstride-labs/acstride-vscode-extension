@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import type { Problem, RunResult, TestCase, TestResult } from '../domain/models';
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/);
+export const problemTargetSchema = z.object({
+  id,
+  language: z.enum(['cpp', 'python']),
+  contestId: z.number().int().positive().optional(),
+});
 export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('draftState'), dirty: z.boolean() }),
@@ -13,10 +18,10 @@ export const requestSchema = z.discriminatedUnion('type', [
     }),
   }),
   z.object({ type: z.literal('deleteTest'), testId: id }),
-  z.object({ type: z.literal('run'), testId: id.optional() }),
+  z.object({ type: z.literal('run'), testId: id.optional(), target: problemTargetSchema }),
   z.object({ type: z.literal('stop') }),
   z.object({ type: z.literal('switchLanguage') }),
-  z.object({ type: z.literal('copySource') }),
+  z.object({ type: z.literal('copySource'), target: problemTargetSchema }),
 ]);
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =

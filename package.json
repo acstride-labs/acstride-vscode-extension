@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "CFIDE — Codeforces IDE",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -123,11 +123,6 @@
           "command": "cfide.switchLanguage",
           "when": "cfide.sourceActive",
           "group": "navigation@1"
-        },
-        {
-          "command": "cfide.copySolution",
-          "when": "cfide.sourceActive",
-          "group": "navigation@2"
         }
       ],
       "view/title": [
@@ -212,6 +207,18 @@
           "default": "",
           "scope": "machine-overridable",
           "description": "%setting.cfide.python.templatePath%"
+        },
+        "cfide.python.templateCode": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1000000,
+          "description": "%setting.cfide.python.templateCode%"
+        },
+        "cfide.cpp.templateCode": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1000000,
+          "description": "%setting.cfide.cpp.templateCode%"
         },
         "cfide.cpp.compiler": {
           "type": "string",

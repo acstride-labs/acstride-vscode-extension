@@ -62,13 +62,6 @@ export function StatementView() {
           >
             {data?.language === 'python' ? 'Python 3' : 'C++'} ▾
           </button>
-          <button
-            disabled={!data}
-            title={t('Copy code and open submission page')}
-            onClick={() => send({ type: 'copySource' })}
-          >
-            {t('Copy and submit')}
-          </button>
         </header>
         <div className="statement-scroll" ref={viewport}>
           {data?.statement.imageWarning && (

@@ -26,7 +26,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('switchLanguage') }),
-  z.object({ type: z.literal('copySource') }),
   z.object({ type: z.literal('selectContest'), contestId: contestIdSchema }),
   z.object({
     type: z.literal('syncContest'),

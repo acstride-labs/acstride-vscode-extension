@@ -184,7 +184,13 @@ describe('built-in anonymous public downloads', () => {
     ])
       expect(contestRequestSchema.safeParse({ type, contestId: 1 }).success).toBe(false);
     expect(requestSchema.safeParse({ type: 'submit' }).success).toBe(false);
-    expect(requestSchema.safeParse({ type: 'copySource' }).success).toBe(true);
+    expect(
+      requestSchema.safeParse({
+        type: 'copySource',
+        target: { id: 'A', language: 'cpp', contestId: 1 },
+      }).success,
+    ).toBe(true);
+    expect(requestSchema.safeParse({ type: 'copySource' }).success).toBe(false);
     const manifest = JSON.parse(await fs.readFile(path.resolve('package.json'), 'utf8'));
     const commands = manifest.contributes.commands.map((c: { command: string }) => c.command);
     for (const command of [

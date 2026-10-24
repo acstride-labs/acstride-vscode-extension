@@ -99,9 +99,30 @@ function App() {
   return (
     <main className="tests-pane">
       <div className="test-toolbar">
-        <button disabled={running || anyDirty || !problem} onClick={() => send({ type: 'run' })}>
+        <button
+          className="secondary"
+          disabled={running || anyDirty || !problem}
+          title={t('Switch language')}
+          onClick={() => send({ type: 'switchLanguage' })}
+        >
+          {problem?.language === 'python' ? 'Python 3' : 'C++'} ▾
+        </button>
+        <button
+          disabled={running || anyDirty || !problem}
+          onClick={() => problem && send({ type: 'run', target: problem })}
+        >
           ▶ {t('Run all tests')}
         </button>
+        {problem?.contestId && (
+          <button
+            className="secondary"
+            disabled={running}
+            title={t('Copy code and open submission page')}
+            onClick={() => send({ type: 'copySource', target: problem })}
+          >
+            {t('Copy and submit')}
+          </button>
+        )}
         {running && (
           <button className="secondary" onClick={() => send({ type: 'stop' })}>
             ■ {t('Stop')}
@@ -176,6 +197,7 @@ function App() {
           key={`${problem?.contestId ?? 'local'}/${problem?.id}/${test.id}`}
           active={activeId === test.id}
           test={test}
+          problem={problem}
           result={results[test.id]}
           running={running}
           anyDirty={anyDirty}
@@ -187,6 +209,7 @@ function App() {
 }
 function TestCard({
   test,
+  problem,
   active,
   result,
   running,
@@ -194,6 +217,7 @@ function TestCard({
   onDirty,
 }: {
   test: TestCase;
+  problem?: Problem;
   active: boolean;
   result?: TestResult;
   running: boolean;
@@ -279,7 +303,7 @@ function TestCard({
         <button
           className="secondary"
           disabled={running || anyDirty}
-          onClick={() => send({ type: 'run', testId: test.id })}
+          onClick={() => problem && send({ type: 'run', testId: test.id, target: problem })}
         >
           {t('Run test')}
         </button>

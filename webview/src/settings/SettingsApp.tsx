@@ -3,11 +3,14 @@ import { send } from '../bridge';
 import { useI18n } from '../i18n';
 import type { SettingsState, SettingsValues } from '../../../src/shared/settings-protocol';
 import type { LocalePreference } from '../../../src/shared/i18n';
+import type { Language } from '../../../src/domain/models';
 
 export function SettingsApp() {
   const { t } = useI18n();
   const [state, setState] = useState<SettingsState>();
   const [values, setValues] = useState<SettingsValues>();
+  const [templateLanguage, setTemplateLanguage] = useState<Language>('cpp');
+  const [templateDrafts, setTemplateDrafts] = useState({ cpp: '', python: '' });
   const [cppArgs, setCppArgs] = useState('[]'),
     [pythonArgs, setPythonArgs] = useState('[]');
   const [dirty, setDirty] = useState(false),
@@ -25,6 +28,7 @@ export function SettingsApp() {
   useEffect(() => {
     if (!state || dirty) return;
     setValues(state.values);
+    setTemplateDrafts(state.templatePreviews);
     setCppArgs(JSON.stringify(state.values.cppArgs));
     setPythonArgs(JSON.stringify(state.values.pythonArgs));
   }, [state, dirty]);
@@ -45,6 +49,63 @@ export function SettingsApp() {
           <h1>{t('Settings')}</h1>
         </div>
       </header>
+      <section className="card settings-section environment-section">
+        <div className="card-title">
+          <h2>{t('Programming environments')}</h2>
+          <button
+            disabled={disabled || dirty || !state?.trusted}
+            onClick={() => send({ type: 'checkAllEnvironments' })}
+          >
+            {t('Auto-check')}
+          </button>
+        </div>
+        {(['cpp', 'python'] as const).map((language) => {
+          const result = state?.environments[language];
+          return (
+            <div className="environment-item" key={language}>
+              <div className="environment-row">
+                <strong>{language === 'cpp' ? 'C++' : 'Python 3'}</strong>
+                <code>{result?.command}</code>
+                <span
+                  className={
+                    result?.status === 'passed'
+                      ? 'pass'
+                      : result?.status === 'failed'
+                        ? 'error'
+                        : ''
+                  }
+                  role="status"
+                >
+                  {result?.status === 'passed' ? '✓ ' : result?.status === 'failed' ? '✕ ' : ''}
+                  {t(
+                    result?.status === 'passed'
+                      ? 'Available'
+                      : result?.status === 'failed'
+                        ? 'Unavailable'
+                        : result?.status === 'checking'
+                          ? 'Checking…'
+                          : 'Not checked',
+                  )}
+                </span>
+                <button
+                  className="secondary"
+                  disabled={disabled || dirty || !state?.trusted}
+                  onClick={() => send({ type: 'checkEnvironment', language })}
+                >
+                  {t('Check')}
+                </button>
+              </div>
+              {result?.message && (
+                <details>
+                  <summary>{t('Failure details')}</summary>
+                  <pre className="error">{t(result.message)}</pre>
+                </details>
+              )}
+            </div>
+          );
+        })}
+        {dirty && <small>{t('Save changes before checking environments.')}</small>}
+      </section>
       <section className="card settings-section">
         <h2>{t('Interface language')}</h2>
         <label>
@@ -122,6 +183,67 @@ export function SettingsApp() {
         >
           <fieldset disabled={disabled || !state.trusted}>
             <section className="card settings-section">
+              <h2>{t('Code templates')}</h2>
+              <div className="template-editor">
+                <div className="template-controls">
+                  <label>
+                    {t('Template language')}
+                    <select
+                      value={templateLanguage}
+                      onChange={(e) => setTemplateLanguage(e.target.value as Language)}
+                    >
+                      <option value="cpp">C++</option>
+                      <option value="python">Python 3</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => {
+                      const code = state.defaultTemplates[templateLanguage];
+                      setTemplateDrafts((old) => ({ ...old, [templateLanguage]: code }));
+                      update(
+                        templateLanguage === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode',
+                        code,
+                      );
+                    }}
+                  >
+                    {t('Restore default template')}
+                  </button>
+                  <button type="submit" disabled={!dirty}>
+                    {t('Save settings')}
+                  </button>
+                </div>
+                <label>
+                  {t('Initial code')}
+                  <textarea
+                    className="template-code"
+                    spellCheck={false}
+                    value={templateDrafts[templateLanguage]}
+                    maxLength={1_000_000}
+                    onChange={(e) => {
+                      const code = e.target.value;
+                      setTemplateDrafts((old) => ({ ...old, [templateLanguage]: code }));
+                      update(
+                        templateLanguage === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode',
+                        code,
+                      );
+                    }}
+                  />
+                </label>
+              </div>
+              <small>
+                {t(
+                  'Used only for new solution files. Existing code stays unchanged. Use ${PROBLEM_ID} for the problem index.',
+                )}
+              </small>
+              {state.templateWarnings[templateLanguage] && (
+                <small className="error">
+                  {t('Cannot read the template file. Paste code here to replace it.')}
+                </small>
+              )}
+            </section>
+            <section className="card settings-section">
               <h2>{t('Public tracking')}</h2>
               <label>
                 {t('Codeforces handle')}
@@ -154,13 +276,6 @@ export function SettingsApp() {
                   }}
                 />
               </label>
-              <label>
-                {t('C++ template path')}
-                <input
-                  value={values.cppTemplate}
-                  onChange={(e) => update('cppTemplate', e.target.value)}
-                />
-              </label>
             </section>
             <section className="card settings-section">
               <h2>Python</h2>
@@ -180,13 +295,6 @@ export function SettingsApp() {
                     setPythonArgs(e.target.value);
                     setDirty(true);
                   }}
-                />
-              </label>
-              <label>
-                {t('Python template path')}
-                <input
-                  value={values.pythonTemplate}
-                  onChange={(e) => update('pythonTemplate', e.target.value)}
                 />
               </label>
               <p>
@@ -214,24 +322,6 @@ export function SettingsApp() {
                   'Arguments are passed without a shell. Save settings before checking the active environment.',
                 )}
               </p>
-              <div className="actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={dirty}
-                  onClick={() => send({ type: 'checkEnvironment', language: 'cpp' })}
-                >
-                  {t('Check C++ environment')}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={dirty}
-                  onClick={() => send({ type: 'checkEnvironment', language: 'python' })}
-                >
-                  {t('Check Python environment')}
-                </button>
-              </div>
             </section>
             <div className="actions">
               <button type="submit" disabled={!dirty}>

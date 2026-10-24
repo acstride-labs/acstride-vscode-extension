@@ -5,6 +5,7 @@ import os from 'node:os';
 import type { Language, Problem } from '../domain/models';
 import { languages } from '../domain/languages';
 import { FileWorkspaceStore } from '../infrastructure/storage/file-workspace-store';
+import { instantiateTemplate, readSourceTemplate } from '../infrastructure/storage/source-template';
 import { CppRunner } from '../infrastructure/execution/cpp-runner';
 import { PythonRunner } from '../infrastructure/execution/python-runner';
 import { RunTests } from '../application/run-tests';
@@ -82,17 +83,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           }
         }),
       );
-    command('cfide.copySolution', async () => {
-      this.ensureIdle();
-      const { source, problem } = await this.snapshot();
-      await vscode.env.clipboard.writeText(source);
-      if (problem.contestId)
-        await vscode.env.openExternal(
-          vscode.Uri.parse(
-            `https://codeforces.com/contest/${problem.contestId}/submit/${encodeURIComponent(problem.id)}`,
-          ),
-        );
-    });
+    command('cfide.copySolution', () => this.copySolution());
     command('cfide.createProblem', () => this.create());
     command('cfide.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
     command('cfide.refresh', () => this.changes.fire(undefined));
@@ -147,23 +138,20 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     return item;
   }
   async template(language: Language, id: string) {
-    const configured = vscode.workspace
-      .getConfiguration('cfide')
-      .get<string>(language + '.templatePath', '');
-    return (
-      await fs.readFile(
-        configured ||
-          path.join(
-            this.context.extensionPath,
-            'resources',
-            'templates',
-            languages[language].template,
-          ),
-        'utf8',
-      )
-    ).replaceAll('$' + '{PROBLEM_ID}', id);
+    const config = vscode.workspace.getConfiguration('cfide');
+    const code = await readSourceTemplate({
+      code: config.get<string>(language + '.templateCode', ''),
+      file: config.get<string>(language + '.templatePath', ''),
+      bundled: path.join(
+        this.context.extensionPath,
+        'resources',
+        'templates',
+        languages[language].template,
+      ),
+    });
+    return instantiateTemplate(code, id);
   }
-  async checkEnvironment(language: Language) {
+  async checkEnvironment(language: Language, notify = true) {
     this.trust();
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-env-'));
     try {
@@ -190,9 +178,10 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         throw new Error(
           result.compileError || result.results[0]?.stderr || t('Environment check failed.'),
         );
-      void vscode.window.showInformationMessage(
-        t('{language} environment is ready.', { language: languages[language].label }),
-      );
+      if (notify)
+        void vscode.window.showInformationMessage(
+          t('{language} environment is ready.', { language: languages[language].label }),
+        );
     } finally {
       await fs.rm(folder, { recursive: true, force: true });
     }
@@ -370,7 +359,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
           return;
         }
         if (message.type === 'copySource') {
-          void vscode.commands.executeCommand('cfide.copySolution');
+          void this.copySolution(message.target).catch((e) => this.error(e));
           return;
         }
         const captured = this.current;
@@ -390,7 +379,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
             } else if (message.type === 'deleteTest') {
               await this.store().deleteTest(this.current.id, message.testId);
               await this.state();
-            } else if (message.type === 'run') await this.run(message.testId);
+            } else if (message.type === 'run') await this.run(message.testId, message.target);
           })
           .catch((error) => this.error(error));
       },
@@ -426,7 +415,28 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
     if (document.isDirty && !(await document.save())) throw new Error('Could not save source.');
     return { ...active, source: await fs.readFile(uri.fsPath, 'utf8') };
   }
-  private async run(testId?: string) {
+  private ensureTarget(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+    if (
+      target &&
+      (target.id !== this.current?.id ||
+        target.contestId !== this.current?.contestId ||
+        target.language !== this.current?.language)
+    )
+      throw new Error('Problem or language changed. Retry from the updated toolbar.');
+  }
+  async copySolution(target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+    this.ensureTarget(target);
+    const { source, problem } = await this.snapshot();
+    await vscode.env.clipboard.writeText(source);
+    if (problem.contestId)
+      await vscode.env.openExternal(
+        vscode.Uri.parse(
+          `https://codeforces.com/contest/${problem.contestId}/submit/${encodeURIComponent(problem.id)}`,
+        ),
+      );
+  }
+  private async run(testId?: string, target?: Pick<Problem, 'id' | 'language' | 'contestId'>) {
+    this.ensureTarget(target);
     this.trust();
     if (this.busy) throw new Error('A test run is already in progress.');
     if (this.dirtyTests) throw new Error('Save test changes before running.');
@@ -457,6 +467,7 @@ export class WorkspaceController implements vscode.Disposable, vscode.TreeDataPr
         this.abort.signal,
         (result) => this.send({ type: 'progress', result }),
         testId,
+        problem.language,
       );
       this.send({ type: 'result', result });
     } finally {

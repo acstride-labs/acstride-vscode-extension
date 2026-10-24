@@ -1,4 +1,4 @@
-# Localization and settings architecture (0.8)
+# Localization and settings architecture (0.9)
 
 ## Interaction and ownership
 
@@ -17,6 +17,12 @@ Settings contains:
 The selected scope loads the values for that scope: user values inherit defaults; workspace values inherit user/defaults. The effective execution configuration still follows VS Code's precedence. UI language cannot be overridden by a contest/workspace. Machine-specific compiler/interpreter/template keys use `machine-overridable` so explicit workspace overrides are supported. Environment checks test the **active** saved configuration, which may include workspace overrides.
 
 ## Configurable language resources
+
+Settings starts with per-language environment checks. One allowlisted `checkAllEnvironments` request checks C++ and Python independently, recording progress/success/failure without stopping at the first error. Results stay in memory, not configuration, and are invalidated when effective tool settings change. Checks execute the active saved tool configuration in a temporary folder and require workspace trust; they do not auto-install tools or rewrite paths.
+
+Starter-code editing uses separate `cpp.templateCode` and `python.templateCode` values at the selected user/workspace scope. Settings shows resolved previews while retaining independent drafts. Inline nonblank code wins over legacy `templatePath`, then the bundled template. Only trusted workspaces may preview configured files. Template files and inline values have size limits; templates are read as text, never evaluated. `${PROBLEM_ID}` substitution happens only when creating a solution. Existing source files are protected by exclusive creation in storage. The editor replaces the old path inputs, not the existing file-based configuration keys.
+
+Run and copy messages include their displayed problem/language identity. The host rejects stale identities. Both actions save that exact source buffer before reading it; a failed save aborts the action. Execution receives the captured language rather than rereading a mutable language selection to choose its source. Copying writes only the selected code to the clipboard and opens the official submission URL; there is no automatic submission.
 
 Write for developers in each locale, not as a literal translation of the resource ID. Chinese uses established terms such as `token`, `Handle`, `Hack`, JSON and API rather than unfamiliar coined equivalents (for example, do not render `token` as “词元”). Use “代码”, “编程语言” and “用例” for source, language selection and local test cases. Russian `токен` and Japanese `トークン` are conventional local technical terms and should not be forcibly replaced with English. Keep error messages short, actionable and accurate; preserve parameters and distinguish official verdicts from local results. Wording regression tests cover the first-mismatch messages in all four locales.
 

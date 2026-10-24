@@ -395,6 +395,7 @@ body[data-mode='statement'] {
 }
 .test-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-height: 28px;
@@ -518,6 +519,62 @@ body[data-mode='statement'] {
 .settings-page h1 {
   font-size: 20px;
   margin: 0;
+}
+.template-editor {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.template-controls {
+  display: grid;
+  gap: 12px;
+}
+.template-code {
+  min-height: 280px;
+  line-height: 1.5;
+  font-size: 13px;
+  tab-size: 4;
+  white-space: pre;
+  overflow: auto;
+}
+.environment-section .card-title {
+  margin-bottom: 0;
+}
+.environment-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.environment-row strong {
+  min-width: 70px;
+}
+.environment-row code {
+  color: var(--vscode-descriptionForeground);
+  overflow-wrap: anywhere;
+}
+.environment-row [role='status'] {
+  margin-left: auto;
+}
+.environment-item details {
+  margin-top: 8px;
+}
+.environment-item summary {
+  cursor: pointer;
+  color: var(--vscode-errorForeground);
+}
+.environment-section .pass {
+  color: var(--vscode-testing-iconPassed, #388a34);
+}
+@media (max-width: 580px) {
+  .template-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .template-controls {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    align-items: end;
+  }
 }
 button:focus-visible,
 [role='tab']:focus-visible {

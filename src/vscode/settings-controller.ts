@@ -1,4 +1,7 @@
 import * as vscode from 'vscode';
+import path from 'node:path';
+import { languages } from '../domain/languages';
+import { readSourceTemplate } from '../infrastructure/storage/source-template';
 import {
   settingsKeys,
   settingsRequestSchema,
@@ -17,6 +20,7 @@ export class SettingsController implements vscode.Disposable {
   private busy = false;
   private notice?: string;
   private error?: string;
+  private environments: SettingsState['environments'] = {};
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
@@ -25,6 +29,15 @@ export class SettingsController implements vscode.Disposable {
     this.disposables.push(
       vscode.commands.registerCommand('cfide.openSettings', () => this.open()),
       vscode.workspace.onDidChangeConfiguration((event) => {
+        if (
+          [
+            'cfide.cpp.compiler',
+            'cfide.cpp.args',
+            'cfide.python.interpreter',
+            'cfide.python.args',
+          ].some((key) => event.affectsConfiguration(key))
+        )
+          this.environments = {};
         if (!event.affectsConfiguration('cfide') || this.busy) return;
         void this.publish();
       }),
@@ -37,6 +50,14 @@ export class SettingsController implements vscode.Disposable {
   private workspaceAvailable() {
     const folders = vscode.workspace.workspaceFolders;
     return folders?.length === 1 && folders[0].uri.scheme === 'file';
+  }
+  private executionFingerprint() {
+    const config = vscode.workspace.getConfiguration('cfide');
+    return JSON.stringify(
+      ['cpp.compiler', 'cpp.args', 'python.interpreter', 'python.args'].map((key) =>
+        config.get(key),
+      ),
+    );
   }
   private async open() {
     if (!this.panel) {
@@ -107,6 +128,7 @@ export class SettingsController implements vscode.Disposable {
         if (this.scope === 'workspace' && !this.workspaceAvailable())
           throw new Error('Open a folder in VS Code first.');
         const config = vscode.workspace.getConfiguration('cfide');
+        const executionBefore = this.executionFingerprint();
         const target =
           this.scope === 'workspace'
             ? vscode.ConfigurationTarget.Workspace
@@ -130,10 +152,40 @@ export class SettingsController implements vscode.Disposable {
             );
           throw error;
         }
+        if (executionBefore !== this.executionFingerprint()) this.environments = {};
         this.notice = 'Settings saved.';
-      } else if (message.type === 'checkEnvironment') {
-        await this.workspace.checkEnvironment(message.language);
-        this.notice = 'Environment check passed.';
+      } else if (message.type === 'checkEnvironment' || message.type === 'checkAllEnvironments') {
+        if (!vscode.workspace.isTrusted)
+          throw new Error('Trust this workspace before changing execution settings.');
+        const config = vscode.workspace.getConfiguration('cfide');
+        const before = this.executionFingerprint();
+        const selected =
+          message.type === 'checkAllEnvironments'
+            ? (['cpp', 'python'] as const)
+            : [message.language];
+        for (const language of selected) {
+          const command = config.get<string>(
+            language === 'cpp' ? 'cpp.compiler' : 'python.interpreter',
+            language === 'cpp' ? 'g++' : 'python3',
+          );
+          this.environments[language] = { status: 'checking', command };
+          await this.publish();
+          try {
+            await this.workspace.checkEnvironment(language, false);
+            this.environments[language] = { status: 'passed', command };
+          } catch (error) {
+            this.environments[language] = {
+              status: 'failed',
+              command,
+              message: error instanceof Error ? error.message : String(error),
+            };
+          }
+          await this.publish();
+        }
+        if (this.executionFingerprint() !== before) {
+          this.environments = {};
+          this.notice = 'Environment changed. Run checks again.';
+        }
       }
     } finally {
       this.busy = false;
@@ -154,11 +206,39 @@ export class SettingsController implements vscode.Disposable {
         ];
       }),
     ) as SettingsValues;
+    const defaultTemplates = { cpp: '', python: '' };
+    const templatePreviews = { cpp: '', python: '' };
+    const templateWarnings: SettingsState['templateWarnings'] = {};
+    for (const language of ['cpp', 'python'] as const) {
+      const bundled = path.join(
+        this.context.extensionPath,
+        'resources',
+        'templates',
+        languages[language].template,
+      );
+      defaultTemplates[language] = await readSourceTemplate({ bundled });
+      try {
+        templatePreviews[language] = await readSourceTemplate({
+          code: values[language === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode'],
+          file: vscode.workspace.isTrusted
+            ? values[language === 'cpp' ? 'cppTemplate' : 'pythonTemplate']
+            : undefined,
+          bundled,
+        });
+      } catch {
+        templatePreviews[language] = defaultTemplates[language];
+        templateWarnings[language] = true;
+      }
+    }
     const state: SettingsState = {
       locale: currentLocale(),
       preference: config.get<LocalePreference>('ui.language', 'auto'),
       scope: this.scope,
       values,
+      defaultTemplates,
+      templatePreviews,
+      templateWarnings,
+      environments: this.environments,
       workspaceAvailable: !!this.workspaceAvailable(),
       trusted: vscode.workspace.isTrusted,
       busy: this.busy,
