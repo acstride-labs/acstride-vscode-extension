@@ -14,7 +14,7 @@ export class PythonRunner implements ProgramRunner {
     signal: AbortSignal,
     progress?: (result: TestResult) => void,
   ): Promise<RunResult> {
-    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-python-'));
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-python-'));
     try {
       const snapshot = path.join(folder, 'main.py');
       await fs.copyFile(source, snapshot);

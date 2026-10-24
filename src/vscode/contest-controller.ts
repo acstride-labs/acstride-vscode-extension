@@ -7,7 +7,7 @@ import { AiClient } from '../infrastructure/ai/client';
 import { sanitizeTranslation } from '../infrastructure/ai/translation';
 import * as vscode from 'vscode';
 import path from 'node:path';
-import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientClient, codeforcesClientExecutable } from '../infrastructure/codeforces/codeforces-client';
 import * as cheerio from 'cheerio';
 import {
   parseContestId,
@@ -36,7 +36,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private assistance!: AiAssistance;
   private queue = new RequestQueue();
   private api: CodeforcesApi;
-  private cfTool: CfToolClient;
+  private codeforcesClient: CodeforcesClientClient;
   private initialized: Promise<void>;
   private workspaces: CodeforcesWorkspaces;
   private dashboard?: vscode.WebviewPanel;
@@ -74,8 +74,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     private workspace: WorkspaceController,
     private aiClient = new AiClient(),
   ) {
-    const executable = cfToolExecutable(context.extensionUri.fsPath);
-    this.cfTool = new CfToolClient(executable, undefined, (code) => {
+    const executable = codeforcesClientExecutable(context.extensionUri.fsPath);
+    this.codeforcesClient = new CodeforcesClientClient(executable, undefined, (code) => {
       if (code === 'tool_unavailable' || code === 'protocol_mismatch')
         return t('The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.');
       if (code === 'verification_required')
@@ -84,21 +84,21 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         );
       return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
     });
-    const submissions = new SubmissionController(context, this.cfTool);
+    const submissions = new SubmissionController(context, this.codeforcesClient);
     workspace.submissions = submissions;
     this.disposables.push(submissions.onAccountChanged(() => workspace.publishAccount()));
     workspace.submitHandler = (snapshot) => submissions.submit(snapshot);
     this.disposables.push(
       submissions,
-      vscode.commands.registerCommand('cfide.signIn', async () => {
-        await vscode.commands.executeCommand('cfide.openSettings', 'environment');
+      vscode.commands.registerCommand('codeforcesWorkbench.signIn', async () => {
+        await vscode.commands.executeCommand('codeforcesWorkbench.openSettings', 'environment');
         try {
           await submissions.signIn();
         } catch {
           /* Account card owns login errors. */
         }
       }),
-      vscode.commands.registerCommand('cfide.signOut', () =>
+      vscode.commands.registerCommand('codeforcesWorkbench.signOut', () =>
         submissions.signOut().catch((e) => this.report(e)),
       ),
     );
@@ -110,14 +110,14 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     this.disposables.push(
       this.ai.onTranslationChanged(() => this.publishTranslationAvailability()),
     );
-    this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
+    this.api = new CodeforcesApi(this.queue, (method, params) => this.codeforcesClient.call(method, params));
     this.workspaces = new CodeforcesWorkspaces(
       () => workspace.localStore().root,
       this.api,
       {
-        problem: (id, index, assetsDir) => this.cfTool.problem(id, index, assetsDir),
+        problem: (id, index, assetsDir) => this.codeforcesClient.problem(id, index, assetsDir),
         problems: (id, indices, assetsDir, handlers) =>
-          this.cfTool.problems(id, indices, assetsDir, handlers),
+          this.codeforcesClient.problems(id, indices, assetsDir, handlers),
       },
       (language, index) => workspace.template(language, index),
       (id, collection) => {
@@ -128,10 +128,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           void this.translate(statement).catch(() => {});
       },
     );
-    this.initialized = this.cfTool.ready().catch(() => {
+    this.initialized = this.codeforcesClient.ready().catch(() => {
       // Report installation errors on operations while allowing local/cached work.
     });
-    this.selectedId = context.workspaceState.get<number>('cfide.selectedContest');
+    this.selectedId = context.workspaceState.get<number>('codeforcesWorkbench.selectedContest');
   }
   private trust() {
     if (!vscode.workspace.isTrusted)
@@ -152,21 +152,21 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           }
         }),
       );
-    command('cfide.openContestCenter', (node?: Node) =>
+    command('codeforcesWorkbench.openContestCenter', (node?: Node) =>
       this.openCenter(node?.kind === 'contest' ? node.record.contest.id : undefined),
     );
-    command('cfide.addContest', () => this.add());
-    command('cfide.addCodeforcesProblem', () => this.addStandalone());
-    command('cfide.openCodeforcesProblem', (problem: Problem) =>
+    command('codeforcesWorkbench.addContest', () => this.add());
+    command('codeforcesWorkbench.addCodeforcesProblem', () => this.addStandalone());
+    command('codeforcesWorkbench.openCodeforcesProblem', (problem: Problem) =>
       this.openProblem(problem.contestId!, problem.id, 'standalone'),
     );
-    this.status.command = 'cfide.openContestCenter';
+    this.status.command = 'codeforcesWorkbench.openContestCenter';
     this.disposables.push(
       this.changes,
       this.diagnostics,
       this.status,
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration('cfide.ui.language')) {
+        if (event.affectsConfiguration('codeforcesWorkbench.ui.language')) {
           if (this.dashboard) void this.publish();
           postLocale(this.dashboard?.webview);
           postLocale(this.statementPanel?.webview);
@@ -177,13 +177,13 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             );
           this.changes.fire(undefined);
         }
-        if (event.affectsConfiguration('cfide.codeforces.handle')) {
+        if (event.affectsConfiguration('codeforcesWorkbench.codeforces.handle')) {
           this.lastStatus.clear();
           this.pendingContests.clear();
           this.backgroundErrors.clear();
           this.lastBoard = 0;
         }
-        if (event.affectsConfiguration('cfide')) void this.publish();
+        if (event.affectsConfiguration('codeforcesWorkbench')) void this.publish();
       }),
     );
     this.workspace.resolveSource = async (source) => {
@@ -267,7 +267,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   private handle() {
     return (
-      vscode.workspace.getConfiguration('cfide').get<string>('codeforces.handle', '').trim() ||
+      vscode.workspace.getConfiguration('codeforcesWorkbench').get<string>('codeforces.handle', '').trim() ||
       undefined
     );
   }
@@ -335,7 +335,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     });
     item.iconPath = new vscode.ThemeIcon(node.record.archived ? 'archive' : 'trophy');
     item.command = {
-      command: 'cfide.openContestCenter',
+      command: 'codeforcesWorkbench.openContestCenter',
       title: t('Contest Center'),
       arguments: [node],
     };
@@ -399,7 +399,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.lastBoard = 0;
     }
     this.selectedId = id;
-    await this.context.workspaceState.update('cfide.selectedContest', id);
+    await this.context.workspaceState.update('codeforcesWorkbench.selectedContest', id);
     await this.publish();
   }
   private async openCenter(id?: number) {
@@ -408,7 +408,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     if (id) await this.select(id);
     if (!this.dashboard) {
       this.dashboard = vscode.window.createWebviewPanel(
-        'cfide.contestCenter',
+        'codeforcesWorkbench.contestCenter',
         t('AC-Stride · Contest Center'),
         vscode.ViewColumn.One,
         {
@@ -505,9 +505,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return;
     }
     if (message.type === 'openAiSettings')
-      return vscode.commands.executeCommand('cfide.openSettings', 'assistance');
+      return vscode.commands.executeCommand('codeforcesWorkbench.openSettings', 'assistance');
     if (message.type === 'openSettings')
-      return vscode.commands.executeCommand('cfide.openSettings');
+      return vscode.commands.executeCommand('codeforcesWorkbench.openSettings');
     if (message.type === 'rankFilter') {
       this.rankMode = message.mode;
       this.rankSearch = message.search;
@@ -601,7 +601,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
     if (!this.statementPanel) {
       this.statementPanel = vscode.window.createWebviewPanel(
-        'cfide.statement',
+        'codeforcesWorkbench.statement',
         t('AC-Stride · Statement'),
         { viewColumn: vscode.ViewColumn.One, preserveFocus: true },
         {
@@ -853,7 +853,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     $('img').each((_, node) => {
       const src = $(node).attr('src') || '';
       if (
-        /^cfide-asset:[a-f0-9]{64}\.(png|jpg|webp|gif)$/.test(src) &&
+        /^codeforces-workbench-asset:[a-f0-9]{64}\.(png|jpg|webp|gif)$/.test(src) &&
         (collection === 'contest' ? this.dashboard : this.statementPanel)
       )
         $(node).attr(
@@ -863,7 +863,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
               vscode.Uri.file(
                 path.join(
                   this.runtime(collection).repo.assets(id),
-                  src.slice('cfide-asset:'.length),
+                  src.slice('codeforces-workbench-asset:'.length),
                 ),
               ),
             )
@@ -1055,7 +1055,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   dispose() {
-    this.cfTool.dispose();
+    this.codeforcesClient.dispose();
     this.workspaces.dispose();
     this.queue.dispose();
     this.timers.forEach(clearInterval);

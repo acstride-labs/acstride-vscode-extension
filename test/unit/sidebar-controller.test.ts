@@ -22,15 +22,15 @@ import { SidebarController } from '../../src/vscode/sidebar-controller';
 import { parseProblemReference } from '../../src/domain/contest';
 it('declares three toggleable native peer views with no redundant group or welcome view', async () => {
   const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
-  expect(manifest.contributes.views.cfide.map((view: any) => view.id)).toEqual([
-    'cfide.contests',
-    'cfide.codeforcesProblems',
-    'cfide.problems',
+  expect(manifest.contributes.views.codeforcesWorkbench.map((view: any) => view.id)).toEqual([
+    'codeforcesWorkbench.contests',
+    'codeforcesWorkbench.codeforcesProblems',
+    'codeforcesWorkbench.problems',
   ]);
   expect(
-    manifest.contributes.views.cfide.every((view: any) => view.canToggleVisibility === true),
+    manifest.contributes.views.codeforcesWorkbench.every((view: any) => view.canToggleVisibility === true),
   ).toBe(true);
-  expect(manifest.contributes.views.cfide.map((view: any) => view.name)).toEqual([
+  expect(manifest.contributes.views.codeforcesWorkbench.map((view: any) => view.name)).toEqual([
     '%view.contests%',
     '%view.codeforcesProblems%',
     '%view.practice%',
@@ -39,9 +39,9 @@ it('declares three toggleable native peer views with no redundant group or welco
   expect(
     actions.filter((i: any) => i.group === 'navigation@1').map((i: any) => [i.command, i.when]),
   ).toEqual([
-    ['cfide.addContest', 'view == cfide.contests'],
-    ['cfide.addCodeforcesProblem', 'view == cfide.codeforcesProblems'],
-    ['cfide.createProblem', 'view == cfide.problems'],
+    ['codeforcesWorkbench.addContest', 'view == codeforcesWorkbench.contests'],
+    ['codeforcesWorkbench.addCodeforcesProblem', 'view == codeforcesWorkbench.codeforcesProblems'],
+    ['codeforcesWorkbench.createProblem', 'view == codeforcesWorkbench.problems'],
   ]);
   expect(manifest.contributes.menus['view/item/context']).toBeUndefined();
   expect(manifest.contributes.viewsWelcome).toBeUndefined();

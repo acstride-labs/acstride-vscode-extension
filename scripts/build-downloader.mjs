@@ -2,18 +2,18 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { root, bundle, hostTarget, run, hashes, cleanEnvironment } from './downloader-common.mjs';
 
-import { pin, cfToolSource } from './cf-tool-source.mjs';
-const source = await cfToolSource();
+import { pin, codeforcesClientSource } from './codeforces-client-source.mjs';
+const source = await codeforcesClientSource();
 const target = hostTarget();
 const build = path.join(root, '.build', 'downloader');
 const venv = path.join(build, 'venv');
 const python = path.join(venv, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 await fs.mkdir(build, { recursive: true });
-await run(process.env.CFIDE_BUILD_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'), [
-  '-m',
-  'venv',
-  venv,
-]);
+await run(
+  process.env.CODEFORCES_WORKBENCH_BUILD_PYTHON ||
+    (process.platform === 'win32' ? 'python' : 'python3'),
+  ['-m', 'venv', venv],
+);
 await run(python, [
   '-m',
   'pip',
@@ -32,7 +32,7 @@ await run(
     '--onedir',
     '--noupx',
     '--name',
-    'cfide-downloader',
+    'codeforces-workbench-downloader',
     '--collect-all',
     'curl_cffi',
     '--collect-all',
@@ -56,10 +56,14 @@ await run(
 // Only replace this generated bundle, never a user workspace or Python installation.
 await fs.rm(bundle, { recursive: true, force: true });
 await fs.mkdir(bundle, { recursive: true });
-await fs.cp(path.join(build, 'output', 'cfide-downloader'), path.join(bundle, 'cfide-downloader'), {
-  recursive: true,
-  dereference: true,
-});
+await fs.cp(
+  path.join(build, 'output', 'codeforces-workbench-downloader'),
+  path.join(bundle, 'codeforces-workbench-downloader'),
+  {
+    recursive: true,
+    dereference: true,
+  },
+);
 await run(python, [
   path.join(source, 'packaging', 'collect-notices.py'),
   path.join(bundle, 'notices'),

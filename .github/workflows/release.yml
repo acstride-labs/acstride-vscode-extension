@@ -1,0 +1,159 @@
+name: Publish release
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published GitHub Release tag (for retry)
+        required: true
+        type: string
+      publish_marketplace:
+        description: Publish the verified packages to Marketplace
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.release.outputs.tag }}
+      pre_release: ${{ steps.release.outputs.pre_release }}
+    steps:
+      - uses: actions/github-script@v7
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        with:
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            if (!/^v\d+\.\d+\.\d+$/.test(tag)) throw new Error('Invalid release tag');
+            const {data: release} = await github.rest.repos.getReleaseByTag({...context.repo, tag});
+            if (release.draft) throw new Error('Publish the GitHub Release first');
+            core.setOutput('tag', tag);
+            core.setOutput('pre_release', String(release.prerelease));
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate version, channel and source
+        id: source
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_PRE_RELEASE: ${{ steps.release.outputs.pre_release }}
+        run: |
+          node scripts/validate-release.mjs
+          git merge-base --is-ancestor HEAD origin/master
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+      pre_release: ${{ needs.prepare.outputs.pre_release == 'true' }}
+  upload:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: codeforces-workbench-*
+          path: release-assets
+          merge-multiple: true
+      - name: Attach verified packages and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        working-directory: release-assets
+        run: |
+          test "$(find . -maxdepth 1 -name '*.vsix' | wc -l)" -eq 4
+          sha256sum *.vsix > SHA256SUMS
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > existing-assets
+          # Reuse previously uploaded packages on retries, without overwriting public files.
+          mkdir existing
+          for file in *.vsix; do
+            if grep -Fxq "$file" existing-assets; then
+              gh release download "$RELEASE_TAG" --pattern "$file" --dir existing
+              mv "existing/$file" "$file"
+            else
+              gh release upload "$RELEASE_TAG" "$file"
+            fi
+          done
+          sha256sum *.vsix > SHA256SUMS
+          if grep -Fxq SHA256SUMS existing-assets; then
+            gh release download "$RELEASE_TAG" --pattern SHA256SUMS --dir existing
+            cmp SHA256SUMS existing/SHA256SUMS
+          else
+            gh release upload "$RELEASE_TAG" SHA256SUMS
+          fi
+  marketplace:
+    needs: [prepare, upload]
+    if: github.event_name == 'release' || inputs.publish_marketplace
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Download the exact Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mkdir release-assets
+          gh release download "$RELEASE_TAG" --pattern '*.vsix' --pattern SHA256SUMS --dir release-assets
+      - name: Verify Release checksums and package identity
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_PRE_RELEASE: ${{ needs.prepare.outputs.pre_release }}
+        run: node scripts/verify-release-assets.mjs
+      - name: Check publishing authentication
+        env:
+          AUTH_MODE: ${{ vars.MARKETPLACE_AUTH_MODE || 'pat' }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          if [ "$AUTH_MODE" = pat ]; then
+            test -n "$VSCE_PAT" || { echo 'Configure VSCE_PAT in the marketplace environment.'; exit 1; }
+          elif [ "$AUTH_MODE" = entra ]; then
+            test -n "$CLIENT_ID" && test -n "$TENANT_ID"
+          else
+            echo 'MARKETPLACE_AUTH_MODE must be pat or entra'; exit 1
+          fi
+      - uses: azure/login@v2
+        if: vars.MARKETPLACE_AUTH_MODE == 'entra'
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Publish all platform packages
+        env:
+          AUTH_MODE: ${{ vars.MARKETPLACE_AUTH_MODE || 'pat' }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          RELEASE_PRE_RELEASE: ${{ needs.prepare.outputs.pre_release }}
+        run: |
+          args=(--packagePath release-assets/*.vsix --skip-duplicate)
+          if [ "$RELEASE_PRE_RELEASE" = true ]; then args+=(--pre-release); fi
+          if [ "$AUTH_MODE" = entra ]; then args+=(--azure-credential); fi
+          npx --no-install vsce publish "${args[@]}"

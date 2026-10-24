@@ -5,26 +5,30 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { root, hostTarget } from './downloader-common.mjs';
 
-export async function verifyCfTool(folder = path.join(root, 'resources', 'cf-tool')) {
-  const pin = JSON.parse(await fs.readFile(path.join(root, 'packaging', 'cf-tool.json'), 'utf8'));
+export async function verifyCodeforcesClient(
+  folder = path.join(root, 'resources', 'codeforces-client'),
+) {
+  const pin = JSON.parse(
+    await fs.readFile(path.join(root, 'packaging', 'codeforces-client.json'), 'utf8'),
+  );
   const manifest = JSON.parse(await fs.readFile(path.join(folder, 'manifest.json'), 'utf8'));
-  const name = process.platform === 'win32' ? 'acstride-cf.exe' : 'acstride-cf';
+  const name = process.platform === 'win32' ? 'codeforces-client.exe' : 'codeforces-client';
   const expected = [name, 'LICENSE', 'THIRD_PARTY_NOTICES.txt', 'manifest.json'].sort();
   if (JSON.stringify((await fs.readdir(folder)).sort()) !== JSON.stringify(expected))
     throw new Error(
-      'CF Tool bundle contains unexpected files. Rebuild from a clean bundle directory.',
+      'Codeforces Client bundle contains unexpected files. Rebuild from a clean bundle directory.',
     );
   if (
     manifest.protocol !== 1 ||
     manifest.target !== hostTarget() ||
     manifest.revision !== pin.revision
   )
-    throw new Error('CF Tool bundle does not match the pinned source/platform.');
+    throw new Error('Codeforces Client bundle does not match the pinned source/platform.');
   for (const file of [name, 'LICENSE', 'THIRD_PARTY_NOTICES.txt']) {
     const hash = createHash('sha256')
       .update(await fs.readFile(path.join(folder, file)))
       .digest('hex');
-    if (hash !== manifest.files[file]) throw new Error(`CF Tool hash mismatch: ${file}`);
+    if (hash !== manifest.files[file]) throw new Error(`Codeforces Client hash mismatch: ${file}`);
   }
   const result = spawnSync(
     path.join(folder, name),
@@ -39,7 +43,7 @@ export async function verifyCfTool(folder = path.join(root, 'resources', 'cf-too
     },
   );
   if (result.error || result.status !== 0)
-    throw new Error('Bundled CF Tool cannot start without Go on PATH.');
+    throw new Error('Bundled Codeforces Client cannot start without Go on PATH.');
   const value = JSON.parse(result.stdout);
   if (
     value.protocol !== 1 ||
@@ -50,11 +54,11 @@ export async function verifyCfTool(folder = path.join(root, 'resources', 'cf-too
       value.data.anonymous.includes(op),
     )
   )
-    throw new Error('Bundled CF Tool protocol mismatch.');
+    throw new Error('Bundled Codeforces Client protocol mismatch.');
   console.log(
-    `Verified CF Tool protocol, source pin, notices, hash and standalone startup (${hostTarget()}).`,
+    `Verified Codeforces Client protocol, source pin, notices, hash and standalone startup (${hostTarget()}).`,
   );
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))
-  await verifyCfTool();
+  await verifyCodeforcesClient();

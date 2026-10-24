@@ -15,7 +15,7 @@ export class CppRunner implements ProgramRunner {
     signal: AbortSignal,
     progress?: (result: TestResult) => void,
   ): Promise<RunResult> {
-    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-run-'));
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-run-'));
     const result: RunResult = { runId: randomUUID(), results: [] };
     try {
       // Snapshot beside the build output; quoted local includes resolve against the source folder.

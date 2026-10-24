@@ -11,7 +11,7 @@ describe.skipIf(!existsSync(executable))(
   'real bundled downloader (offline, no system Python)',
   () => {
     it('runs with an empty PATH and poisoned Python variables, without writing to its bundle or user environment', async () => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-embedded-'));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-embedded-'));
       const original = { ...process.env };
       try {
         const result = await executeProcess(executable, ['--self-test'], {

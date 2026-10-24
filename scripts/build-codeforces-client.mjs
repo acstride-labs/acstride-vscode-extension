@@ -4,8 +4,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { root, hostTarget } from './downloader-common.mjs';
-import { pin, cfToolSource } from './cf-tool-source.mjs';
-const go = process.env.ACSTRIDE_BUILD_GO || 'go';
+import { pin, codeforcesClientSource } from './codeforces-client-source.mjs';
+const go = process.env.CODEFORCES_WORKBENCH_BUILD_GO || 'go';
 const env = { ...process.env, CGO_ENABLED: '0', GOTOOLCHAIN: 'local' };
 // Let the notice generator locate this same Go tool, without changing user PATH.
 if (path.isAbsolute(go)) env.PATH = path.dirname(go) + path.delimiter + (env.PATH || '');
@@ -23,14 +23,18 @@ function run(command, args, cwd) {
   return result.stdout.trim();
 }
 hostTarget();
-const source = await cfToolSource();
-const bundle = path.join(root, 'resources', 'cf-tool');
+const source = await codeforcesClientSource();
+const bundle = path.join(root, 'resources', 'codeforces-client');
 await fs.mkdir(bundle, { recursive: true });
-const name = process.platform === 'win32' ? 'acstride-cf.exe' : 'acstride-cf';
+const name = process.platform === 'win32' ? 'codeforces-client.exe' : 'codeforces-client';
 const executable = path.join(bundle, name);
 run(go, ['mod', 'download', 'all'], source);
 run(go, ['mod', 'verify'], source);
-run(go, ['build', '-trimpath', '-ldflags=-s -w', '-o', executable, './cmd/acstride-cf'], source);
+run(
+  go,
+  ['build', '-trimpath', '-ldflags=-s -w', '-o', executable, './cmd/codeforces-client'],
+  source,
+);
 run(
   go,
   ['run', './tools/notices', '-output', path.join(bundle, 'THIRD_PARTY_NOTICES.txt')],
@@ -46,4 +50,4 @@ await fs.writeFile(
   path.join(bundle, 'manifest.json'),
   JSON.stringify({ protocol: 1, target: hostTarget(), revision: pin.revision, files }, null, 2),
 );
-console.log(`Built pinned CF Tool for ${hostTarget()}.`);
+console.log(`Built pinned Codeforces Client for ${hostTarget()}.`);

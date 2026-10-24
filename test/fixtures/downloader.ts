@@ -4,8 +4,8 @@ export function downloaderExecutable(root: string) {
     root,
     'resources',
     'downloader',
-    'cfide-downloader',
-    process.platform === 'win32' ? 'cfide-downloader.exe' : 'cfide-downloader',
+    'codeforces-workbench-downloader',
+    process.platform === 'win32' ? 'codeforces-workbench-downloader.exe' : 'codeforces-workbench-downloader',
   );
 }
 export function downloaderEnvironment() {

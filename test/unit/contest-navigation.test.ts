@@ -65,7 +65,7 @@ it('renders contests as non-expandable clickable leaves with no problem children
   expect(await controller.getChildren(nodes[0])).toEqual([]);
   const item = controller.getTreeItem(nodes[0]);
   expect(item.collapsibleState).toBe(0);
-  expect(item.command?.command).toBe('cfide.openContestCenter');
+  expect(item.command?.command).toBe('codeforcesWorkbench.openContestCenter');
   expect(item.command?.arguments).toEqual([nodes[0]]);
 });
 it('does not fetch full standings while the Problems tab is open', async () => {

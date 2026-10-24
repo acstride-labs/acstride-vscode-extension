@@ -45,7 +45,7 @@ afterEach(async () => {
   );
 });
 async function fixture(language: Language) {
-  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-source-selection-'));
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-source-selection-'));
   folders.push(folder);
   const store = new FileWorkspaceStore(folder, 7);
   await store.createProblem('A', 'Test', '// saved C++', 'cpp');

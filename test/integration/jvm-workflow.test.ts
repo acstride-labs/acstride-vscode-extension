@@ -26,7 +26,7 @@ for (const language of ['java', 'kotlin'] as const) {
   describe.skipIf(!available)(`${language} workflow with real compiler`, () => {
     const config = { command, runtimeCommand, args: [], timeoutMs: 3000 };
     async function workspace(code: string) {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-jvm-test-'));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-jvm-test-'));
       folders.push(root);
       const store = new FileWorkspaceStore(root);
       await store.createProblem('A', language, code, language);

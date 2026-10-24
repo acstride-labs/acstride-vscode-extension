@@ -1,5 +1,17 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      pre_release:
+        type: boolean
+        default: false
+permissions:
+  contents: read
 jobs:
   check:
     strategy:
@@ -17,6 +29,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -44,15 +58,17 @@ jobs:
           go-version: '1.26'
           cache: false
       - run: npm ci
-      - run: npm run build:cf-tool
-      - run: npm run verify:cf-tool
+      - run: npm run build:codeforces-client
+      - run: npm run verify:codeforces-client
       - run: npm run build:downloader
         env:
-          CFIDE_BUILD_PYTHON: python
+          CODEFORCES_WORKBENCH_BUILD_PYTHON: python
       - run: npm run check
       - run: npm run package
+        env:
+          CODEFORCES_WORKBENCH_PRE_RELEASE: ${{ inputs.pre_release && 'true' || 'false' }}
       - run: npm run verify:vsix
       - uses: actions/upload-artifact@v4
         with:
-          name: cfide-${{ matrix.target }}
+          name: codeforces-workbench-${{ matrix.target }}
           path: '*.vsix'

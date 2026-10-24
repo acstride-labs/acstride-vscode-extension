@@ -1,15 +1,14 @@
-# AC-Stride
+# Codeforces Workbench
 
-Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
-[VS Code extension](https://github.com/acstride-labs/acstride-vscode-extension),
-[Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
+Part of [AC-Stride](https://github.com/acstride-labs):
+[VS Code extension](https://github.com/acstride-labs/codeforces-workbench),
+[Codeforces CLI](https://github.com/acstride-labs/codeforces-client), and
 [product website](https://github.com/acstride-labs/acstride-web).
 
-The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compatible
-with existing installations. Build environment variables
-retain their `CFIDE_` prefix.
+The Marketplace extension identity is `acstride.codeforces-workbench`. Settings use `codeforcesWorkbench.*`, workspace metadata lives in `.codeforces-workbench`, and build environment variables use `CODEFORCES_WORKBENCH_*`.
 
-A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. The extension uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+
+A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. The extension uses a pinned, embedded ACStride Codeforces Client as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and Codeforces Client are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -22,7 +21,7 @@ A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin su
 - Compact case tabs: verified passes are green, all abnormal verdicts are red; run-only results stay neutral. Single-case runs preserve other results and switching tabs preserves unsaved test drafts.
 - Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
-Public downloads and rankings remain anonymous. One-click submission uses CF Tool's **experimental** session/submission commands only after explicit user action and confirmation. Sign in from the **Codeforces account** section at the top of **Settings**, using native VS Code username/password inputs; only CF Tool receives credentials via stdin, and it stores the resulting session in the OS keyring. The extension never stores passwords or imports browser cookies. Use **AC-Stride: Sign in to Codeforces** to reconnect and **Sign out of Codeforces** to remove the local session.
+Public downloads and rankings remain anonymous. One-click submission uses Codeforces Client's **experimental** session/submission commands only after explicit user action and confirmation. Sign in from the **Codeforces account** section at the top of **Settings**, using native VS Code username/password inputs; only Codeforces Client receives credentials via stdin, and it stores the resulting session in the OS keyring. The extension never stores passwords or imports browser cookies. Use **AC-Stride: Sign in to Codeforces** to reconnect and **Sign out of Codeforces** to remove the local session.
 
 Login and automatic submission have not been verified against a real account. Site verification/2FA may prevent them. Unknown submissions are never automatically resent. Receipts survive restart and are checked against exact source identity before an official submission ID is monitored. An unknown receipt may require checking the official website; do not repeatedly submit. No CAPTCHA is solved or bypassed.
 
@@ -41,7 +40,7 @@ The built-in anonymous downloader is **not a guarantee against site verification
 
 ### No system Python changes
 
-The private runtime lives only inside AC-Stride's extension directory and is launched by CF Tool using an install-relative absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
+The private runtime lives only inside AC-Stride's extension directory and is launched by Codeforces Client using an install-relative absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
 
 This runtime is exclusively for public downloads, not for executing solutions. The solution Python interpreter/compiler remains user-configurable and separate.
 
@@ -71,16 +70,16 @@ Environment checks are at the top of Settings. **Check all** (自动检测) chec
 
 Under **Code templates**, choose C++ or Python on the left and paste starter code in the editor on the right. Drafts are independent, so switching the language does not lose edits. Save Settings to persist them at the selected user/workspace scope; Restore default fills the built-in template. `${PROBLEM_ID}` inserts the problem index. Templates are used only when creating a new solution file (including the first switch to a language); existing solutions are never replaced. Inline code takes priority over the legacy template-file setting. Empty inline code falls back to that file or the bundled default.
 
-- `cfide.solution.defaultLanguage`: `cpp`, `python`, `java` or `kotlin` for newly imported contests/problems and local practice.
-- `cfide.ui.language`: `auto` (follow VS Code), `en`, `zh-CN`, `ru`, `ja`.
-- `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
-- `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
-- `cfide.cpp.args`: argument array, default `-std=c++20 -O2 -Wall -Wextra`.
-- `cfide.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
-- `cfide.python.args`: additional solution interpreter arguments.
-- `cfide.run.timeoutMs`: per-test timeout, default 2000 ms.
-- `cfide.{cpp,python,java,kotlin}.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
-- `cfide.{cpp,python,java,kotlin}.templatePath`: legacy optional template files, used only when inline code is empty.
+- `codeforcesWorkbench.solution.defaultLanguage`: `cpp`, `python`, `java` or `kotlin` for newly imported contests/problems and local practice.
+- `codeforcesWorkbench.ui.language`: `auto` (follow VS Code), `en`, `zh-CN`, `ru`, `ja`.
+- `codeforcesWorkbench.codeforces.handle`: optional public read-only handle; no password is needed.
+- `codeforcesWorkbench.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
+- `codeforcesWorkbench.cpp.args`: argument array, default `-std=c++20 -O2 -Wall -Wextra`.
+- `codeforcesWorkbench.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
+- `codeforcesWorkbench.python.args`: additional solution interpreter arguments.
+- `codeforcesWorkbench.run.timeoutMs`: per-test timeout, default 2000 ms.
+- `codeforcesWorkbench.{cpp,python,java,kotlin}.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
+- `codeforcesWorkbench.{cpp,python,java,kotlin}.templatePath`: legacy optional template files, used only when inline code is empty.
 
 C++ completion comes from your installed language extension, not AC-Stride. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
 
@@ -90,24 +89,24 @@ UI text is maintained in four JSON catalogs shared by React and the extension ho
 
 ```text
 your-workspace/
-  .cfide/contests.json
+  .codeforces-workbench/contests.json
   contests/
     1234/
-      .cfide/contest.json
-      .cfide/statements/     # cached sanitized statements/assets
-      .cfide/standings.json
-      .cfide/status-HANDLE.json
+      .codeforces-workbench/contest.json
+      .codeforces-workbench/statements/     # cached sanitized statements/assets
+      .codeforces-workbench/standings.json
+      .codeforces-workbench/status-HANDLE.json
       A/solutions/main.cpp
       A/solutions/main.py
       A/tests/samples/       # official, read-only in UI
       A/tests/custom/        # user-editable
     5678/                    # independent sources/tests, including its own A
-  .cfide/workspace.json     # legacy local-practice index
+  .codeforces-workbench/workspace.json     # legacy local-practice index
   A/main.cpp               # local practice remains compatible
   B/main.py
 ```
 
-Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Legacy browser profiles and 0.5's download venv are **not automatically deleted** and are not used. Modern CF Tool sessions live in the OS keyring; modern submission receipts/source snapshots live in its private state directory. Extension tracking metadata lives in VS Code global state and contains no passwords/cookies/source. The removed `codeforces.setupPython` / `downloadPython` settings are ignored. No Chrome installation is removed. No backend service or telemetry is used.
+Solutions, saved tests and cached public data persist across restarts. Run results are session-only. Archive stops background contest work; reimport never overwrites solutions/custom tests. Existing local-practice and contest folders remain readable. Legacy browser profiles and 0.5's download venv are **not automatically deleted** and are not used. Modern Codeforces Client sessions live in the OS keyring; modern submission receipts/source snapshots live in its private state directory. Extension tracking metadata lives in VS Code global state and contains no passwords/cookies/source. The removed `codeforces.setupPython` / `downloadPython` settings are ignored. No Chrome installation is removed. No backend service or telemetry is used.
 
 ## Development and verification
 
@@ -115,20 +114,20 @@ Node.js 24 LTS is required for development. **Developers/CI only** need Python 3
 
 ```sh
 npm ci
-npm run build:cf-tool
+npm run build:codeforces-client
 npm run build:downloader
 npm run check
 npm run package
 npm run verify:vsix
 # Optional public live checks using the bundled binary, never a system Python:
-CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts
+CODEFORCES_WORKBENCH_LIVE=1 npm test -- test/live/codeforces.test.ts
 ```
 
-Set `CFIDE_BUILD_PYTHON` to an absolute build interpreter path if needed. `npm run package` refuses to produce a VSIX without the matching, hash-verified working downloader. It always sets the VSIX platform target. CI builds all four targets independently, verifies frozen startup with empty PATH and invalid PYTHONHOME/PYTHONPATH, and extracts the final VSIX to check file hashes/executable permissions/startup. Package notices accompany the binary. See `packaging/README.md` for distribution details.
+Set `CODEFORCES_WORKBENCH_BUILD_PYTHON` to an absolute build interpreter path if needed. `npm run package` refuses to produce a VSIX without the matching, hash-verified working downloader. It always sets the VSIX platform target. CI builds all four targets independently, verifies frozen startup with empty PATH and invalid PYTHONHOME/PYTHONPATH, and extracts the final VSIX to check file hashes/executable permissions/startup. Package notices accompany the binary. See `packaging/README.md` for distribution details.
 
-Live public checks are opt-in (`CFIDE_LIVE=1`) and exercise the actual bundled CLI for metadata, public submissions, standings, structured statements and workspace sample import. Fixture and offline checks do not establish live website availability or success on other platforms. See `test/MANUAL.md` for acceptance steps.
+Live public checks are opt-in (`CODEFORCES_WORKBENCH_LIVE=1`) and exercise the actual bundled CLI for metadata, public submissions, standings, structured statements and workspace sample import. Fixture and offline checks do not establish live website availability or success on other platforms. See `test/MANUAL.md` for acceptance steps.
 
-Architecture: `domain` contains local models/checking; `application` handles scheduling and workspace imports; `infrastructure/codeforces` contains the CLI adapter, typed data mapping, display sanitization and a priority queue. All network requests, Codeforces DOM parsing, samples and image caching belong to CF Tool. The extension owns solutions/custom tests, native views, countdowns and React UI. CF Tool coordinates request starts across its processes with a shared 2.1-second minimum interval. The extension has no direct network transport, including in source development mode; build the embedded tools before testing Codeforces features.
+Architecture: `domain` contains local models/checking; `application` handles scheduling and workspace imports; `infrastructure/codeforces` contains the CLI adapter, typed data mapping, display sanitization and a priority queue. All network requests, Codeforces DOM parsing, samples and image caching belong to Codeforces Client. The extension owns solutions/custom tests, native views, countdowns and React UI. Codeforces Client coordinates request starts across its processes with a shared 2.1-second minimum interval. The extension has no direct network transport, including in source development mode; build the embedded tools before testing Codeforces features.
 
 Only regular public contests and desktop single-folder file workspaces are supported. Gym/group/private contests, virtual participation, stress testing, custom checkers and web-only VS Code are out of scope. Public API data may be unavailable, frozen, delayed or limited to recent submissions. The publisher is a development placeholder, no Marketplace release is configured, and no open-source license has been selected.
 
@@ -148,7 +147,7 @@ Install a JDK (17 or newer recommended). Kotlin also requires the standalone Kot
 
 - Java uses `Main.java` with a `Main` class and `public static void main(String[] args)`.
 - Kotlin uses `Main.kt` with a top-level `fun main()`; its JAR includes the Kotlin runtime.
-- Configure `cfide.java.compiler` (`javac`) or `cfide.kotlin.compiler` (`kotlinc`), `.args` for compiler arguments, `.runtime` (`java`) and `.runtimeArgs` for JVM flags. Each command accepts an executable name or absolute path, without embedded arguments. On Windows, the official Kotlin distribution's `bin/kotlinc.bat` is supported through a shell-free Java launcher.
+- Configure `codeforcesWorkbench.java.compiler` (`javac`) or `codeforcesWorkbench.kotlin.compiler` (`kotlinc`), `.args` for compiler arguments, `.runtime` (`java`) and `.runtimeArgs` for JVM flags. Each command accepts an executable name or absolute path, without embedded arguments. On Windows, the official Kotlin distribution's `bin/kotlinc.bat` is supported through a shell-free Java launcher.
 - Compilation has a separate 60-second limit; each test uses the configured local execution timeout. Temporary source snapshots and build outputs are removed after completion or cancellation.
 - Switch languages from the workbench selector. Existing source files are preserved. Codeforces submission offers the matching Java or Kotlin compiler versions supplied by the contest; choose a version compatible with your code and local toolchain.
 
@@ -164,6 +163,10 @@ Each feature has a visibility switch, response-language selector, and editable p
 
 ## Incremental downloads
 
-Contest import fetches a lightweight problem list without loading the complete leaderboard. CF Tool downloads the first problem's statement and samples first, then starts two FIFO consumers for the remaining problems. Completion order can differ when requests take different amounts of time. Standalone imports download just the requested problem.
+Contest import fetches a lightweight problem list without loading the complete leaderboard. Codeforces Client downloads the first problem's statement and samples first, then starts two FIFO consumers for the remaining problems. Completion order can differ when requests take different amounts of time. Standalone imports download just the requested problem.
 
-Statements and samples become usable before images finish. Images are cached in a separate background queue and update the open statement automatically. Public reads use one persistent CF Tool process and a two-process anonymous transport pool to reuse network connections. Closing the window cancels pending work and reaps those processes; cached statements, code and tests remain available. Existing request pacing and bounded retry behavior remain in place. Full rankings are fetched for the visible overview after a statement is available, or when explicitly refreshed.
+Statements and samples become usable before images finish. Images are cached in a separate background queue and update the open statement automatically. Public reads use one persistent Codeforces Client process and a two-process anonymous transport pool to reuse network connections. Closing the window cancels pending work and reaps those processes; cached statements, code and tests remain available. Existing request pacing and bounded retry behavior remain in place. Full rankings are fetched for the visible overview after a statement is available, or when explicitly refreshed.
+
+## Release process
+
+The first public preview is **0.1.0**. Publishing a GitHub Release starts the four-platform build, attaches verified VSIX packages and SHA256 checksums, and publishes the same packages to Marketplace when authentication is configured. See [the release runbook](docs/RELEASING.md) for one-time authentication setup, release channels and retries.

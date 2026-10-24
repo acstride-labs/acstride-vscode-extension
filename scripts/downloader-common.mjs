@@ -8,8 +8,8 @@ export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const bundle = path.join(root, 'resources', 'downloader');
 export const executable = path.join(
   bundle,
-  'cfide-downloader',
-  process.platform === 'win32' ? 'cfide-downloader.exe' : 'cfide-downloader',
+  'codeforces-workbench-downloader',
+  process.platform === 'win32' ? 'codeforces-workbench-downloader.exe' : 'codeforces-workbench-downloader',
 );
 export function hostTarget() {
   const target = `${process.platform}-${process.arch}`;

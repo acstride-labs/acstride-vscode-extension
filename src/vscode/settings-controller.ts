@@ -42,7 +42,7 @@ export class SettingsController implements vscode.Disposable {
   private async syncAccountHandle() {
     const account = this.workspace.submissions?.accountState;
     if (account?.status !== 'signedIn' || !account.handle) return;
-    const config = vscode.workspace.getConfiguration('cfide');
+    const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
     if (config.get('codeforces.handle') === account.handle) return;
     const inspected = config.inspect('codeforces.handle');
     await config.update(
@@ -67,23 +67,23 @@ export class SettingsController implements vscode.Disposable {
     });
     if (subscription) this.disposables.push(subscription);
     this.disposables.push(
-      vscode.commands.registerCommand('cfide.openSettings', (tab?: string) => this.open(tab)),
+      vscode.commands.registerCommand('codeforcesWorkbench.openSettings', (tab?: string) => this.open(tab)),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (
           [
-            'cfide.cpp.compiler',
-            'cfide.cpp.args',
-            'cfide.python.interpreter',
-            'cfide.python.args',
+            'codeforcesWorkbench.cpp.compiler',
+            'codeforcesWorkbench.cpp.args',
+            'codeforcesWorkbench.python.interpreter',
+            'codeforcesWorkbench.python.args',
             ...['java', 'kotlin'].flatMap((language) =>
               ['compiler', 'args', 'runtime', 'runtimeArgs'].map(
-                (key) => `cfide.${language}.${key}`,
+                (key) => `codeforcesWorkbench.${language}.${key}`,
               ),
             ),
           ].some((key) => event.affectsConfiguration(key))
         )
           this.environments = {};
-        if (!event.affectsConfiguration('cfide') || this.busy) return;
+        if (!event.affectsConfiguration('codeforcesWorkbench') || this.busy) return;
         void this.publish();
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
@@ -97,7 +97,7 @@ export class SettingsController implements vscode.Disposable {
     return folders?.length === 1 && folders[0].uri.scheme === 'file';
   }
   private executionFingerprint() {
-    const config = vscode.workspace.getConfiguration('cfide');
+    const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
     return JSON.stringify(
       [
         'cpp.compiler',
@@ -122,7 +122,7 @@ export class SettingsController implements vscode.Disposable {
     if (!this.panel) {
       this.panelReady = false;
       this.panel = vscode.window.createWebviewPanel(
-        'cfide.settings',
+        'codeforcesWorkbench.settings',
         t('AC-Stride · Settings'),
         vscode.ViewColumn.One,
         {
@@ -279,7 +279,7 @@ export class SettingsController implements vscode.Disposable {
         else await submissions.refreshAccount();
       } else if (message.type === 'setLocale') {
         await vscode.workspace
-          .getConfiguration('cfide')
+          .getConfiguration('codeforcesWorkbench')
           .update('ui.language', message.locale, vscode.ConfigurationTarget.Global);
       } else if (message.type === 'saveSettings') {
         const account = this.workspace.submissions?.accountState;
@@ -291,7 +291,7 @@ export class SettingsController implements vscode.Disposable {
           throw new Error('Settings scope changed. Reload settings and retry.');
         if (this.scope === 'workspace' && !this.workspaceAvailable())
           throw new Error('Open a folder in VS Code first.');
-        const config = vscode.workspace.getConfiguration('cfide');
+        const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
         const executionBefore = this.executionFingerprint();
         const target =
           this.scope === 'workspace'
@@ -321,7 +321,7 @@ export class SettingsController implements vscode.Disposable {
       } else if (message.type === 'checkEnvironment' || message.type === 'checkAllEnvironments') {
         if (!vscode.workspace.isTrusted)
           throw new Error('Trust this workspace before changing execution settings.');
-        const config = vscode.workspace.getConfiguration('cfide');
+        const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
         const before = this.executionFingerprint();
         const selected = message.type === 'checkAllEnvironments' ? languageIds : [message.language];
         for (const language of selected) {
@@ -352,7 +352,7 @@ export class SettingsController implements vscode.Disposable {
   }
   private async publish() {
     if (!this.panel) return;
-    const config = vscode.workspace.getConfiguration('cfide');
+    const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
     const values = Object.fromEntries(
       Object.entries(settingsKeys).map(([field, key]) => {
         const value = config.inspect(key);

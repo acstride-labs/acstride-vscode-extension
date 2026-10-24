@@ -1,9 +1,9 @@
 node_modules/
 dist/
 *.vsix
-.cfide/cache/
+.codeforces-workbench/cache/
 .DS_Store
 coverage/
 .build/
 resources/downloader/
-resources/cf-tool/
+resources/codeforces-client/

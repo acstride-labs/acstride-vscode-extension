@@ -63,7 +63,7 @@ export class WorkspaceController implements vscode.Disposable {
   constructor(private context: vscode.ExtensionContext) {}
   defaultLanguage(): Language {
     return vscode.workspace
-      .getConfiguration('cfide')
+      .getConfiguration('codeforcesWorkbench')
       .get<Language>('solution.defaultLanguage', 'cpp');
   }
   localStore() {
@@ -92,12 +92,12 @@ export class WorkspaceController implements vscode.Disposable {
           this.current && this.store().sourcePath(this.current.id, this.current.language);
         void vscode.commands.executeCommand(
           'setContext',
-          'cfide.sourceActive',
+          'codeforcesWorkbench.sourceActive',
           !!source && editor?.document.uri.fsPath === source,
         );
       }),
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (!event.affectsConfiguration('cfide.ui.language')) return;
+        if (!event.affectsConfiguration('codeforcesWorkbench.ui.language')) return;
         if (this.view) this.view.title = t('Workbench');
         postLocale(this.view?.webview);
         this.changes.fire(undefined);
@@ -113,12 +113,12 @@ export class WorkspaceController implements vscode.Disposable {
           }
         }),
       );
-    command('cfide.submitSolution', () => this.submitSolution());
-    command('cfide.createProblem', () => this.create());
-    command('cfide.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
-    command('cfide.refresh', () => this.changes.fire(undefined));
-    command('cfide.switchLanguage', () => this.switchLanguage());
-    command('cfide.runTests', async () => {
+    command('codeforcesWorkbench.submitSolution', () => this.submitSolution());
+    command('codeforcesWorkbench.createProblem', () => this.create());
+    command('codeforcesWorkbench.openProblem', (p: Problem) => this.openInStore(this.localStore(), p));
+    command('codeforcesWorkbench.refresh', () => this.changes.fire(undefined));
+    command('codeforcesWorkbench.switchLanguage', () => this.switchLanguage());
+    command('codeforcesWorkbench.runTests', async () => {
       await this.mutation;
       const file = vscode.window.activeTextEditor?.document.uri.fsPath;
       if (file) {
@@ -142,7 +142,7 @@ export class WorkspaceController implements vscode.Disposable {
       }
       await this.run();
     });
-    command('cfide.stop', () => this.abort?.abort());
+    command('codeforcesWorkbench.stop', () => this.abort?.abort());
     this.disposables.push(
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
         this.abort?.abort();
@@ -154,7 +154,7 @@ export class WorkspaceController implements vscode.Disposable {
     );
   }
   async template(language: Language, id: string) {
-    const config = vscode.workspace.getConfiguration('cfide');
+    const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
     const code = await readSourceTemplate({
       code: config.get<string>(language + '.templateCode', ''),
       file: config.get<string>(language + '.templatePath', ''),
@@ -169,11 +169,11 @@ export class WorkspaceController implements vscode.Disposable {
   }
   async checkEnvironment(language: Language, notify = true) {
     this.trust();
-    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-env-'));
+    const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-env-'));
     try {
       const file = path.join(folder, languages[language].sourceFile);
       await fs.writeFile(file, environmentProbe[language]);
-      const config = vscode.workspace.getConfiguration('cfide');
+      const config = vscode.workspace.getConfiguration('codeforcesWorkbench');
       const result = await languageRunner(language).run(
         file,
         [{ id: 'check', input: '', expected: '5' }],
@@ -273,7 +273,7 @@ export class WorkspaceController implements vscode.Disposable {
     const testsColumn = saved.contestId ? vscode.ViewColumn.Three : vscode.ViewColumn.Two;
     if (!this.view) {
       const view = vscode.window.createWebviewPanel(
-        'cfide.tests',
+        'codeforcesWorkbench.tests',
         t('Workbench'),
         { viewColumn: testsColumn, preserveFocus: true },
         { enableScripts: true, retainContextWhenHidden: true },
@@ -284,7 +284,7 @@ export class WorkspaceController implements vscode.Disposable {
       vscode.Uri.file(store.sourcePath(saved.id, saved.language)),
       { viewColumn: saved.contestId ? vscode.ViewColumn.Two : vscode.ViewColumn.One },
     );
-    await this.context.workspaceState.update('cfide.lastProblem', {
+    await this.context.workspaceState.update('codeforcesWorkbench.lastProblem', {
       root: store.root,
       id: saved.id,
       contestId: saved.contestId,
@@ -298,7 +298,7 @@ export class WorkspaceController implements vscode.Disposable {
       id: string;
       contestId?: number;
       collection?: 'standalone';
-    }>('cfide.lastProblem');
+    }>('codeforcesWorkbench.lastProblem');
     if (!last || typeof last !== 'object' || !vscode.workspace.isTrusted) return;
     const root = this.localStore().root;
     const expected = last.contestId
@@ -391,7 +391,7 @@ export class WorkspaceController implements vscode.Disposable {
           return;
         }
         if (message.type === 'openLogin') {
-          void vscode.commands.executeCommand('cfide.openSettings', 'environment');
+          void vscode.commands.executeCommand('codeforcesWorkbench.openSettings', 'environment');
           return;
         }
         if (message.type === 'copySource') {
@@ -536,7 +536,7 @@ export class WorkspaceController implements vscode.Disposable {
       const { store, problem } = await this.snapshot();
       const config = languageRunConfig(
         problem.language,
-        vscode.workspace.getConfiguration('cfide'),
+        vscode.workspace.getConfiguration('codeforcesWorkbench'),
       );
       const command = config.command;
       this.output.appendLine(

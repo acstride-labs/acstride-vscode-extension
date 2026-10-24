@@ -21,7 +21,7 @@ import {
   type AiConfig,
 } from '../shared/ai-protocol';
 import { normalizeAiBaseUrl } from '../infrastructure/ai/client';
-const configKey = 'cfide.aiConfig';
+const configKey = 'codeforcesWorkbench.aiConfig';
 /** Credentials are bound to the configured endpoint, so editing Base URL never forwards an old key. */
 export class AiSettings {
   private static translationListeners = new Set<() => void>();
@@ -35,7 +35,7 @@ export class AiSettings {
   }
   constructor(private context: Pick<vscode.ExtensionContext, 'globalState' | 'secrets'>) {}
   private keyId(baseUrl: string) {
-    return `cfide.ai.apiKey:${normalizeAiBaseUrl(baseUrl)}`;
+    return `codeforcesWorkbench.ai.apiKey:${normalizeAiBaseUrl(baseUrl)}`;
   }
   config(): AiConfig {
     const value = this.context.globalState.get<unknown>(configKey);
@@ -47,7 +47,7 @@ export class AiSettings {
   }
   translationOptions(): TranslationOptions {
     const parsed = translationOptionsSchema.safeParse(
-      this.context.globalState.get('cfide.translationOptions'),
+      this.context.globalState.get('codeforcesWorkbench.translationOptions'),
     );
     if (!parsed.success) return { ...defaultTranslationOptions };
     return [legacyTranslationPrompt, previousEnglishTranslationPrompt].includes(parsed.data.prompt)
@@ -56,14 +56,14 @@ export class AiSettings {
   }
   async saveTranslationOptions(options: TranslationOptions) {
     await this.context.globalState.update(
-      'cfide.translationOptions',
+      'codeforcesWorkbench.translationOptions',
       translationOptionsSchema.parse(options),
     );
     for (const listener of AiSettings.translationListeners) listener();
   }
   assistanceOptions(): AssistantOptions {
     const parsed = assistantOptionsSchema.safeParse(
-      this.context.globalState.get('cfide.assistanceOptions'),
+      this.context.globalState.get('codeforcesWorkbench.assistanceOptions'),
     );
     const options = parsed.success
       ? parsed.data
@@ -88,20 +88,20 @@ export class AiSettings {
   }
   async saveAssistanceOptions(options: AssistantOptions) {
     await this.context.globalState.update(
-      'cfide.assistanceOptions',
+      'codeforcesWorkbench.assistanceOptions',
       assistantOptionsSchema.parse(options),
     );
     for (const listener of AiSettings.translationListeners) listener();
   }
   cacheOptions(): AiCacheOptions {
     const parsed = aiCacheOptionsSchema.safeParse(
-      this.context.globalState.get('cfide.aiCacheOptions'),
+      this.context.globalState.get('codeforcesWorkbench.aiCacheOptions'),
     );
     return parsed.success ? parsed.data : { ...defaultAiCacheOptions };
   }
   async saveCacheOptions(options: AiCacheOptions) {
     await this.context.globalState.update(
-      'cfide.aiCacheOptions',
+      'codeforcesWorkbench.aiCacheOptions',
       aiCacheOptionsSchema.parse(options),
     );
   }

@@ -6,7 +6,7 @@ import { bundle, executable, hostTarget, hashes, cleanEnvironment } from './down
 
 export async function verifyDownloader() {
   const pin = JSON.parse(
-    await fs.readFile(new URL('../packaging/cf-tool.json', import.meta.url), 'utf8'),
+    await fs.readFile(new URL('../packaging/codeforces-client.json', import.meta.url), 'utf8'),
   );
   let manifest;
   try {
@@ -22,11 +22,11 @@ export async function verifyDownloader() {
     manifest.revision !== pin.revision
   )
     throw new Error('Downloader target/protocol does not match this packaging host.');
-  const actual = await hashes(path.join(bundle, 'cfide-downloader'));
+  const actual = await hashes(path.join(bundle, 'codeforces-workbench-downloader'));
   const notices = await hashes(path.join(bundle, 'notices'));
   const expected = Object.fromEntries(Object.entries(manifest.files));
   const files = Object.fromEntries([
-    ...Object.entries(actual).map(([k, v]) => [`cfide-downloader/${k}`, v]),
+    ...Object.entries(actual).map(([k, v]) => [`codeforces-workbench-downloader/${k}`, v]),
     ...Object.entries(notices).map(([k, v]) => [`notices/${k}`, v]),
   ]);
   if (
@@ -41,8 +41,8 @@ export async function verifyDownloader() {
     env: {
       ...cleanEnvironment(),
       PATH: '',
-      PYTHONHOME: '/does-not-exist/cfide',
-      PYTHONPATH: '/does-not-exist/cfide',
+      PYTHONHOME: '/does-not-exist/codeforcesWorkbench',
+      PYTHONPATH: '/does-not-exist/codeforcesWorkbench',
       PYINSTALLER_RESET_ENVIRONMENT: '1',
     },
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
-import { CfToolClient, cfToolExecutable } from '../../src/infrastructure/codeforces/cf-tool-client';
+import { CodeforcesClientClient, codeforcesClientExecutable } from '../../src/infrastructure/codeforces/codeforces-client';
 
 function fake(mode = 'success') {
   return vi.fn(async (_exe: string, args: string[]) => {
@@ -36,10 +36,10 @@ function fake(mode = 'success') {
   });
 }
 
-describe('bundled CF Tool bridge', () => {
+describe('bundled Codeforces Client bridge', () => {
   it('uses protocol/request IDs, one handshake, explicit args and no auth operations', async () => {
     const run = fake(),
-      client = new CfToolClient('/bundle/acstride-cf', run);
+      client = new CodeforcesClientClient('/bundle/codeforces-client', run);
     await expect(client.call('contest.list', { gym: 'false' })).resolves.toEqual([{ id: 1 }]);
     await client.call('contest.status', { contestId: 1, handle: 'tester', from: 1, count: 100 });
     await client.call('contest.standings', { contestId: 1 });
@@ -49,18 +49,18 @@ describe('bundled CF Tool bridge', () => {
     client.dispose();
   });
   it.each(['wrong-id', 'version', 'invalid', 'failure'])('rejects %s responses', async (mode) => {
-    const client = new CfToolClient('/bundle/acstride-cf', fake(mode));
+    const client = new CodeforcesClientClient('/bundle/codeforces-client', fake(mode));
     await expect(client.call('contest.list', { gym: 'false' })).rejects.toThrow();
   });
   it('does not expose server error bodies', async () => {
-    const client = new CfToolClient('/bundle/acstride-cf', fake('failure'));
+    const client = new CodeforcesClientClient('/bundle/codeforces-client', fake('failure'));
     await expect(client.call('contest.list', { gym: 'false' })).rejects.not.toThrow(
       'PRIVATE RAW BODY',
     );
   });
   it('rejects unsupported methods and argument injection before execution', async () => {
     const run = fake(),
-      client = new CfToolClient('/bundle/acstride-cf', run);
+      client = new CodeforcesClientClient('/bundle/codeforces-client', run);
     for (const [method, params] of [
       ['enter', {}],
       ['contest.list', { gym: 'true' }],
@@ -73,8 +73,8 @@ describe('bundled CF Tool bridge', () => {
   });
   it('chooses only the extension-owned platform executable', () => {
     expect(
-      cfToolExecutable('/extension', 'win32').endsWith(
-        path.join('resources', 'cf-tool', 'acstride-cf.exe'),
+      codeforcesClientExecutable('/extension', 'win32').endsWith(
+        path.join('resources', 'codeforces-client', 'codeforces-client.exe'),
       ),
     ).toBe(true);
   });
@@ -113,10 +113,10 @@ it('accepts only matching structured problem identities and declared local asset
       }),
     };
   });
-  const client = new CfToolClient('/bundle/acstride-cf', transport);
+  const client = new CodeforcesClientClient('/bundle/codeforces-client', transport);
   const result = await client.problem(1, 'A', path.resolve('/assets'));
   expect(result.samples).toEqual([{ id: 'sample-1', input: '你好\n\n', expected: '\n' }]);
-  expect(result.statement.html).toContain(`cfide-asset:${asset}`);
+  expect(result.statement.html).toContain(`codeforces-workbench-asset:${asset}`);
   expect(result.statement.html).toContain('$$$a+b$$$');
   expect(result.statement.html).not.toMatch(
     /<script|onerror|\.\.\/x|https:\/\/codeforces.com\/image/,
@@ -165,7 +165,7 @@ it('sends passwords only on stdin and preserves unknown receipts for exact-ID re
       }),
     };
   });
-  const client = new CfToolClient('/bundle/acstride-cf', run);
+  const client = new CodeforcesClientClient('/bundle/codeforces-client', run);
   await client.login('tester', 'private-password');
   expect(JSON.stringify(run.mock.calls[0][1])).not.toContain('private-password');
   expect(JSON.parse(run.mock.calls[0][2].input!)).toEqual({

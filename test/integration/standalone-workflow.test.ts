@@ -108,7 +108,7 @@ it('derives a stable legacy import time from folder creation without using refre
   const f = await fixture();
   const contests = new ContestRepository(f.root);
   await contests.add(f.contest, 'cpp');
-  const file = path.join(contests.contestRoot(4), '.cfide/contest.json');
+  const file = path.join(contests.contestRoot(4), '.codeforces-workbench/contest.json');
   const saved = JSON.parse(await fs.readFile(file, 'utf8'));
   delete saved.importedAt;
   await fs.writeFile(file, JSON.stringify(saved));

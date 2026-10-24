@@ -108,13 +108,13 @@ it('caches all AI completions before transport while connection tests stay live'
 it('sanitizes cached translation output only at rendering, preserving formulas and allowed local images', () => {
   const asset = 'a'.repeat(64) + '.png';
   const html = sanitizeTranslation(
-    '<p onclick="bad()">$$$x$$$</p><script>bad()</script><img src="cfide-asset:' + asset + '">',
-    '<img src="cfide-asset:' + asset + '">',
+    '<p onclick="bad()">$$$x$$$</p><script>bad()</script><img src="codeforces-workbench-asset:' + asset + '">',
+    '<img src="codeforces-workbench-asset:' + asset + '">',
   );
   expect(html).not.toContain('onclick');
   expect(html).not.toContain('script');
   expect(html).toContain('$$$x$$$');
-  expect(html).toContain('cfide-asset:' + asset);
+  expect(html).toContain('codeforces-workbench-asset:' + asset);
 });
 
 it('does not cache semantically invalid assistant output so retry reaches the model', async () => {

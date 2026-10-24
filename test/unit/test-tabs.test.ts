@@ -27,7 +27,7 @@ describe('test case tabs', () => {
     const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
     expect(
       manifest.contributes.menus['editor/title'].some(
-        (entry: { command: string }) => entry.command === 'cfide.submitSolution',
+        (entry: { command: string }) => entry.command === 'codeforcesWorkbench.submitSolution',
       ),
     ).toBe(false);
   });

@@ -43,7 +43,7 @@ export function sanitizeStatement(html: string, assets: string[]) {
       a: ['href', 'title'],
     },
     allowedSchemes: ['https'],
-    allowedSchemesByTag: { img: ['https', 'cfide-asset'] },
+    allowedSchemesByTag: { img: ['https', 'codeforces-workbench-asset'] },
     allowProtocolRelative: false,
     transformTags: {
       img: (_tag, attrs) => {
@@ -52,7 +52,7 @@ export function sanitizeStatement(html: string, assets: string[]) {
           const name = source.slice('acstride-asset:'.length);
           attrs.src =
             names.has(name) && /^[a-f0-9]{64}\.(png|jpg|gif|webp)$/.test(name)
-              ? `cfide-asset:${name}`
+              ? `codeforces-workbench-asset:${name}`
               : '';
         } else attrs.src = '';
         return { tagName: 'img', attribs: attrs };

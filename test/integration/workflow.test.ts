@@ -8,7 +8,7 @@ import { RunTests } from '../../src/application/run-tests';
 import { executeProcess } from '../../src/infrastructure/execution/process-executor';
 const folders: string[] = [];
 async function workspace() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-test-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codeforces-workbench-test-'));
   folders.push(root);
   return new FileWorkspaceStore(root);
 }
@@ -86,7 +86,7 @@ describe('local C++ workflow', () => {
     setTimeout(() => abort.abort(), 100);
     expect((await pending).reason).toBe('cancelled');
     await expect(
-      executeProcess('cfide-nonexistent-compiler', [], {
+      executeProcess('codeforces-workbench-nonexistent-compiler', [], {
         cwd: store.root,
         signal: new AbortController().signal,
         timeoutMs: 1000,
