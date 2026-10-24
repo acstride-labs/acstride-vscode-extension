@@ -145,6 +145,11 @@ function App() {
                 {t(submitting ? 'Preparing submission…' : 'One-click submit')}
               </button>
               {account.status !== 'signedIn' && (
+                <span className="submission-help-icon" aria-hidden="true">
+                  ?
+                </span>
+              )}
+              {account.status !== 'signedIn' && (
                 <span className="submission-login-hint" id="submission-login-hint">
                   {t(
                     account.status === 'checking'
