@@ -402,5 +402,8 @@
   "AI service returned no translation.": "AI サービスから有効な翻訳が返されませんでした。",
   "Open AC-Stride settings panel": "AC-Stride 設定パネルを開く",
   "Enable AI statement translation in AI assistance to use this feature.": "「AI アシスト」で AI 問題文翻訳を有効にしてください。",
-  "Go to AI assistance settings": "AI アシスト設定へ"
+  "Go to AI assistance settings": "AI アシスト設定へ",
+  "Changes are saved automatically.": "変更は自動的に保存されます。",
+  "Translation prompt cannot be empty.": "翻訳プロンプトは空にできません。",
+  "This restores the default prompt and saves it immediately.": "既定のプロンプトに戻し、すぐに保存します。"
 }

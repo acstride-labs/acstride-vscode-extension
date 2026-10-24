@@ -402,5 +402,8 @@
   "AI service returned no translation.": "AI 服务没有返回有效译文，请重试。",
   "Open AC-Stride settings panel": "打开 AC-Stride 设置面板",
   "Enable AI statement translation in AI assistance to use this feature.": "请在“AI 辅助”设置中开启 AI 题面翻译后使用。",
-  "Go to AI assistance settings": "前往 AI 辅助设置"
+  "Go to AI assistance settings": "前往 AI 辅助设置",
+  "Changes are saved automatically.": "修改会自动保存。",
+  "Translation prompt cannot be empty.": "翻译 Prompt 不能为空。",
+  "This restores the default prompt and saves it immediately.": "这会恢复默认 Prompt 并立即保存。"
 }

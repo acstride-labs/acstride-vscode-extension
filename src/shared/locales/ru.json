@@ -402,5 +402,8 @@
   "AI service returned no translation.": "Сервис ИИ не вернул перевод.",
   "Open AC-Stride settings panel": "Открыть панель настроек AC-Stride",
   "Enable AI statement translation in AI assistance to use this feature.": "Включите перевод условий в разделе «Помощь ИИ», чтобы использовать эту функцию.",
-  "Go to AI assistance settings": "Открыть настройки ИИ"
+  "Go to AI assistance settings": "Открыть настройки ИИ",
+  "Changes are saved automatically.": "Изменения сохраняются автоматически.",
+  "Translation prompt cannot be empty.": "Промпт перевода не может быть пустым.",
+  "This restores the default prompt and saves it immediately.": "Промпт по умолчанию будет восстановлен и сразу сохранён."
 }

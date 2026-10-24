@@ -402,5 +402,8 @@
   "AI service returned no translation.": "AI service returned no translation.",
   "Open AC-Stride settings panel": "Open AC-Stride settings panel",
   "Enable AI statement translation in AI assistance to use this feature.": "Enable AI statement translation in AI assistance to use this feature.",
-  "Go to AI assistance settings": "Go to AI assistance settings"
+  "Go to AI assistance settings": "Go to AI assistance settings",
+  "Changes are saved automatically.": "Changes are saved automatically.",
+  "Translation prompt cannot be empty.": "Translation prompt cannot be empty.",
+  "This restores the default prompt and saves it immediately.": "This restores the default prompt and saves it immediately."
 }

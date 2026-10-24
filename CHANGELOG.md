@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.6
+
+- Save translation switches and target language immediately; automatically save prompt edits after a short pause or on blur. Keep restore confirmation and serialize saves so rapid edits retain the latest settings.
+
 ## 0.13.5
 
 - Move submission refresh to a small icon after tracking/update metadata, sharing the ranking refresh control and preserving its disabled state when no handle is configured.

@@ -3,6 +3,7 @@ import {
   defaultTranslationOptions,
   defaultTranslationPrompt,
   type TranslationOptions,
+  translationOptionsSchema,
   translationLanguages,
   type TranslationLanguage,
 } from '../../../src/shared/ai-protocol';
@@ -14,26 +15,59 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
   const [saved, setSaved] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const confirmation = useRef<HTMLDialogElement>(null);
+  const current = useRef(defaultTranslationOptions);
+  const persisted = useRef('');
+  const dirty = useRef(false);
+  const inFlight = useRef<TranslationOptions>();
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const flush = () => {
+    clearTimeout(timer.current);
+    timer.current = undefined;
+    if (inFlight.current) return;
+    const parsed = translationOptionsSchema.safeParse(current.current);
+    if (!parsed.success || JSON.stringify(parsed.data) === persisted.current) return;
+    inFlight.current = parsed.data;
+    send({ type: 'saveTranslationSettings', options: parsed.data });
+  };
   useEffect(() => {
     if (confirming) confirmation.current?.showModal();
     else confirmation.current?.close();
   }, [confirming]);
   useEffect(() => {
-    if (options) {
+    // Host refreshes must not overwrite edits made while a save is in flight.
+    if (options && !dirty.current && !inFlight.current && !timer.current) {
+      current.current = options;
+      persisted.current = JSON.stringify(options);
       setDraft(options);
       setSaved(true);
     }
   }, [options?.enabled, options?.autoTranslate, options?.targetLanguage, options?.prompt]);
   useEffect(() => {
     const listener = (event: MessageEvent) => {
-      if (event.data.type === 'translationSettingsSaved') setSaved(true);
+      if (event.data.type === 'translationSettingsSaved' && inFlight.current) {
+        persisted.current = JSON.stringify(inFlight.current);
+        inFlight.current = undefined;
+        const parsed = translationOptionsSchema.safeParse(current.current);
+        const matches = parsed.success && JSON.stringify(parsed.data) === persisted.current;
+        dirty.current = !matches;
+        setSaved(matches);
+        if (!matches && !timer.current) flush();
+      }
     };
     window.addEventListener('message', listener);
-    return () => window.removeEventListener('message', listener);
+    return () => {
+      window.removeEventListener('message', listener);
+      clearTimeout(timer.current);
+    };
   }, []);
-  const change = (value: Partial<TranslationOptions>) => {
-    setDraft({ ...draft, ...value });
+  const change = (value: Partial<TranslationOptions>, delayed = false) => {
+    current.current = { ...current.current, ...value };
+    setDraft(current.current);
+    dirty.current = true;
     setSaved(false);
+    clearTimeout(timer.current);
+    if (delayed) timer.current = setTimeout(flush, 500);
+    else flush();
   };
   return (
     <section className="card settings-section">
@@ -79,7 +113,8 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
           rows={8}
           value={draft.prompt}
           maxLength={20000}
-          onChange={(e) => change({ prompt: e.target.value })}
+          onChange={(e) => change({ prompt: e.target.value }, true)}
+          onBlur={flush}
         />
       </label>
       <p>
@@ -98,17 +133,13 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
         </p>
       )}
       <div className="actions">
-        <button
-          type="button"
-          disabled={!draft.prompt.trim() || saved}
-          onClick={() => send({ type: 'saveTranslationSettings', options: draft })}
-        >
-          {t('Save changes')}
-        </button>
         <button type="button" className="secondary" onClick={() => setConfirming(true)}>
           {t('Restore default prompt')}
         </button>
-        {saved && <span role="status">{t('Saved')}</span>}
+        <span role="status">{t(saved ? 'Saved' : 'Changes are saved automatically.')}</span>
+        {!draft.prompt.trim() && (
+          <span className="error">{t('Translation prompt cannot be empty.')}</span>
+        )}
       </div>
       <dialog
         ref={confirmation}
@@ -117,7 +148,7 @@ export function TranslationSettingsCard({ options }: { options?: TranslationOpti
         onCancel={() => setConfirming(false)}
       >
         <h3 id="restore-prompt-title">{t('Restore default prompt?')}</h3>
-        <p>{t('This replaces the current prompt draft. Save your changes to apply it.')}</p>
+        <p>{t('This restores the default prompt and saves it immediately.')}</p>
         <div className="actions">
           <button
             type="button"
