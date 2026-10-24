@@ -18,7 +18,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
       collection: z.enum(['contest', 'standalone']).optional(),
     })
     .strict(),
-  z.object({ type: z.literal('addContest') }),
   z.object({ type: z.literal('openSettings') }),
   z.object({ type: z.literal('openAiSettings') }).strict(),
   z.object({ type: z.literal('openContestDetails'), contestId: contestIdSchema }).strict(),
@@ -29,7 +28,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('switchLanguage') }),
-  z.object({ type: z.literal('selectContest'), contestId: contestIdSchema }),
   z.object({ type: z.literal('refreshStatus'), contestId: contestIdSchema }),
   z.object({ type: z.literal('refreshStandings'), contestId: contestIdSchema }),
   z.object({

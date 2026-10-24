@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.4
+
+- Simplify the contest overview by removing its duplicate heading, add button, contest picker and redundant phase/type text. Keep one compact status label beside the contest name and move ranking refresh to a small icon beside update metadata. Remove unused picker messages and clock styles.
+
 ## 0.13.3
 
 - Disable the statement translation icon when translation is off. Show a localized settings link only on hover or keyboard focus; clicking the disabled icon never navigates. Update open statements immediately when the preference changes.

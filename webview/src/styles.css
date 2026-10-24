@@ -179,20 +179,7 @@ input:not([type='checkbox']) {
   width: 100%;
   color: var(--vscode-descriptionForeground);
 }
-.contest-picker {
-  margin: 24px 0;
-}
-.countdown {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
-  gap: 4px;
-}
-.countdown strong {
-  font-size: 28px;
-  font-variant-numeric: tabular-nums;
-}
-.contest-heading h2 {
+.contest-heading h1 {
   font-size: 20px;
 }
 .tabs {
@@ -475,19 +462,6 @@ body[data-mode='statement'] {
   padding: 6px 8px;
   margin: 4px 0;
 }
-.contest-center .center-header h1 {
-  font-size: 20px;
-  margin: 0;
-}
-.contest-center .contest-picker {
-  margin: 16px 0;
-}
-.settings-section .checkbox-label {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
 .settings-page h1 {
   font-size: 20px;
   margin: 0;
@@ -742,4 +716,24 @@ button.contest-problem-row:hover {
 .translation-hint {
   left: 0;
   right: auto;
+}
+
+.contest-update-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.contest-refresh-icon {
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.contest-refresh-icon:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
 }

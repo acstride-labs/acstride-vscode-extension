@@ -463,7 +463,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       void this.poll().catch((error) => this.report(error, false));
       return;
     }
-    if (message.type === 'addContest') return this.add();
     if (message.type === 'openAiSettings')
       return vscode.commands.executeCommand('cfide.openSettings', 'assistance');
     if (message.type === 'openSettings')
@@ -473,7 +472,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.rankSearch = message.search;
       return this.publish();
     }
-    if (message.type === 'selectContest') return this.select(message.contestId);
     if (message.type === 'switchLanguage')
       return vscode.commands.executeCommand('cfide.switchLanguage');
     this.trust();

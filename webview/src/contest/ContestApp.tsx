@@ -45,42 +45,6 @@ export function ContestApp() {
       : t('Not synchronized');
   return (
     <main className="contest-center">
-      <header className="center-header">
-        <div>
-          <h1>
-            {t('Your contest workspace')}{' '}
-            {contest && (
-              <span className="contest-time-label">
-                {contest.phase === 'FINISHED' || (countdown <= 0 && contest.phase !== 'BEFORE')
-                  ? t('FINISHED')
-                  : `${t(contest.phase === 'BEFORE' ? 'Starts in' : 'Remaining')} ${duration(countdown)}`}
-              </span>
-            )}
-          </h1>
-        </div>
-        <button disabled={disabled} onClick={() => send({ type: 'addContest' })}>
-          ＋ {t('Add contest')}
-        </button>
-      </header>
-      <label className="contest-picker">
-        {t('Current contest')}
-        <select
-          disabled={disabled}
-          aria-label={t('Current contest')}
-          value={id ?? ''}
-          onChange={(e) => send({ type: 'selectContest', contestId: Number(e.target.value) })}
-        >
-          <option value="" disabled>
-            {t('Select a contest')}
-          </option>
-          {state?.contests.map((c) => (
-            <option key={c.contest.id} value={c.contest.id}>
-              {c.archived ? `[${t('Archived')}] ` : ''}
-              {c.contest.id} · {c.contest.name}
-            </option>
-          ))}
-        </select>
-      </label>
       {state?.error && (
         <pre className="error" role="alert">
           {t(state.error)}
@@ -107,9 +71,16 @@ export function ContestApp() {
         <>
           <section className="contest-heading">
             <div>
-              <h2>{contest.name}</h2>
+              <h1>
+                {contest.name}
+                <span className="contest-time-label">
+                  {contest.phase === 'FINISHED' || (countdown <= 0 && contest.phase !== 'BEFORE')
+                    ? t('FINISHED')
+                    : `${t(contest.phase === 'BEFORE' ? 'Starts in' : 'Remaining')} ${duration(countdown)}`}
+                </span>
+              </h1>
               <p>
-                #{id} · {t(contest.phase)} · {contest.type}
+                #{id}
                 {contest.frozen ? ' · ' + t('Standings frozen') : ''}
                 {record.archived ? ' · ' + t('Archived') : ''}
               </p>
@@ -188,12 +159,6 @@ export function ContestApp() {
             <>
               <div className="actions">
                 <button
-                  disabled={disabled}
-                  onClick={() => send({ type: 'refreshStandings', contestId: id })}
-                >
-                  {t('Refresh rankings')}
-                </button>
-                <button
                   className="secondary"
                   onClick={() => send({ type: 'rankFilter', mode: 'all', search: '' })}
                 >
@@ -225,9 +190,30 @@ export function ContestApp() {
                   {t('Search')}
                 </button>
               </form>
-              <p>
-                {updated(state.rankingsUpdatedAt)} ·{' '}
-                {t('{count} participants', { count: state.rankTotal })}
+              <p className="contest-update-line">
+                <span>
+                  {updated(state.rankingsUpdatedAt)} ·{' '}
+                  {t('{count} participants', { count: state.rankTotal })}
+                </span>
+                <button
+                  className="secondary contest-refresh-icon"
+                  disabled={disabled}
+                  title={t('Refresh rankings')}
+                  aria-label={t('Refresh rankings')}
+                  onClick={() => send({ type: 'refreshStandings', contestId: id })}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    aria-hidden="true"
+                  >
+                    <path d="M13.5 6A5.5 5.5 0 0 0 3 5M2.5 10A5.5 5.5 0 0 0 13 11M3 1.5V5h3.5M13 14.5V11H9.5" />
+                  </svg>
+                </button>
               </p>
               <div className="table-scroll">
                 <table>
