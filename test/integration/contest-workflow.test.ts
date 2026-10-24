@@ -260,3 +260,22 @@ it('recovers an interrupted final attempt without showing a permanent loading st
   expect(session.problem).toHaveBeenCalledOnce();
   expect((await repo.get(1234)).problems[0].ready).toBe(true);
 });
+
+it('queues both distinct selected problems even when background work is archived', async () => {
+  const { repo, service, session } = await fixture();
+  await service.add(1234, 'python');
+  await repo.update(1234, (r) => {
+    r.archived = true;
+    r.contest.phase = 'FINISHED';
+    r.problems = ['A', 'B'].map((index) => ({
+      index,
+      name: index,
+      ready: false,
+      downloadAttempts: 0,
+      nextRetryAt: 0,
+    }));
+  });
+  await Promise.all([service.ensureDownloaded(1234, 'A'), service.ensureDownloaded(1234, 'B')]);
+  expect(session.problem).toHaveBeenCalledTimes(2);
+  expect((await repo.get(1234)).problems.every((p) => p.ready)).toBe(true);
+});

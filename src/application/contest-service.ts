@@ -56,7 +56,15 @@ export class ContestService {
   sync(id: number, onlyIndex?: string): Promise<void> {
     if (this.stopped) return Promise.resolve();
     const existing = this.syncing.get(id);
-    if (existing) return existing;
+    if (existing) {
+      if (!onlyIndex) return existing;
+      return existing.then(async () => {
+        if (this.stopped) return;
+        const problem = (await this.repository.get(id)).problems.find((p) => p.index === onlyIndex);
+        if (problem && !problem.ready && problem.downloadAttempts < maxDownloadAttempts)
+          await this.sync(id, onlyIndex);
+      });
+    }
     const running = this.runSync(id, onlyIndex).finally(() => this.syncing.delete(id));
     this.syncing.set(id, running);
     return running;
