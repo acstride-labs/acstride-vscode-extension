@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.3
+
+- Disable the statement translation icon when translation is off. Show a localized settings link only on hover or keyboard focus; clicking the disabled icon never navigates. Update open statements immediately when the preference changes.
+
 ## 0.13.2
 
 - Add a localized link at the top of the native VS Code extension settings to open the AC-Stride settings panel.

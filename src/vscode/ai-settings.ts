@@ -16,6 +16,15 @@ import { normalizeAiBaseUrl } from '../infrastructure/ai/client';
 const configKey = 'cfide.aiConfig';
 /** Credentials are bound to the configured endpoint, so editing Base URL never forwards an old key. */
 export class AiSettings {
+  private static translationListeners = new Set<() => void>();
+  onTranslationChanged(listener: () => void) {
+    AiSettings.translationListeners.add(listener);
+    return {
+      dispose: () => {
+        AiSettings.translationListeners.delete(listener);
+      },
+    };
+  }
   constructor(private context: Pick<vscode.ExtensionContext, 'globalState' | 'secrets'>) {}
   private keyId(baseUrl: string) {
     return `cfide.ai.apiKey:${normalizeAiBaseUrl(baseUrl)}`;
@@ -42,6 +51,7 @@ export class AiSettings {
       'cfide.translationOptions',
       translationOptionsSchema.parse(options),
     );
+    for (const listener of AiSettings.translationListeners) listener();
   }
   cacheOptions(): AiCacheOptions {
     const parsed = aiCacheOptionsSchema.safeParse(

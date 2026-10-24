@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {

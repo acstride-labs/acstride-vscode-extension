@@ -6,6 +6,7 @@ import { send } from '../bridge';
 import { useI18n } from '../i18n';
 export function StatementView() {
   const { t } = useI18n();
+  const [translationEnabled, setTranslationEnabled] = useState(false);
   const [translated, setTranslated] = useState(false);
   const [translation, setTranslation] = useState<{
     status: string;
@@ -19,12 +20,22 @@ export function StatementView() {
   const viewport = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const listener = (event: MessageEvent<ContestHostMessage>) => {
+      if (event.data.type === 'translationAvailability') {
+        setTranslationEnabled(event.data.enabled);
+        if (!event.data.enabled) {
+          setTranslated(false);
+          setTranslation(undefined);
+        }
+        return;
+      }
       if (event.data.type === 'translation') {
         setTranslation(event.data);
         if (event.data.status === 'disabled') setTranslated(false);
         return;
       }
       if (event.data.type !== 'statement') return;
+      setTranslationEnabled(event.data.translationEnabled);
+      if (!event.data.translationEnabled) setTranslated(false);
       if (
         key.current !==
         `${event.data.collection ?? 'contest'}/${event.data.contestId}/${event.data.index}`
@@ -59,36 +70,55 @@ export function StatementView() {
         <header className="answer-toolbar">
           <div className="statement-identity">
             <span>{data ? `#${data.contestId} · ${data.index}` : t('STATEMENT')}</span>
-            <button
-              className="secondary translation-toggle"
-              title={t(translated ? 'Show original' : 'AI statement translation')}
-              aria-label={t('AI statement translation')}
-              aria-pressed={translated}
-              disabled={!data?.statement.fetchedAt}
-              onClick={() => {
-                setTranslated(!translated);
-                if (!translated)
-                  data &&
-                    send({
-                      type: 'translateStatement',
-                      contestId: data.contestId,
-                      index: data.index,
-                      collection: data.collection,
-                    });
-              }}
+            <span
+              className="translation-action"
+              tabIndex={!translationEnabled ? 0 : undefined}
+              aria-describedby={!translationEnabled ? 'translation-disabled-hint' : undefined}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                aria-hidden="true"
+              <button
+                className="secondary translation-toggle"
+                title={
+                  translationEnabled
+                    ? t(translated ? 'Show original' : 'AI statement translation')
+                    : undefined
+                }
+                aria-label={t('AI statement translation')}
+                aria-pressed={translated}
+                disabled={!translationEnabled || !data?.statement.fetchedAt}
+                onClick={() => {
+                  if (!translationEnabled) return;
+                  setTranslated(!translated);
+                  if (!translated)
+                    data &&
+                      send({
+                        type: 'translateStatement',
+                        contestId: data.contestId,
+                        index: data.index,
+                        collection: data.collection,
+                      });
+                }}
               >
-                <path d="M2 4h9M6.5 2v2M4 4c.5 4 3 6 6 8M9 4c-.5 4-3 7-7 9M10 17l4-10 4 10M11.5 14h5" />
-              </svg>
-            </button>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  aria-hidden="true"
+                >
+                  <path d="M2 4h9M6.5 2v2M4 4c.5 4 3 6 6 8M9 4c-.5 4-3 7-7 9M10 17l4-10 4 10M11.5 14h5" />
+                </svg>
+              </button>
+              {!translationEnabled && (
+                <span className="translation-hint" id="translation-disabled-hint">
+                  {t('Enable AI statement translation in AI assistance to use this feature.')}{' '}
+                  <button className="text-link" onClick={() => send({ type: 'openAiSettings' })}>
+                    {t('Go to AI assistance settings')}
+                  </button>
+                </span>
+              )}
+            </span>
           </div>
           <button
             className="secondary"

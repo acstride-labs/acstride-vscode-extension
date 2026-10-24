@@ -400,5 +400,7 @@
   "LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.": "达到任一上限时，LRU 会淘汰最久未使用的请求。超过空间上限的结果正常返回，但不缓存。关闭缓存会保留已有条目，后续请求跳过缓存读写。",
   "Use 1–10000 requests and 1–1024 MB.": "条目数请设置为 1–10000，空间请设置为 1–1024 MB。",
   "AI service returned no translation.": "AI 服务没有返回有效译文，请重试。",
-  "Open AC-Stride settings panel": "打开 AC-Stride 设置面板"
+  "Open AC-Stride settings panel": "打开 AC-Stride 设置面板",
+  "Enable AI statement translation in AI assistance to use this feature.": "请在“AI 辅助”设置中开启 AI 题面翻译后使用。",
+  "Go to AI assistance settings": "前往 AI 辅助设置"
 }

@@ -154,3 +154,26 @@ it('replaces every language placeholder without changing the saved prompt', () =
   expect(options.prompt).toContain('{{language}}');
   expect(renderTranslationPrompt({ ...options, targetLanguage: 'ru' })).toContain('Russian');
 });
+it('notifies open views after translation preferences are saved through another settings instance', async () => {
+  const data = new Map<string, unknown>();
+  const context = {
+    globalState: {
+      get: (key: string) => data.get(key),
+      update: async (key: string, value: unknown) => {
+        data.set(key, value);
+      },
+    },
+  } as unknown as vscode.ExtensionContext;
+  const viewSettings = new AiSettings(context),
+    editorSettings = new AiSettings(context);
+  const observed: boolean[] = [];
+  const subscription = viewSettings.onTranslationChanged(() =>
+    observed.push(viewSettings.translationOptions().enabled),
+  );
+  await editorSettings.saveTranslationOptions({ ...defaultTranslationOptions, enabled: true });
+  await editorSettings.saveTranslationOptions({ ...defaultTranslationOptions, enabled: false });
+  expect(observed).toEqual([true, false]);
+  subscription.dispose();
+  await editorSettings.saveTranslationOptions({ ...defaultTranslationOptions, enabled: true });
+  expect(observed).toEqual([true, false]);
+});

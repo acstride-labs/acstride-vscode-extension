@@ -400,5 +400,7 @@
   "LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.": "LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.",
   "Use 1–10000 requests and 1–1024 MB.": "Use 1–10000 requests and 1–1024 MB.",
   "AI service returned no translation.": "AI service returned no translation.",
-  "Open AC-Stride settings panel": "Open AC-Stride settings panel"
+  "Open AC-Stride settings panel": "Open AC-Stride settings panel",
+  "Enable AI statement translation in AI assistance to use this feature.": "Enable AI statement translation in AI assistance to use this feature.",
+  "Go to AI assistance settings": "Go to AI assistance settings"
 }

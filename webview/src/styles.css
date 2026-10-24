@@ -554,7 +554,8 @@ button:focus-visible,
   outline-offset: -1px;
 }
 
-.submission-action {
+.submission-action,
+.translation-action {
   display: inline-flex;
   align-items: center;
   position: relative;
@@ -574,10 +575,12 @@ button:focus-visible,
   line-height: 1;
   cursor: help;
 }
-.submission-action button:disabled {
+.submission-action button:disabled,
+.translation-action button:disabled {
   pointer-events: none;
 }
-.submission-login-hint {
+.submission-login-hint,
+.translation-hint {
   display: none;
   position: absolute;
   top: 100%;
@@ -595,7 +598,9 @@ button:focus-visible,
   white-space: normal;
 }
 .submission-action:hover .submission-login-hint,
-.submission-action:focus-within .submission-login-hint {
+.submission-action:focus-within .submission-login-hint,
+.translation-action:hover .translation-hint,
+.translation-action:focus-within .translation-hint {
   display: block;
 }
 button.text-link {
@@ -732,4 +737,9 @@ button.contest-problem-row:hover {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.translation-hint {
+  left: 0;
+  right: auto;
 }

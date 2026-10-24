@@ -98,6 +98,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       ),
     );
     this.ai = new AiSettings(context);
+    this.disposables.push(
+      this.ai.onTranslationChanged(() => this.publishTranslationAvailability()),
+    );
     this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
     this.workspaces = new CodeforcesWorkspaces(
       () => workspace.localStore().root,
@@ -281,6 +284,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         void (collection === 'contest' ? this.dashboard : this.statementPanel)?.webview.postMessage(
           {
             type: 'statement',
+            translationEnabled: this.ai.translationOptions().enabled,
             ...target,
             statement: this.mapAssets(id, statement, collection),
           } satisfies ContestHostMessage,
@@ -444,6 +448,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       )
         void this.dashboard.webview.postMessage({
           type: 'statement',
+          translationEnabled: this.ai.translationOptions().enabled,
           ...this.statementTarget,
           statement: this.mapAssets(this.statementTarget.contestId, this.statementTarget.statement),
         });
@@ -459,6 +464,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return;
     }
     if (message.type === 'addContest') return this.add();
+    if (message.type === 'openAiSettings')
+      return vscode.commands.executeCommand('cfide.openSettings', 'assistance');
     if (message.type === 'openSettings')
       return vscode.commands.executeCommand('cfide.openSettings');
     if (message.type === 'rankFilter') {
@@ -539,6 +546,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         if (reveal) this.dashboard.reveal(vscode.ViewColumn.One, true);
         void this.dashboard.webview.postMessage({
           type: 'statement',
+          translationEnabled: this.ai.translationOptions().enabled,
           ...this.statementTarget,
           statement: this.mapAssets(id, statement, collection),
         });
@@ -586,7 +594,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             else if (message.type === 'openContestDetails')
               await this.openCenter(message.contestId).catch((e) => this.report(e));
             else if (message.type === 'translateStatement') await this.showTranslation(message);
-            else if (message.type === 'switchLanguage')
+            else if (message.type === 'switchLanguage' || message.type === 'openAiSettings')
               await this.handleMessage(message).catch((e) => this.report(e));
             return;
           }
@@ -596,6 +604,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             if (this.statementPanel)
               void this.statementPanel.webview.postMessage({
                 type: 'statement',
+                translationEnabled: this.ai.translationOptions().enabled,
                 ...target,
                 statement: this.mapAssets(target.contestId, target.statement, target.collection),
               } satisfies ContestHostMessage);
@@ -616,6 +625,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     postLocale(this.statementPanel.webview);
     void this.statementPanel.webview.postMessage({
       type: 'statement',
+      translationEnabled: this.ai.translationOptions().enabled,
       contestId: id,
       index,
       language,
@@ -638,6 +648,14 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       120000,
     );
     return sanitizeTranslation(output, statement.html);
+  }
+  private publishTranslationAvailability() {
+    const message: ContestHostMessage = {
+      type: 'translationAvailability',
+      enabled: this.ai.translationOptions().enabled,
+    };
+    void this.dashboard?.webview.postMessage(message);
+    void this.statementPanel?.webview.postMessage(message);
   }
   private async showTranslation(request: {
     contestId: number;
@@ -664,7 +682,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       void (
         target.collection === 'contest' ? this.dashboard : this.statementPanel
       )?.webview.postMessage({ type: 'translation', status: 'disabled' });
-      await vscode.commands.executeCommand('cfide.openSettings', 'assistance');
+      this.publishTranslationAvailability();
       return;
     }
     if (!target.statement.fetchedAt) return;

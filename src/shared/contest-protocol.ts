@@ -20,6 +20,7 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('addContest') }),
   z.object({ type: z.literal('openSettings') }),
+  z.object({ type: z.literal('openAiSettings') }).strict(),
   z.object({ type: z.literal('openContestDetails'), contestId: contestIdSchema }).strict(),
   z
     .object({
@@ -64,6 +65,7 @@ export interface ContestViewState {
 export type ContestHostMessage =
   | { type: 'contestState'; state: ContestViewState }
   | { type: 'contestOverview' }
+  | { type: 'translationAvailability'; enabled: boolean }
   | {
       type: 'translation';
       status: 'pending' | 'ready' | 'failed' | 'disabled';
@@ -72,6 +74,7 @@ export type ContestHostMessage =
     }
   | {
       type: 'statement';
+      translationEnabled: boolean;
       collection?: 'contest' | 'standalone';
       contestId: number;
       index: string;
