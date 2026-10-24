@@ -297,5 +297,8 @@
   "REJECTED": "REJECTED",
   "PARTIAL": "PARTIAL",
   "SECURITY VIOLATED": "SECURITY VIOLATED",
-  "PRESENTATION ERROR": "PRESENTATION ERROR"
+  "PRESENTATION ERROR": "PRESENTATION ERROR",
+  "The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.": "The bundled Codeforces tool is unavailable. Reinstall the VSIX for your system.",
+  "Codeforces requires site verification. Use the official website and retry later.": "Codeforces requires site verification. Use the official website and retry later.",
+  "Codeforces connection failed ({code}). Cached data is retained.": "Could not connect to Codeforces ({code}). Your cached data is safe."
 }

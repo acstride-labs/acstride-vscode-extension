@@ -9,7 +9,7 @@ The extension ID, `cfide.*` commands/settings and `.cfide` workspace data remain
 unchanged for compatibility with existing installations. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.9 adds editable starter-code templates, one-click environment checks and language-bound run/copy actions to the compact answering layout. The public downloader, private Python runtime, curl_cffi and CA certificates are bundled in the platform-specific VSIX: no user-side Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.10 adds a pinned, embedded ACStride CF Tool for public contest metadata, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -23,6 +23,13 @@ A Codeforces extension for desktop VS Code, with C++ and Python support and Engl
 - Configurable four-language interface, live switching and a separate settings page for preferences/tools.
 
 There are **no login, Cookie import, browser connection, automatic submission, registration or clarification controls**. Register and submit on the official website yourself. Adding a contest locally does not register your account. Public tracking does not authenticate ownership of a handle.
+
+The separately developed CLI has opt-in experimental account/submission commands,
+but the extension's bridge exposes **only anonymous API reads**. It never loads
+CLI keyring sessions, forwards cookies/passwords, or submits source. Its protocol,
+request IDs, operation schemas and exit status are checked before accepting data.
+The existing curl_cffi statement path and TypeScript sanitization/image cache are
+retained; there is no second browser connection or downloader setup screen.
 
 ## Start here
 
@@ -104,6 +111,7 @@ Node.js 24 LTS is required for development. **Developers/CI only** need Python 3
 
 ```sh
 npm ci
+npm run build:cf-tool
 npm run build:downloader
 npm run check
 npm run package

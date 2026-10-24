@@ -11,9 +11,23 @@ import path from 'node:path';
 import os from 'node:os';
 import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
 import { parseStatement } from '../../src/infrastructure/codeforces/statement-parser';
+import { CfToolClient, cfToolExecutable } from '../../src/infrastructure/codeforces/cf-tool-client';
 
 // Explicitly opt in. These checks never log in, register, or submit code.
 describe.skipIf(process.env.CFIDE_LIVE !== '1')('live read-only Codeforces smoke checks', () => {
+  it('uses the actual bundled Go bridge for public metadata, submissions and standings', async () => {
+    const queue = new RequestQueue(),
+      tool = new CfToolClient(cfToolExecutable(path.resolve('.')));
+    try {
+      const api = new CodeforcesApi(queue, fetch, (method, params) => tool.call(method, params));
+      expect((await api.contest(1)).id).toBe(1);
+      expect((await api.submissions(1, 'tourist')).length).toBeGreaterThan(0);
+      expect((await api.standings(1)).problems.some((p) => p.index === 'A')).toBe(true);
+    } finally {
+      tool.dispose();
+      queue.dispose();
+    }
+  }, 90000);
   it('loads a public contest and standings from the live API', async () => {
     const queue = new RequestQueue();
     try {

@@ -297,5 +297,8 @@
   "REJECTED": "已拒绝",
   "PARTIAL": "部分通过",
   "SECURITY VIOLATED": "违反安全限制",
-  "PRESENTATION ERROR": "输出格式错误"
+  "PRESENTATION ERROR": "输出格式错误",
+  "The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.": "内置 Codeforces 工具无法使用，请重新安装适合当前系统的 VSIX。",
+  "Codeforces requires site verification. Use the official website and retry later.": "Codeforces 要求网页验证，请先使用官网，稍后再重试。",
+  "Codeforces connection failed ({code}). Cached data is retained.": "暂时无法连接 Codeforces（{code}），已下载的数据不会丢失。"
 }

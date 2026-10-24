@@ -4,6 +4,7 @@ import os from 'node:os';
 import { promises as fs } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { root, hostTarget, cleanEnvironment, hashes } from './downloader-common.mjs';
+import { verifyCfTool } from './verify-cf-tool.mjs';
 
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
 const archive = path.join(root, `ac-stride-${manifest.version}-${hostTarget()}.vsix`);
@@ -23,6 +24,7 @@ try {
           names.push(name);
           if (
             (!name.startsWith('extension/resources/downloader/') &&
+              !name.startsWith('extension/resources/cf-tool/') &&
               !/^extension\/package\.nls(?:\.(?:zh-cn|ru|ja))?\.json$/.test(name) &&
               name !== 'extension.vsixmanifest') ||
             name.endsWith('/')
@@ -73,6 +75,7 @@ try {
   )
     throw new Error('VSIX leaked build tools or the unbundled helper');
   const bundle = path.join(temp, 'extension', 'resources', 'downloader');
+  await verifyCfTool(path.join(temp, 'extension', 'resources', 'cf-tool'));
   const embeddedManifest = JSON.parse(
     await fs.readFile(path.join(bundle, 'manifest.json'), 'utf8'),
   );

@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Anonymous Codeforces workbench for VS Code: contest preparation, public problem downloads, C++/Python tests, verdict tracking and rankings.",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -258,6 +258,8 @@
   "scripts": {
     "build": "node scripts/build-localization.mjs && node esbuild.mjs && vite build",
     "build:downloader": "node scripts/build-downloader.mjs",
+    "build:cf-tool": "node scripts/build-cf-tool.mjs",
+    "verify:cf-tool": "node scripts/verify-cf-tool.mjs",
     "verify:downloader": "node scripts/verify-downloader.mjs",
     "verify:vsix": "node scripts/verify-vsix.mjs",
     "typecheck": "tsc --noEmit && tsc -p webview/tsconfig.json --noEmit",

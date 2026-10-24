@@ -297,5 +297,8 @@
   "REJECTED": "却下",
   "PARTIAL": "部分正解",
   "SECURITY VIOLATED": "セキュリティ違反",
-  "PRESENTATION ERROR": "出力形式エラー"
+  "PRESENTATION ERROR": "出力形式エラー",
+  "The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.": "内蔵の Codeforces ツールを利用できません。お使いの環境に対応した VSIX を再インストールしてください。",
+  "Codeforces requires site verification. Use the official website and retry later.": "Codeforces でブラウザーによる確認が必要です。公式サイトを利用し、しばらくしてから再試行してください。",
+  "Codeforces connection failed ({code}). Cached data is retained.": "Codeforces に接続できませんでした（{code}）。保存済みのデータは保持されています。"
 }

@@ -43,6 +43,10 @@ export class CodeforcesApi {
   constructor(
     private queue: RequestQueue,
     private fetcher: typeof fetch = fetch,
+    private toolCall?: (
+      method: string,
+      params: Record<string, string | number>,
+    ) => Promise<unknown>,
   ) {}
   private call(
     method: string,
@@ -50,6 +54,7 @@ export class CodeforcesApi {
     priority = 10,
   ): Promise<unknown> {
     return this.queue.schedule(async () => {
+      if (this.toolCall) return this.toolCall(method, params);
       const url = new URL(`https://codeforces.com/api/${method}`);
       for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
       const response = await this.fetcher(url, {

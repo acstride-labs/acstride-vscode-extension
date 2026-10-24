@@ -297,5 +297,8 @@
   "REJECTED": "Отклонено",
   "PARTIAL": "Частичное решение",
   "SECURITY VIOLATED": "Нарушение безопасности",
-  "PRESENTATION ERROR": "Ошибка формата вывода"
+  "PRESENTATION ERROR": "Ошибка формата вывода",
+  "The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.": "Встроенный инструмент Codeforces недоступен. Переустановите VSIX для вашей системы.",
+  "Codeforces requires site verification. Use the official website and retry later.": "Codeforces требует проверку в браузере. Воспользуйтесь официальным сайтом и повторите попытку позже.",
+  "Codeforces connection failed ({code}). Cached data is retained.": "Не удалось подключиться к Codeforces ({code}). Сохранённые данные не потеряны."
 }

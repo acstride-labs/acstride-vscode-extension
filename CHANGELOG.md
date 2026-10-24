@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+
+- Bundle ACStride CF Tool at a fixed Git commit for anonymous contest metadata, public submission records and rankings, using versioned JSON, request IDs and strict method/argument validation.
+- Keep login, cookies and automatic submission out of the extension; the CLI's opt-in account/submission experiment is not enabled through the editor bridge.
+- Preserve the existing curl_cffi statement downloader, C++/Python execution, directory layout and user code/tests.
+- Build Go binaries and dependency/runtime notices in developer/CI workflows only. Verify source pin, platform, hashes, protocol and standalone startup before packaging and again after extracting the final VSIX. No end-user Go installation or runtime downloads.
+- Add bridge tests and localized connection/installation diagnostics in English, Chinese, Russian and Japanese.
+
 ## 0.9.1
 
 - Rename the product to AC-Stride across the extension, four interface languages, native commands, settings, diagnostics and documentation.

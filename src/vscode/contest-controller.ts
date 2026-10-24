@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
+import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
 import * as cheerio from 'cheerio';
 import { parseContestId, type ContestRecord } from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
@@ -35,6 +37,7 @@ type Node =
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private queue = new RequestQueue();
   private api = new CodeforcesApi(this.queue);
+  private cfTool?: CfToolClient;
   private reader: PublicProblemClient;
   private downloaderReady = false;
   private initialized: Promise<void>;
@@ -67,6 +70,24 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
   ) {
+    const executable = cfToolExecutable(context.extensionUri.fsPath);
+    // Source checkouts may omit native bundles. Packaged builds require a verified tool.
+    if (existsSync(executable) || context.extensionMode === vscode.ExtensionMode.Production) {
+      this.cfTool = new CfToolClient(executable, undefined, (code) => {
+        if (code === 'tool_unavailable' || code === 'protocol_mismatch')
+          return t(
+            'The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.',
+          );
+        if (code === 'verification_required')
+          return t(
+            'Codeforces requires site verification. Use the official website and retry later.',
+          );
+        return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
+      });
+      this.api = new CodeforcesApi(this.queue, fetch, (method, params) =>
+        this.cfTool!.call(method, params),
+      );
+    }
     this.reader = new PublicProblemClient(
       this.queue,
       downloaderExecutable(context.extensionUri.fsPath),
@@ -665,6 +686,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   dispose() {
+    this.cfTool?.dispose();
     this.reader.dispose();
     this.service?.dispose();
     this.queue.dispose();

@@ -4,10 +4,11 @@ End users install only the matching VSIX. They never execute pip, download a Pyt
 
 ## Build and validate
 
-Use Node 24 and Python 3.10+ on the target OS/architecture:
+Use Node 24, Go 1.26+ and Python 3.10+ on the target OS/architecture (developer/CI only):
 
 ```sh
 npm ci
+npm run build:cf-tool
 npm run build:downloader
 npm run check
 npm run package
@@ -26,7 +27,28 @@ Supported targets: `darwin-arm64`, `darwin-x64`, `win32-x64`, `linux-x64`. Linux
 - The child gets a copied environment stripped of Python/venv/Conda/native-library injection, impersonate.pro account/config overrides and external CA overrides. curl_cffi is pointed at a private, unused config location in the bundle instead of the user's curl_cffi configuration/cache. Parent environment and solution execution are unchanged. Standard proxy settings remain honored. TLS verification uses the bundled certifi store.
 - `--self-test` is offline: load native libcurl, confirm CA data, report protocol/embedded status. Normal mode accepts one bounded stdin JSON public problem path; only anonymous GETs to the same HTTPS Codeforces problem page are allowed. No login/Cookie input, arbitrary URL or POST interface exists.
 - stdin/stdout JSON, fixed time/output/page limits, cancellation and static diagnostics are retained. No persistent account state or helper runtime files are written. Imported statements are still parsed/sanitized by TypeScript.
-- Wrong/incomplete/incompatible installs show an explicit reinstall-the-correct-package error and leave local code/tests intact. HTML import remains available. Site verification/network failures are distinct from installation failures.
+- Wrong/incomplete/incompatible installs show an explicit reinstall-the-correct-package error and leave local code/tests intact. Retry later or continue with cached/local work. Site verification/network failures are distinct from installation failures.
+
+## Embedded CF Tool
+
+`packaging/cf-tool.json` pins the Go repository to an exact commit. `build:cf-tool`
+fetches that commit at build time, verifies module checksums and builds the native
+standalone executable into ignored `resources/cf-tool/`. `ACSTRIDE_BUILD_GO` may
+select an absolute developer compiler; `ACSTRIDE_CF_TOOL_SOURCE` may select a
+clean local checkout, but it must match the same pin. These variables do not
+configure extension runtime behavior or user PATH.
+
+The bundle includes the original MIT license, locked dependency and Go runtime
+notices, file hashes and target/source metadata. `verify:cf-tool` runs offline
+capabilities with empty PATH and checks request/protocol identity. `package` and
+`verify:vsix` require it, including validation of the extracted final binary.
+
+Production installs always use the extension-owned executable and report an
+installation/protocol failure rather than silently changing transport. A source
+development host without a built bundle can retain the original TypeScript API
+client. The bridge only exposes three public API reads; it does not activate
+keyring, credentials, cookies, website POSTs, self-update or local code execution.
+The existing frozen curl_cffi downloader still handles anonymous statements.
 
 ## Dependencies and release hygiene
 
