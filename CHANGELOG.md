@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2
+
+- Add a localized link at the top of the native VS Code extension settings to open the AC-Stride settings panel.
+
 ## 0.13.1
 
 - Replace nested sidebar groups with three toggleable native peer views; reuse the legacy local-practice view ID and remove duplicate group/welcome UI. Keep settings in the contest toolbar because stable APIs cannot add a multi-view container title button.

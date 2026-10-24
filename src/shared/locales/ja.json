@@ -399,5 +399,6 @@
   "Maximum cache size (MB)": "キャッシュの最大容量（MB）",
   "LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.": "いずれかの上限に達すると、LRU により最も長く使われていないリクエストを削除します。容量を超える結果は保存せず返します。無効にしても既存のデータは保持し、読み書きのみ停止します。",
   "Use 1–10000 requests and 1–1024 MB.": "件数は 1〜10000、容量は 1〜1024 MB に設定してください。",
-  "AI service returned no translation.": "AI サービスから有効な翻訳が返されませんでした。"
+  "AI service returned no translation.": "AI サービスから有効な翻訳が返されませんでした。",
+  "Open AC-Stride settings panel": "AC-Stride 設定パネルを開く"
 }

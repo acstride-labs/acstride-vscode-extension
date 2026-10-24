@@ -23,6 +23,7 @@
   "trust.description": "問題の閲覧に対応しています。コンパイルと実行には信頼済みワークスペースが必要です。",
   "language.auto": "VS Code に合わせる",
   "setting.cfide.ui.language": "AC-Stride の表示言語。問題文とコードは翻訳しません。",
+  "setting.cfide.ui.language.markdown": "[AC-Stride 設定パネルを開く](command:cfide.openSettings)\n\nAC-Stride の表示言語。問題文とコードは翻訳しません。",
   "setting.cfide.codeforces.handle": "提出結果や周辺順位を確認する公開ユーザー名。アカウント認証は行いません。",
   "setting.cfide.python.interpreter": "Python 3 の実行ファイルまたは絶対パス。Windows では python が必要な場合があります。仮想環境では完全なパスを指定してください。",
   "setting.cfide.python.args": "Python の追加引数。AC-Stride が UTF-8 とバッファーなし実行のオプションを追加します。",

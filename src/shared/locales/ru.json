@@ -399,5 +399,6 @@
   "Maximum cache size (MB)": "Максимальный размер кеша (МБ)",
   "LRU removes the least recently used requests when either limit is reached. Oversized results are returned without being cached. Disabling the cache keeps existing entries but skips reads and writes.": "При достижении любого лимита LRU удаляет дольше всего неиспользуемые запросы. Слишком большие ответы возвращаются без сохранения. Отключение кеша сохраняет записи, но прекращает чтение и запись.",
   "Use 1–10000 requests and 1–1024 MB.": "Укажите от 1 до 10000 запросов и от 1 до 1024 МБ.",
-  "AI service returned no translation.": "Сервис ИИ не вернул перевод."
+  "AI service returned no translation.": "Сервис ИИ не вернул перевод.",
+  "Open AC-Stride settings panel": "Открыть панель настроек AC-Stride"
 }

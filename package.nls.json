@@ -23,6 +23,7 @@
   "trust.description": "Reading problems is supported; compiling and running requires a trusted workspace.",
   "language.auto": "Follow VS Code",
   "setting.cfide.ui.language": "AC-Stride interface language. Does not translate problem statements or code.",
+  "setting.cfide.ui.language.markdown": "[Open AC-Stride settings panel](command:cfide.openSettings)\n\nAC-Stride interface language. Does not translate problem statements or code.",
   "setting.cfide.codeforces.handle": "Optional public read-only Codeforces handle for submission results and nearby ranking. No account authentication is performed.",
   "setting.cfide.python.interpreter": "Python 3 executable or absolute path. On Windows you may need to set this to python. For virtual environments, use the interpreter's full path.",
   "setting.cfide.python.args": "Additional Python interpreter arguments. AC-Stride adds unbuffered UTF-8 execution flags.",

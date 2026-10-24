@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -189,7 +189,9 @@
           ],
           "default": "auto",
           "scope": "application",
-          "description": "%setting.cfide.ui.language%"
+          "description": "%setting.cfide.ui.language%",
+          "order": -1000,
+          "markdownDescription": "%setting.cfide.ui.language.markdown%"
         },
         "cfide.codeforces.handle": {
           "type": "string",

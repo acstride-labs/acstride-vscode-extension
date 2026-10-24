@@ -23,6 +23,7 @@
   "trust.description": "支持阅读题目；编译和运行需要信任工作区。",
   "language.auto": "跟随 VS Code",
   "setting.cfide.ui.language": "AC-Stride 界面语言，不翻译题面或代码。",
+  "setting.cfide.ui.language.markdown": "[打开 AC-Stride 设置面板](command:cfide.openSettings)\n\nAC-Stride 界面语言，不翻译题面或代码。",
   "setting.cfide.codeforces.handle": "可选的公开 Codeforces 账号，用于查看提交结果和附近排名，不进行账号认证。",
   "setting.cfide.python.interpreter": "Python 3 可执行文件或绝对路径。Windows 上可能需要设为 python；虚拟环境请填写解释器完整路径。",
   "setting.cfide.python.args": "附加 Python 参数。AC-Stride 会添加无缓冲和 UTF-8 运行选项。",

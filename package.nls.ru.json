@@ -23,6 +23,7 @@
   "trust.description": "Условия можно читать; компиляция и запуск требуют доверенного рабочего пространства.",
   "language.auto": "Как в VS Code",
   "setting.cfide.ui.language": "Язык интерфейса AC-Stride. Условия задач и код не переводятся.",
+  "setting.cfide.ui.language.markdown": "[Открыть панель настроек AC-Stride](command:cfide.openSettings)\n\nЯзык интерфейса AC-Stride. Условия задач и код не переводятся.",
   "setting.cfide.codeforces.handle": "Необязательный публичный ник Codeforces для посылок и соседних мест. Аутентификация не выполняется.",
   "setting.cfide.python.interpreter": "Исполняемый файл Python 3 или полный путь. В Windows может потребоваться python. Для venv укажите полный путь.",
   "setting.cfide.python.args": "Дополнительные аргументы Python. AC-Stride добавляет режим UTF-8 и отключение буферизации.",

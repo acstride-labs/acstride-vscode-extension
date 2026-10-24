@@ -56,6 +56,12 @@ for (const [locale, suffix] of [
     if (!Object.hasOwn(english, source))
       throw new Error('Missing English setting resource: ' + key);
     values[token] = text(source);
+    if (key === 'cfide.ui.language')
+      values[token + '.markdown'] =
+        '[' +
+        text('Open AC-Stride settings panel') +
+        '](command:cfide.openSettings)\n\n' +
+        text(source);
   }
   await fs.writeFile(
     path.join(root, `package.nls${suffix}.json`),
