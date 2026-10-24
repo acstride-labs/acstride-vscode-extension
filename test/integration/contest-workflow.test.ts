@@ -279,3 +279,57 @@ it('queues both distinct selected problems even when background work is archived
   expect(session.problem).toHaveBeenCalledTimes(2);
   expect((await repo.get(1234)).problems.every((p) => p.ready)).toBe(true);
 });
+
+it('discovers problems without a full board and publishes text before background assets', async () => {
+  const { repo, api } = await fixture();
+  const discover = vi.fn(async (id: number) => ({
+    contest: { ...fixtureContest, id },
+    problems: [
+      { index: 'A', name: 'Sum' },
+      { index: 'B', name: 'Other' },
+    ],
+  }));
+  let release!: () => void;
+  const images = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let textReady!: () => void;
+  const text = new Promise<void>((resolve) => {
+    textReady = resolve;
+  });
+  const batch = vi.fn(
+    async (
+      _id: number,
+      indices: string[],
+      _dir: string,
+      handlers: import('../../src/application/contest-service').DownloadHandlers,
+    ) => {
+      expect(indices).toEqual(['A', 'B']);
+      await handlers.problem('A', structuredProblem());
+      await handlers.problem('B', structuredProblem());
+      textReady();
+      await images;
+      await handlers.assets('A', {
+        ...structuredProblem(),
+        statement: { ...structuredProblem().statement, html: '<p>images ready</p>' },
+      });
+    },
+  );
+  const service = new ContestService(
+    repo,
+    { ...api, problems: discover },
+    { problem: vi.fn(), problems: batch },
+    async () => 'code',
+  );
+  await service.add(1234, 'cpp');
+  const sync = service.sync(1234);
+  await text;
+  expect((await repo.get(1234)).problems.every((problem) => problem.ready)).toBe(true);
+  expect((await repo.statement(1234, 'A'))?.html).toBe(structuredProblem().statement.html);
+  expect(api.standings).not.toHaveBeenCalled();
+  release();
+  await sync;
+  expect((await repo.statement(1234, 'A'))?.html).toBe('<p>images ready</p>');
+  await service.sync(1234);
+  expect(batch).toHaveBeenCalledTimes(1);
+});

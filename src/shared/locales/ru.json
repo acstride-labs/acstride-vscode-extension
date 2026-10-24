@@ -448,5 +448,6 @@
   "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Подстановки: {{language}} — выбранный язык ответа; {{hintCount}} — число подсказок. Заменяются перед запросом, сохранённый промпт не меняется.",
   "AI Translation": "ИИ-перевод",
   "AI Solution": "ИИ-решение",
-  "Save": "Сохранить"
+  "Save": "Сохранить",
+  "Statement images are loading in the background…": "Изображения условия загружаются в фоне…"
 }

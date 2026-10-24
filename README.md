@@ -9,7 +9,7 @@ The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compati
 with existing installations. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. Version 0.13 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. The extension uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -161,3 +161,9 @@ Configure and test your provider under **Settings → AI assistance**. The origi
 - **AI Coding**: open a read-only editor-style dialog with reference code in the current solution language. Copy it if needed; the extension never replaces source files or submits generated code. Generated references still need review and testing.
 
 Each feature has a visibility switch, response-language selector, and editable prompt. Save AI assistance settings to apply them. Restoring a default prompt requires confirmation and updates only the draft until saved. `{{language}}`, `{{programmingLanguage}}`, and `{{hintCount}}` are substituted before requesting the model; the original prompt is preserved. Statement/source data is provided separately. Tasks share the configured input/output cache and duplicate in-flight requests are merged. Results for an old problem cannot appear in another problem’s dialog.
+
+## Incremental downloads
+
+Contest import fetches a lightweight problem list without loading the complete leaderboard. CF Tool downloads the first problem's statement and samples first, then starts two FIFO consumers for the remaining problems. Completion order can differ when requests take different amounts of time. Standalone imports download just the requested problem.
+
+Statements and samples become usable before images finish. Images are cached in a separate background queue and update the open statement automatically. Public reads use one persistent CF Tool process and a two-process anonymous transport pool to reuse network connections. Closing the window cancels pending work and reaps those processes; cached statements, code and tests remain available. Existing request pacing and bounded retry behavior remain in place. Full rankings are fetched for the visible overview after a statement is available, or when explicitly refreshed.

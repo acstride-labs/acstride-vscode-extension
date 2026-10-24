@@ -45,6 +45,7 @@ function fixture() {
     selectedId: 2261,
     section: 'prepare',
     dashboard: { visible: true },
+    dashboardMode: 'overview',
     workspace: { active: () => undefined },
     pendingContests: new Set(),
     lastStatus: new Map(),
@@ -75,6 +76,22 @@ it('does not fetch full standings while the Problems tab is open', async () => {
   await (controller as any).poll();
   expect(service.refreshSubmissions).toHaveBeenCalledOnce();
 });
+it('does not poll full rankings during statement reading or before any statement is ready', async () => {
+  for (const mode of ['statement', 'overview']) {
+    const { controller, service, repo } = fixture();
+    const host = controller as any;
+    host.section = 'rankings';
+    host.dashboardMode = mode;
+    if (mode === 'overview')
+      repo.get.mockResolvedValue({
+        ...record,
+        problems: record.problems.map((problem) => ({ ...problem, ready: false })),
+      });
+    await host.poll();
+    expect(service.refreshBoard).not.toHaveBeenCalled();
+  }
+});
+
 it('keeps background timeout notices scoped to their section and clears them after recovery', async () => {
   const { controller, service } = fixture();
   const host = controller as any;

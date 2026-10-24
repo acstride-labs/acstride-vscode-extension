@@ -448,5 +448,6 @@
   "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "占位符：{{language}} 为所选回复语言，{{hintCount}} 为提示数量。发送请求前自动替换，保存的 Prompt 原文不变。",
   "AI Translation": "AI 翻译",
   "AI Solution": "AI 解答",
-  "Save": "保存"
+  "Save": "保存",
+  "Statement images are loading in the background…": "题面图片正在后台加载…"
 }

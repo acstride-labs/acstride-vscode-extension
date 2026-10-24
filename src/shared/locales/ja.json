@@ -448,5 +448,6 @@
   "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "{{language}} は回答言語、{{hintCount}} はヒント数です。送信前に置換し、保存済みプロンプトは変更しません。",
   "AI Translation": "AI 翻訳",
   "AI Solution": "AI 解答",
-  "Save": "保存"
+  "Save": "保存",
+  "Statement images are loading in the background…": "問題文の画像をバックグラウンドで読み込み中…"
 }

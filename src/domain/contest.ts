@@ -44,6 +44,7 @@ export interface Statement {
   memoryLimit: string;
   fetchedAt: number;
   imageWarning?: string;
+  imagesPending?: boolean;
 }
 export interface CFSubmission {
   id: number;

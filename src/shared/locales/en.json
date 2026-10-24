@@ -448,5 +448,6 @@
   "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.",
   "AI Translation": "AI Translation",
   "AI Solution": "AI Solution",
-  "Save": "Save"
+  "Save": "Save",
+  "Statement images are loading in the background…": "Statement images are loading in the background…"
 }

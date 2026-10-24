@@ -4,7 +4,19 @@ import { ContestRepository } from '../infrastructure/storage/contest-repository'
 import type { CodeforcesApi } from '../infrastructure/codeforces/api-client';
 import type { TestCase } from '../domain/models';
 
+export type DownloadedProblem = { statement: Statement; samples: TestCase[] };
+export interface DownloadHandlers {
+  problem(index: string, value: DownloadedProblem): Promise<void>;
+  assets(index: string, value: DownloadedProblem): Promise<void>;
+  error(index: string, error: Error): Promise<void>;
+}
 export interface ProblemReader {
+  problems?(
+    id: number,
+    indices: string[],
+    assetsDir: string,
+    handlers: DownloadHandlers,
+  ): Promise<void>;
   problem(
     id: number,
     index: string,
@@ -12,7 +24,8 @@ export interface ProblemReader {
   ): Promise<{ statement: Statement; samples: TestCase[] }>;
 }
 
-type Api = Pick<CodeforcesApi, 'contest' | 'standings' | 'submissions'>;
+type Api = Pick<CodeforcesApi, 'contest' | 'standings' | 'submissions'> &
+  Partial<Pick<CodeforcesApi, 'problems'>>;
 export class ContestService {
   private syncing = new Map<number, Promise<void>>();
   private requested = new Map<string, Promise<void>>();
@@ -72,7 +85,7 @@ export class ContestService {
       throw error;
     }
   }
-  sync(id: number, onlyIndex?: string): Promise<void> {
+  sync(id: number, onlyIndex?: string, discover = true): Promise<void> {
     if (this.stopped) return Promise.resolve();
     const existing = this.syncing.get(id);
     if (existing) {
@@ -84,7 +97,7 @@ export class ContestService {
           await this.sync(id, onlyIndex);
       });
     }
-    const running = this.runSync(id, onlyIndex).finally(() => this.syncing.delete(id));
+    const running = this.runSync(id, onlyIndex, discover).finally(() => this.syncing.delete(id));
     this.syncing.set(id, running);
     return running;
   }
@@ -112,7 +125,7 @@ export class ContestService {
     return requested;
   }
 
-  private async runSync(id: number, onlyIndex?: string) {
+  private async runSync(id: number, onlyIndex?: string, discover = true) {
     try {
       const record = await this.repository.get(id);
       const now = Date.now();
@@ -124,10 +137,12 @@ export class ContestService {
       // A known problem can download independently of an unavailable leaderboard.
       if (
         this.repository.collection !== 'standalone' &&
+        discover &&
         (!onlyIndex || !record.problems.some((p) => p.index === onlyIndex))
       ) {
-        const board = await this.api.standings(id);
-        await this.repository.saveStandings(id, board);
+        const board = this.api.problems
+          ? await this.api.problems(id)
+          : await this.api.standings(id);
         await this.repository.update(id, (r) => {
           r.contest = board.contest;
           r.updatedAt = now;
@@ -139,63 +154,98 @@ export class ContestService {
         });
       }
       this.changed(id);
-      for (const problem of (await this.repository.get(id)).problems) {
+      const pending = (await this.repository.get(id)).problems.filter((problem) =>
+        onlyIndex
+          ? problem.index === onlyIndex
+          : !problem.ready &&
+            problem.downloadAttempts < maxDownloadAttempts &&
+            problem.nextRetryAt <= now,
+      );
+      for (const problem of pending) {
         if (this.stopped) return;
-        if (
-          onlyIndex
-            ? problem.index !== onlyIndex
-            : problem.ready ||
-              problem.downloadAttempts >= maxDownloadAttempts ||
-              problem.nextRetryAt > now
-        )
-          continue;
+        await this.ensureSolution(id, problem.index);
         await this.repository.update(id, (r) => {
-          const p = r.problems.find((p) => p.index === problem.index)!;
-          p.downloadAttempts++;
-          delete p.error;
+          const item = r.problems.find((p) => p.index === problem.index)!;
+          item.downloadAttempts++;
+          delete item.error;
         });
-        this.changed(id);
-        try {
-          await this.ensureSolution(id, problem.index);
-          const parsed = await this.reader.problem(id, problem.index, this.repository.assets(id));
+      }
+      const handlers: DownloadHandlers = {
+        problem: async (index, parsed) => {
           if (this.stopped) return;
           const store = this.repository.problems(id);
           if (this.repository.collection === 'standalone') {
             const title =
-              parsed.statement.title.replace(/^[A-Za-z][0-9]*[.．]\s*/, '').slice(0, 200) ||
-              problem.index;
-            await store.renameProblem(problem.index, title);
+              parsed.statement.title.replace(/^[A-Za-z][0-9]*[.．]\s*/, '').slice(0, 200) || index;
+            await store.renameProblem(index, title);
             await this.repository.update(id, (r) => {
-              r.problems.find((p) => p.index === problem.index)!.name = title;
+              r.problems.find((p) => p.index === index)!.name = title;
             });
           }
-          await store.importSamples(problem.index, parsed.samples);
-          await this.repository.saveStatement(id, problem.index, parsed.statement);
-          this.downloaded(id, problem.index, parsed.statement);
+          await store.importSamples(index, parsed.samples);
+          await this.repository.saveStatement(id, index, parsed.statement);
+          this.downloaded(id, index, parsed.statement);
           await this.repository.update(id, (r) => {
-            const p = r.problems.find((p) => p.index === problem.index)!;
-            p.ready = true;
-            p.downloadAttempts = 0;
-            p.nextRetryAt = 0;
-            delete p.error;
+            const item = r.problems.find((p) => p.index === index)!;
+            item.ready = true;
+            item.downloadAttempts = 0;
+            item.nextRetryAt = 0;
+            delete item.error;
           });
-        } catch (error) {
+          this.changed(id);
+        },
+        assets: async (index, parsed) => {
+          if (this.stopped) return;
+          await this.repository.saveStatement(id, index, parsed.statement);
+          this.changed(id);
+        },
+        error: async (index, error) => {
+          if (this.stopped) return;
           await this.repository.update(id, (r) => {
-            const p = r.problems.find((p) => p.index === problem.index)!;
-            p.error = message(error);
-            p.nextRetryAt =
-              p.downloadAttempts < maxDownloadAttempts
-                ? Date.now() + 2000 * 2 ** (p.downloadAttempts - 1)
+            const item = r.problems.find((p) => p.index === index)!;
+            item.error = message(error);
+            item.nextRetryAt =
+              item.downloadAttempts < maxDownloadAttempts
+                ? Date.now() + 2000 * 2 ** (item.downloadAttempts - 1)
                 : 0;
           });
+          this.changed(id);
+        },
+      };
+      this.changed(id);
+      if (pending.length && this.reader.problems) {
+        await this.reader.problems(
+          id,
+          pending.map((p) => p.index),
+          this.repository.assets(id),
+          handlers,
+        );
+      } else {
+        // Compatibility for readers without streaming; production uses CF Tool's FIFO scheduler.
+        for (const problem of pending) {
+          if (this.stopped) return;
+          try {
+            await handlers.problem(
+              problem.index,
+              await this.reader.problem(id, problem.index, this.repository.assets(id)),
+            );
+          } catch (error) {
+            await handlers.error(
+              problem.index,
+              error instanceof Error ? error : new Error(String(error)),
+            );
+          }
         }
-        this.changed(id);
       }
       await this.repository.update(id, (r) => {
         const retrying = r.problems.filter(
           (p) => !p.ready && p.downloadAttempts < maxDownloadAttempts,
         );
         r.nextRetryAt = retrying.length ? Math.min(...retrying.map((p) => p.nextRetryAt)) : 0;
+        if (r.problems.length && r.problems.every((problem) => problem.ready)) {
+          delete r.error;
+          r.retryCount = 0;
+        }
       });
     } catch (error) {
       await this.repository.update(id, (r) => {
@@ -256,15 +306,15 @@ export class ContestService {
           (refresh && record.contest.phase === 'CODING');
         if (discover && this.repository.collection !== 'standalone')
           await this.sync(record.contest.id);
-        else
-          for (const problem of record.problems) {
-            if (
+        else if (
+          record.problems.some(
+            (problem) =>
               !problem.ready &&
               problem.downloadAttempts < maxDownloadAttempts &&
-              problem.nextRetryAt <= now
-            )
-              await this.sync(record.contest.id, problem.index);
-          }
+              problem.nextRetryAt <= now,
+          )
+        )
+          await this.sync(record.contest.id, undefined, false);
       }
     } finally {
       this.tickBusy = false;

@@ -142,6 +142,9 @@ export function StatementView() {
           </div>
         </header>
         <div className="statement-scroll" ref={viewport}>
+          {data?.statement.imagesPending && (
+            <p role="status">{t('Statement images are loading in the background…')}</p>
+          )}
           {data?.statement.imageWarning && (
             <p className="error">{t(data.statement.imageWarning)}</p>
           )}

@@ -115,8 +115,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       () => workspace.localStore().root,
       this.api,
       {
-        problem: (id, index, assetsDir) =>
-          this.queue.schedule(() => this.cfTool.problem(id, index, assetsDir)),
+        problem: (id, index, assetsDir) => this.cfTool.problem(id, index, assetsDir),
+        problems: (id, indices, assetsDir, handlers) =>
+          this.cfTool.problems(id, indices, assetsDir, handlers),
       },
       (language, index) => workspace.template(language, index),
       (id, collection) => {
@@ -285,7 +286,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       if (
         target === this.statementTarget &&
         (statement.fetchedAt !== target.statement.fetchedAt ||
-          statement.html !== target.statement.html)
+          statement.html !== target.statement.html ||
+          statement.imagesPending !== target.statement.imagesPending ||
+          statement.imageWarning !== target.statement.imageWarning)
       ) {
         const newlyDownloaded = !!cached && statement.fetchedAt !== target.statement.fetchedAt;
         target.statement = statement;
@@ -926,13 +929,18 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       if (
         this.selectedId &&
         this.dashboard?.visible &&
+        this.dashboardMode === 'overview' &&
         this.section === 'rankings' &&
         Date.now() - this.lastBoard > 30000
       ) {
         this.lastBoard = Date.now();
         const id = this.selectedId;
         const record = await repo.get(id);
-        if (!record.archived && record.contest.phase !== 'BEFORE') {
+        if (
+          !record.archived &&
+          record.contest.phase !== 'BEFORE' &&
+          record.problems.some((problem) => problem.ready)
+        ) {
           try {
             await service.refreshBoard(id);
             this.backgroundErrors.delete(`${id}/rankings`);

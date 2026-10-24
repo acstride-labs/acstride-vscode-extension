@@ -61,6 +61,10 @@ export class CodeforcesApi {
       .array(submissionSchema)
       .parse(await this.call('contest.status', { contestId: id, handle, from: 1, count: 100 }, 0));
   }
+  async problems(id: number) {
+    const data = standingsSchema.parse(await this.call('contest.problems', { contestId: id }, 10));
+    return { contest: data.contest, problems: data.problems };
+  }
   async standings(id: number): Promise<Standings> {
     // Public regular contests require the anonymous contestId-only request.
     const parsed = standingsSchema.safeParse(

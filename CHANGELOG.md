@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0
+
+- Use a persistent read-only CF Tool session and reusable anonymous transport connections. Import contests from a lightweight problem list rather than the full leaderboard.
+- Download the first problem before starting two ordered consumers for the remaining problems. Show statements and samples immediately, then refresh cached images in the background. Single-problem imports use the same direct stream.
+- Preserve downloaded statements on process interruptions, restart the read session for later requests, and clean up transport processes when the extension closes.
+
 ## 0.16.1
 
 - Replace AI badges with lightweight library icons and icon-only actions with localized hover labels.

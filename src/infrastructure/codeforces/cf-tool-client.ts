@@ -1,3 +1,4 @@
+import { ReadSession } from './read-session';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -52,12 +53,16 @@ export type SubmissionReceipt = z.infer<typeof receiptSchema>;
 export class CfToolClient {
   private abort = new AbortController();
   private handshake?: Promise<void>;
+  private readSession?: ReadSession;
   constructor(
     private executable: string,
     private executor = executeProcess,
     private formatError = (code: string) =>
       `Codeforces tool failed (${code}). Cached data is retained.`,
-  ) {}
+  ) {
+    if (executor === executeProcess)
+      this.readSession = new ReadSession(executable, undefined, formatError);
+  }
 
   private async run(args: string[], problem = false, input?: string) {
     const requestId = randomUUID();
@@ -103,7 +108,11 @@ export class CfToolClient {
   }
 
   ready() {
-    return (this.handshake ??= this.run(['capabilities']).then((data) => {
+    return (this.handshake ??= (
+      this.readSession
+        ? this.readSession.request({ command: 'capabilities' })
+        : this.run(['capabilities'])
+    ).then((data) => {
       const caps = z
         .object({ protocol: z.literal(1), anonymous: z.array(z.string()) })
         .safeParse(data);
@@ -117,6 +126,7 @@ export class CfToolClient {
       'contest.list': ['gym'],
       'contest.status': ['contestId', 'handle', 'from', 'count'],
       'contest.standings': ['contestId'],
+      'contest.problems': ['contestId'],
     };
     if (
       !Object.hasOwn(allowed, method) ||
@@ -137,6 +147,16 @@ export class CfToolClient {
     )
       throw new Error('Invalid result count.');
     await this.ready();
+    if (this.readSession)
+      return this.readSession.request({
+        command: method === 'contest.problems' ? 'contest.problems' : 'api',
+        method,
+        contestId: params.contestId,
+        handle: params.handle,
+        count: params.count,
+      });
+    if (method === 'contest.problems')
+      return this.run(['contest', 'problems', String(params.contestId)]);
     const args = ['api', method];
     if (params.contestId !== undefined) args.push('--contest', String(params.contestId));
     if (params.handle !== undefined) args.push('--handle', String(params.handle));
@@ -159,6 +179,38 @@ export class CfToolClient {
     )
       throw new Error('Invalid Codeforces problem request.');
     await this.ready();
+    if (this.readSession) {
+      let result: Awaited<ReturnType<CfToolClient['problem']>> | undefined;
+      await this.problems(id, [index], assetsDir, {
+        problem: async (_index, value) => {
+          result = value;
+        },
+        assets: async (_index, value) => {
+          result = value;
+        },
+        error: async (_index, error) => {
+          throw error;
+        },
+      });
+      if (!result) throw new Error(this.formatError('request_failed'));
+      return result;
+    }
+    return this.parseProblem(
+      id,
+      index,
+      await this.run(
+        ['problem', 'read', String(id), index, '--bundled', '--assets-dir', assetsDir],
+        true,
+      ),
+    );
+  }
+
+  private parseProblem(
+    id: number,
+    index: string,
+    raw: unknown,
+    imagesPending = false,
+  ): { statement: Statement; samples: TestCase[] } {
     const value = z
       .object({
         contestId: z.literal(id),
@@ -173,14 +225,10 @@ export class CfToolClient {
         assets: z.array(z.string().regex(/^[a-f0-9]{64}\.(png|jpg|gif|webp)$/)),
         samples: z.array(z.object({ input: z.string(), output: z.string() })),
       })
-      .parse(
-        await this.run(
-          ['problem', 'read', String(id), index, '--bundled', '--assets-dir', assetsDir],
-          true,
-        ),
-      );
+      .parse(raw);
     return {
       statement: {
+        imagesPending: imagesPending && /<img\b/i.test(value.statementHtml),
         title: value.name,
         html: sanitizeStatement(value.statementHtml, value.assets),
         timeLimit: value.timeLimit,
@@ -196,6 +244,64 @@ export class CfToolClient {
         expected: sample.output,
       })),
     };
+  }
+
+  async problems(
+    id: number,
+    indices: string[],
+    assetsDir: string,
+    handlers: {
+      problem: (
+        index: string,
+        value: { statement: Statement; samples: TestCase[] },
+      ) => Promise<void>;
+      assets: (
+        index: string,
+        value: { statement: Statement; samples: TestCase[] },
+      ) => Promise<void>;
+      error: (index: string, error: Error) => Promise<void>;
+    },
+  ) {
+    if (
+      !Number.isInteger(id) ||
+      id < 1 ||
+      id > 999999999 ||
+      !indices.length ||
+      indices.some((index) => !/^[A-Z][0-9]{0,2}$/.test(index)) ||
+      new Set(indices).size !== indices.length ||
+      !path.isAbsolute(assetsDir)
+    )
+      throw new Error('Invalid Codeforces problem request.');
+    if (!this.readSession) throw new Error('Streaming read session is unavailable.');
+    await this.ready();
+    await this.readSession.request(
+      { command: 'download', contestId: id, indices, assetsDir },
+      async (event) => {
+        if (!['problem', 'assets', 'problemError'].includes(event.type))
+          throw new Error(this.formatError('protocol_mismatch'));
+        const data = z
+          .object({
+            index: z.string(),
+            problem: z.unknown().optional(),
+            error: z.object({ code: z.string() }).optional(),
+          })
+          .parse(event.data);
+        if (!indices.includes(data.index)) throw new Error(this.formatError('protocol_mismatch'));
+        if (event.type === 'problemError')
+          await handlers.error(
+            data.index,
+            new CfToolError(
+              data.error?.code || 'request_failed',
+              this.formatError(data.error?.code || 'request_failed'),
+            ),
+          );
+        else
+          await handlers[event.type as 'problem' | 'assets'](
+            data.index,
+            this.parseProblem(id, data.index, data.problem, event.type === 'problem'),
+          );
+      },
+    );
   }
 
   async account() {
@@ -313,5 +419,6 @@ export class CfToolClient {
 
   dispose() {
     this.abort.abort();
+    this.readSession?.dispose();
   }
 }
