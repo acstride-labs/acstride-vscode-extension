@@ -309,6 +309,21 @@ body[data-mode='statement'] {
 .problem-rail button {
   border: 1px solid var(--vscode-panel-border);
 }
+/* Verdict colors remain visible for the selected problem; the outline marks selection. */
+.problem-rail button.problem-passed {
+  background: var(--vscode-testing-iconPassed, #388a34);
+  color: #fff;
+  border-color: var(--vscode-testing-iconPassed, #388a34);
+}
+.problem-rail button.problem-attempted {
+  background: var(--vscode-testing-iconFailed, #c72e36);
+  color: #fff;
+  border-color: var(--vscode-testing-iconFailed, #c72e36);
+}
+.problem-rail button.problem-passed:hover,
+.problem-rail button.problem-attempted:hover {
+  filter: brightness(1.12);
+}
 .statement-pane {
   flex: 1;
   min-width: 0;

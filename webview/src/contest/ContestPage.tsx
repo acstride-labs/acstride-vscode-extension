@@ -1,3 +1,5 @@
+import { problemAttemptState } from '../../../src/domain/contest';
+import { RefreshButton } from './RefreshButton';
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage } from '../../../src/shared/contest-protocol';
 import { ContestApp } from './ContestApp';
@@ -20,6 +22,8 @@ export function ContestPage() {
     return () => window.removeEventListener('message', listener);
   }, []);
   const record = state?.contests.find((c) => c.contest.id === state.selectedId);
+  const attempts = state?.watchHandle ? state.submissions : [];
+  const labels = { untried: 'Not attempted', attempted: 'Attempted, not passed', passed: 'Passed' };
   return (
     <main className="answer-pane contest-file">
       <nav className="problem-rail" aria-label={t('Problems')}>
@@ -45,7 +49,9 @@ export function ContestPage() {
         {record?.problems.map((p) => (
           <button
             key={p.index}
-            title={p.name}
+            className={`problem-${problemAttemptState(attempts, p.index)}`}
+            title={`${p.name} · ${t(labels[problemAttemptState(attempts, p.index)])}`}
+            aria-label={`${p.index} · ${p.name} · ${t(labels[problemAttemptState(attempts, p.index)])}`}
             aria-current={index === p.index ? 'page' : undefined}
             onClick={() =>
               send({ type: 'openProblem', contestId: record.contest.id, index: p.index })
@@ -54,6 +60,13 @@ export function ContestPage() {
             {p.index}
           </button>
         ))}
+        {record && (
+          <RefreshButton
+            label={t('Refresh submissions')}
+            disabled={!!state?.busy || !state?.watchHandle}
+            onClick={() => send({ type: 'refreshStatus', contestId: record.contest.id })}
+          />
+        )}
       </nav>
       <div className="contest-file-content">
         <div hidden={!!index}>

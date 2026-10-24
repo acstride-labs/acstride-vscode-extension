@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.1
+
+- Color contest problem buttons green for accepted submissions and red for attempted problems without acceptance. Add a submission refresh action below the last problem, using the configured tracking handle.
+
 ## 0.15.0
 
 - Add Java and Kotlin throughout default-language selection, templates, environment checks, local compilation/testing, and Codeforces submission language selection. Preserve independent source files when switching languages.
