@@ -322,5 +322,10 @@
   "Signed in as {handle}": "ログイン中：{handle}",
   "Not signed in": "未ログイン",
   "Refresh login status": "ログイン状態を更新",
-  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "ログインするとワンクリック提出が使えます。サイト認証でログインできない場合も、コードをコピーして公式サイトから提出できます。"
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "ログインするとワンクリック提出が使えます。サイト認証でログインできない場合も、コードをコピーして公式サイトから提出できます。",
+  "Not attempted": "未挑戦",
+  "Attempted, not passed": "挑戦済み・未通過",
+  "Passed": "通過済み",
+  "Rankings could not be refreshed. Cached data is shown; automatic retries will continue.": "順位表を更新できませんでした。キャッシュを表示し、自動で再試行します。",
+  "Submissions could not be refreshed. Cached data is shown; automatic retries will continue.": "提出履歴を更新できませんでした。キャッシュを表示し、自動で再試行します。"
 }

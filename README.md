@@ -13,7 +13,7 @@ A Codeforces extension for desktop VS Code, with C++ and Python support and Engl
 
 ## What is included
 
-- Multiple contest folders, independent problems, countdowns, archive controls and incremental downloads when problems are released.
+- Multiple contest folders, independent problems, countdowns and incremental downloads when problems are released. The sidebar lists contests; each contest opens a compact problem list with official attempt-state icons.
 - Public statements with sanitized HTML, local math rendering, supported image caching and official samples.
 - Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
@@ -57,7 +57,7 @@ Local AC is **not official acceptance**. The default checker compares tokens, ig
 
 ## Settings
 
-Use the contest sidebar's **+ / trophy / gear** for add / contest info / settings. Global Settings contains interface language, your handle, C++/Python tools/arguments/templates, local time limit and environment checks. Each contest's **Contest settings** tab contains only that contest's default language and archive switch. No downloader-status panel or center-navigation button crowds Settings. Language applies immediately without discarding open forms or test drafts; statements, code and raw tool diagnostics stay in their original language.
+Use the contest sidebar's **+ / trophy / gear** for add / contest info / settings. Global Settings contains Codeforces login, interface language, your handle, C++/Python tools/arguments/templates, local time limit and environment checks. The contest page has Problems, Submissions and Rankings tabs. Each problem occupies one line; click it to open its statement and select it in the problem rail. There is no per-contest settings tab. No downloader-status panel or center-navigation button crowds Settings. Language applies immediately without discarding open forms or test drafts; statements, code and raw tool diagnostics stay in their original language.
 
 Choose **User settings** or **This workspace** before editing tool/tracking settings. Workspace settings override user settings; environment checks use the active saved configuration. Save/discard draft changes before switching scope or contest. Language is always an application-level user preference. Archive preserves all local code/tests.
 
@@ -124,3 +124,5 @@ Live public checks are opt-in (`CFIDE_LIVE=1`) and exercise the actual bundled C
 Architecture: `domain` contains local models/checking; `application` handles scheduling and workspace imports; `infrastructure/codeforces` contains the CLI adapter, typed data mapping, display sanitization and a priority queue. All network requests, Codeforces DOM parsing, samples and image caching belong to CF Tool. The extension owns solutions/custom tests, native views, countdowns and React UI. CF Tool coordinates request starts across its processes with a shared 2.1-second minimum interval. The extension has no direct network transport, including in source development mode; build the embedded tools before testing Codeforces features.
 
 Only regular public contests and desktop single-folder file workspaces are supported. Gym/group/private contests, virtual participation, stress testing, custom checkers and web-only VS Code are out of scope. Public API data may be unavailable, frozen, delayed or limited to recent submissions. The publisher is a development placeholder, no Marketplace release is configured, and no open-source license has been selected.
+
+Background rankings refresh only while the Rankings tab is visible. Submission refresh normally runs at 30-second intervals, with faster polling for known pending submissions. A background network failure keeps cached data and shows a section-specific notice rather than a persistent global error. Diagnostics identify the contest and operation in the **AC-Stride · Codeforces** output channel. Manual operation failures still report errors. Public API operations have a 25-second total deadline (including tool-side pacing); downloads use a longer deadline.

@@ -194,9 +194,9 @@ describe('settings page boundaries', () => {
         contestId: 1,
         values: { defaultLanguage: 'python', archived: false },
       }).success,
-    ).toBe(true);
+    ).toBe(false);
     const center = await fs.readFile('webview/src/contest/ContestApp.tsx', 'utf8');
-    expect(center).toContain('ContestOptions');
+    expect(center).not.toContain('ContestOptions');
     for (const type of ['setLocale', 'watchHandle', 'checkEnvironment', 'saveSettings'])
       expect(center).not.toContain(`type: '${type}'`);
     const request = {

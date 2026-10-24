@@ -14,14 +14,8 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('openSettings') }),
   z
     .object({
-      type: z.literal('saveContestSettings'),
-      contestId: contestIdSchema,
-      values: z
-        .object({
-          defaultLanguage: z.enum(['cpp', 'python']),
-          archived: z.boolean(),
-        })
-        .strict(),
+      type: z.literal('contestSection'),
+      section: z.enum(['prepare', 'submissions', 'rankings']),
     })
     .strict(),
   z.object({ type: z.literal('switchLanguage') }),
@@ -42,6 +36,7 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
 export interface ContestViewState {
   contests: ContestRecord[];
   selectedId?: number;
+  section?: 'prepare' | 'submissions' | 'rankings';
   watchHandle?: string;
   submissions: CFSubmission[];
   submissionsUpdatedAt: number;
@@ -52,6 +47,7 @@ export interface ContestViewState {
   rankMode: 'all' | 'nearby' | 'search';
   busy?: string;
   error?: string;
+  refreshNotice?: string;
   serverNow: number;
   defaultLanguage?: Language;
 }

@@ -199,21 +199,6 @@ input:not([type='checkbox']) {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
-.preparation {
-  display: grid;
-  gap: 14px;
-}
-.preparation label:has(input[type='checkbox']) {
-  display: block;
-}
-.problem-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px;
-}
-.problem-card {
-  margin: 0;
-}
 .table-scroll {
   overflow-x: auto;
   margin-top: 16px;
@@ -497,19 +482,6 @@ body[data-mode='statement'] {
 .contest-center .contest-picker {
   margin: 16px 0;
 }
-.problem-grid {
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-.problem-card {
-  padding: 12px;
-}
-.problem-card .card-title {
-  margin-bottom: 0;
-}
-.contest-options {
-  max-width: 560px;
-}
 .settings-section .checkbox-label {
   display: flex;
   flex-direction: row;
@@ -637,4 +609,46 @@ button.text-link {
 button.text-link:hover {
   color: var(--vscode-textLink-activeForeground);
   background: transparent;
+}
+
+.contest-problem-list {
+  display: flex;
+  flex-direction: column;
+}
+button.contest-problem-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--vscode-foreground);
+  text-align: left;
+}
+button.contest-problem-row:hover {
+  background: var(--vscode-list-hoverBackground, #8882);
+}
+.contest-problem-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.problem-attempt-icon {
+  display: inline-flex;
+  flex: 0 0 16px;
+  color: var(--vscode-descriptionForeground);
+}
+.problem-attempt-icon.attempted {
+  color: var(--vscode-testing-iconFailed, #f48771);
+}
+.problem-attempt-icon.passed {
+  color: var(--vscode-testing-iconPassed, #73c991);
+}
+.refresh-notice {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
 }

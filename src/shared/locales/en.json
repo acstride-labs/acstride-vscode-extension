@@ -322,5 +322,10 @@
   "Signed in as {handle}": "Signed in as {handle}",
   "Not signed in": "Not signed in",
   "Refresh login status": "Refresh login status",
-  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces."
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.",
+  "Not attempted": "Not attempted",
+  "Attempted, not passed": "Attempted, not passed",
+  "Passed": "Passed",
+  "Rankings could not be refreshed. Cached data is shown; automatic retries will continue.": "Rankings could not be refreshed. Cached data is shown; automatic retries will continue.",
+  "Submissions could not be refreshed. Cached data is shown; automatic retries will continue.": "Submissions could not be refreshed. Cached data is shown; automatic retries will continue."
 }

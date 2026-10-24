@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseContestId, submissionLabel } from '../../src/domain/contest';
+import { parseContestId, submissionLabel, problemAttemptState } from '../../src/domain/contest';
 import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
 import { CodeforcesApi } from '../../src/infrastructure/codeforces/api-client';
 import { fixtureContest } from '../fixtures/codeforces';
@@ -93,4 +93,21 @@ describe('Codeforces API and scheduling', () => {
     queue.dispose();
     await expect(queue.schedule(async () => 1)).rejects.toThrow('closed');
   });
+});
+
+it('aggregates official problem attempts, retaining a pass despite a newer failed attempt', () => {
+  const submission = (index: string, verdict?: string) => ({
+    id: 1,
+    creationTimeSeconds: 1,
+    programmingLanguage: 'C++',
+    problem: { index },
+    verdict,
+  });
+  expect(problemAttemptState([], 'A')).toBe('untried');
+  expect(problemAttemptState([submission('B', 'OK')], 'A')).toBe('untried');
+  expect(problemAttemptState([submission('A', 'WRONG_ANSWER')], 'A')).toBe('attempted');
+  expect(problemAttemptState([submission('A', 'TESTING')], 'A')).toBe('attempted');
+  expect(problemAttemptState([submission('A', 'WRONG_ANSWER'), submission('A', 'OK')], 'A')).toBe(
+    'passed',
+  );
 });

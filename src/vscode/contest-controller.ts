@@ -19,16 +19,7 @@ import { WorkspaceController } from './workspace-controller';
 import { webviewHtml } from './webview-html';
 import { postLocale, t } from './localization';
 
-type Node =
-  | { kind: 'contest'; record: ContestRecord }
-  | {
-      kind: 'problem';
-      contestId: number;
-      index: string;
-      name: string;
-      ready: boolean;
-      error?: string;
-    };
+type Node = { kind: 'contest'; record: ContestRecord };
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private queue = new RequestQueue();
   private api: CodeforcesApi;
@@ -50,6 +41,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private rankSearch = '';
   private busy?: string;
   private errorMessage?: string;
+  private section: 'prepare' | 'submissions' | 'rankings' = 'prepare';
+  private backgroundErrors = new Map<string, string>();
+  private readonly diagnostics = vscode.window.createOutputChannel('AC-Stride · Codeforces');
   private changes = new vscode.EventEmitter<Node | undefined>();
   readonly onDidChangeTreeData = this.changes.event;
   private disposables: vscode.Disposable[] = [];
@@ -136,12 +130,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.openCenter(node?.kind === 'contest' ? node.record.contest.id : undefined),
     );
     command('cfide.addContest', () => this.add());
-    command('cfide.openContestProblem', (node: Node) =>
-      node?.kind === 'problem' ? this.openProblem(node.contestId, node.index) : undefined,
-    );
     this.status.command = 'cfide.openContestCenter';
     this.disposables.push(
       this.changes,
+      this.diagnostics,
       this.status,
       tree,
       vscode.workspace.onDidChangeConfiguration((event) => {
@@ -160,6 +152,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         if (event.affectsConfiguration('cfide.codeforces.handle')) {
           this.lastStatus.clear();
           this.pendingContests.clear();
+          this.backgroundErrors.clear();
           this.lastBoard = 0;
         }
         if (event.affectsConfiguration('cfide')) void this.publish();
@@ -198,8 +191,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           /* No open workspace. */
         }
         void this.poll().catch((error) => {
-          this.errorMessage = error instanceof Error ? error.message : String(error);
-          void this.publish();
+          this.diagnostics.appendLine(
+            `Background refresh: ${error instanceof Error ? error.message : String(error)}`,
+          );
         });
       }, 5000),
     );
@@ -209,6 +203,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         this.service?.dispose();
         this.repo = undefined;
         this.selectedId = undefined;
+        this.section = 'prepare';
+        this.backgroundErrors.clear();
         this.dashboard?.dispose();
         this.statementPanel?.dispose();
         this.changes.fire(undefined);
@@ -269,16 +265,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   }
   async getChildren(node?: Node): Promise<Node[]> {
     try {
-      if (node?.kind === 'problem') return [];
-      if (node)
-        return node.record.problems.map((p) => ({
-          kind: 'problem',
-          contestId: node.record.contest.id,
-          index: p.index,
-          name: p.name,
-          ready: p.ready,
-          error: !p.ready && p.downloadAttempts >= maxDownloadAttempts ? p.error : undefined,
-        }));
+      if (node) return [];
       return (await this.runtime().repo.list())
         .sort(
           (a, b) =>
@@ -292,31 +279,22 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   getTreeItem(node: Node): vscode.TreeItem {
-    if (node.kind === 'contest') {
-      const item = new vscode.TreeItem(
-        node.record.contest.name,
-        vscode.TreeItemCollapsibleState.Collapsed,
-      );
-      item.id = `contest:${node.record.contest.id}`;
-      item.description = node.record.archived ? t('Archived') : t(node.record.contest.phase);
-      item.tooltip = t('Contest {id}\n{detail}', {
-        id: node.record.contest.id,
-        detail: t(node.record.error ?? 'Open Contest Center for preparation and standings.'),
-      });
-      item.iconPath = new vscode.ThemeIcon(node.record.archived ? 'archive' : 'trophy');
-      item.command = {
-        command: 'cfide.openContestCenter',
-        title: t('Contest Center'),
-        arguments: [node],
-      };
-      return item;
-    }
-    const item = new vscode.TreeItem(`${node.index} · ${node.name}`);
-    item.id = `contest:${node.contestId}/${node.index}`;
-    item.description = node.error ? t('Download failed') : node.ready ? t('Ready') : t('Waiting');
-    item.iconPath = new vscode.ThemeIcon(node.error ? 'warning' : node.ready ? 'code' : 'clock');
-    item.tooltip = node.error ? t(node.error) : node.name;
-    item.command = { command: 'cfide.openContestProblem', title: t('Open'), arguments: [node] };
+    const item = new vscode.TreeItem(
+      node.record.contest.name,
+      vscode.TreeItemCollapsibleState.None,
+    );
+    item.id = `contest:${node.record.contest.id}`;
+    item.description = node.record.archived ? t('Archived') : t(node.record.contest.phase);
+    item.tooltip = t('Contest {id}\n{detail}', {
+      id: node.record.contest.id,
+      detail: t(node.record.error ?? 'Open Contest Center for preparation and standings.'),
+    });
+    item.iconPath = new vscode.ThemeIcon(node.record.archived ? 'archive' : 'trophy');
+    item.command = {
+      command: 'cfide.openContestCenter',
+      title: t('Contest Center'),
+      arguments: [node],
+    };
     return item;
   }
   private async add() {
@@ -361,6 +339,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     await this.publish();
   }
   private async openCenter(id?: number) {
+    this.section = 'prepare';
     if (id) await this.select(id);
     if (!this.dashboard) {
       this.dashboard = vscode.window.createWebviewPanel(
@@ -403,6 +382,13 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private async handleMessage(message: import('zod').infer<typeof contestRequestSchema>) {
     await this.initialized;
     if (message.type === 'ready') return this.publish();
+    if (message.type === 'contestSection') {
+      this.section = message.section;
+      if (message.section === 'rankings') this.lastBoard = 0;
+      await this.publish();
+      void this.poll().catch((error) => this.report(error, false));
+      return;
+    }
     if (message.type === 'addContest') return this.add();
     if (message.type === 'openSettings')
       return vscode.commands.executeCommand('cfide.openSettings');
@@ -418,22 +404,13 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const { repo, service } = this.runtime();
     await repo.get(message.contestId);
     if (message.type === 'openProblem') return this.openProblem(message.contestId, message.index);
-    if (message.type === 'saveContestSettings')
-      return this.saveContestOptions(message.contestId, message.values);
     if (message.type === 'refreshStatus')
       return this.task(t('Refreshing submissions…'), () => this.refreshStatus(message.contestId));
     if (message.type === 'refreshStandings')
-      return this.task(t('Refreshing official rankings…'), () =>
-        service.refreshBoard(message.contestId),
-      );
-  }
-  async saveContestOptions(id: number, values: { defaultLanguage: Language; archived: boolean }) {
-    this.trust();
-    if (this.busy) throw new Error('Another contest operation is in progress.');
-    await this.runtime().repo.update(id, (record) => {
-      Object.assign(record, values);
-    });
-    await this.changed(id);
+      return this.task(t('Refreshing official rankings…'), async () => {
+        await service.refreshBoard(message.contestId);
+        this.backgroundErrors.delete(`${message.contestId}/rankings`);
+      });
   }
   private async openProblem(id: number, index: string) {
     this.trust();
@@ -554,6 +531,19 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     const handle = this.handle();
     if (!handle) throw new Error('Set a public read-only handle first.');
     await this.runtime().service.refreshSubmissions(id, handle);
+    this.backgroundErrors.delete(`${id}/submissions`);
+  }
+  private backgroundFailure(id: number, section: 'submissions' | 'rankings', error: unknown) {
+    const detail = error instanceof Error ? error.message : String(error);
+    this.diagnostics.appendLine(
+      `${new Date().toISOString()} contest=${id} operation=${section}: ${detail}`,
+    );
+    this.backgroundErrors.set(
+      `${id}/${section}`,
+      section === 'rankings'
+        ? 'Rankings could not be refreshed. Cached data is shown; automatic retries will continue.'
+        : 'Submissions could not be refreshed. Cached data is shown; automatic retries will continue.',
+    );
   }
   private async poll() {
     if (this.pollBusy || !vscode.workspace.isTrusted) return;
@@ -571,34 +561,46 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       for (const id of ids) {
         const record = await repo.get(id);
         if (record.archived) continue;
-        if (
-          handle &&
-          Date.now() - (this.lastStatus.get(id) ?? 0) >= Math.max(5000, ids.size * 3000)
-        ) {
+        const interval = this.pendingContests.has(id) ? Math.max(5000, ids.size * 3000) : 30000;
+        if (handle && Date.now() - (this.lastStatus.get(id) ?? 0) >= interval) {
           this.lastStatus.set(id, Date.now());
           try {
             await service.refreshSubmissions(id, handle);
+            this.backgroundErrors.delete(`${id}/submissions`);
+            const cached = await repo.submissions(id, handle);
+            if (
+              !cached.submissions.some(
+                (s) => !s.verdict || ['TESTING', 'SUBMITTED'].includes(s.verdict),
+              )
+            )
+              this.pendingContests.delete(id);
           } catch (error) {
             this.lastStatus.set(id, Date.now() + 10000);
-            throw error;
+            this.backgroundFailure(id, 'submissions', error);
           }
-          const cached = await repo.submissions(id, handle);
-          if (
-            !cached.submissions.some(
-              (s) => !s.verdict || ['TESTING', 'SUBMITTED'].includes(s.verdict),
-            )
-          )
-            this.pendingContests.delete(id);
         }
       }
-      if (this.selectedId && this.dashboard?.visible && Date.now() - this.lastBoard > 30000) {
+      if (
+        this.selectedId &&
+        this.dashboard?.visible &&
+        this.section === 'rankings' &&
+        Date.now() - this.lastBoard > 30000
+      ) {
         this.lastBoard = Date.now();
-        const record = await repo.get(this.selectedId);
-        if (!record.archived && record.contest.phase !== 'BEFORE')
-          await service.refreshBoard(this.selectedId);
+        const id = this.selectedId;
+        const record = await repo.get(id);
+        if (!record.archived && record.contest.phase !== 'BEFORE') {
+          try {
+            await service.refreshBoard(id);
+            this.backgroundErrors.delete(`${id}/rankings`);
+          } catch (error) {
+            this.backgroundFailure(id, 'rankings', error);
+          }
+        }
       }
     } finally {
       this.pollBusy = false;
+      await this.publish();
     }
   }
   private async publish() {
@@ -626,6 +628,8 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         );
       const state: ContestViewState = {
         contests,
+        section: this.section,
+        refreshNotice: this.backgroundErrors.get(`${selected}/${this.section}`),
         selectedId: selected,
         watchHandle: handle,
         submissions: status.submissions,

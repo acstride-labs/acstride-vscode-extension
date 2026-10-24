@@ -1,0 +1,91 @@
+import { expect, it, vi } from 'vitest';
+vi.mock('vscode', () => ({
+  env: { language: 'en' },
+  workspace: {
+    isTrusted: true,
+    getConfiguration: () => ({ get: (_key: string, fallback: unknown) => fallback }),
+  },
+  TreeItemCollapsibleState: { None: 0 },
+  TreeItem: class {
+    constructor(
+      public label: string,
+      public collapsibleState: number,
+    ) {}
+  },
+  ThemeIcon: class {
+    constructor(public id: string) {}
+  },
+}));
+import { ContestController } from '../../src/vscode/contest-controller';
+import type { ContestRecord } from '../../src/domain/contest';
+const record: ContestRecord = {
+  schemaVersion: 1,
+  contest: { id: 2261, name: 'Contest', phase: 'FINISHED', type: 'CF', durationSeconds: 7200 },
+  archived: false,
+  defaultLanguage: 'cpp',
+  problems: [{ index: 'A', name: 'A', ready: true, downloadAttempts: 0, nextRetryAt: 0 }],
+  updatedAt: 1,
+  nextRetryAt: 0,
+  retryCount: 0,
+};
+function fixture() {
+  const service = {
+    refreshSubmissions: vi.fn(async () => {}),
+    refreshBoard: vi.fn(async () => {}),
+  };
+  const repo = {
+    get: vi.fn(async () => record),
+    list: vi.fn(async () => [record]),
+    submissions: vi.fn(async () => ({ submissions: [] })),
+  };
+  const controller = Object.assign(Object.create(ContestController.prototype), {
+    initialized: Promise.resolve(),
+    selectedId: 2261,
+    section: 'prepare',
+    dashboard: { visible: true },
+    workspace: { active: () => undefined },
+    pendingContests: new Set(),
+    lastStatus: new Map(),
+    lastBoard: 0,
+    backgroundErrors: new Map(),
+    diagnostics: { appendLine: vi.fn() },
+    runtime: () => ({ service, repo }),
+    handle: () => 'tester',
+    publish: vi.fn(async () => {}),
+  });
+  return { controller: controller as ContestController, service, repo };
+}
+it('renders contests as non-expandable clickable leaves with no problem children', async () => {
+  const { controller } = fixture();
+  const nodes = await controller.getChildren();
+  expect(nodes).toHaveLength(1);
+  expect(await controller.getChildren(nodes[0])).toEqual([]);
+  const item = controller.getTreeItem(nodes[0]);
+  expect(item.collapsibleState).toBe(0);
+  expect(item.command?.command).toBe('cfide.openContestCenter');
+  expect(item.command?.arguments).toEqual([nodes[0]]);
+});
+it('does not fetch full standings while the Problems tab is open', async () => {
+  const { controller, service } = fixture();
+  await (controller as any).poll();
+  expect(service.refreshBoard).not.toHaveBeenCalled();
+  expect(service.refreshSubmissions).toHaveBeenCalledOnce();
+  await (controller as any).poll();
+  expect(service.refreshSubmissions).toHaveBeenCalledOnce();
+});
+it('keeps background timeout notices scoped to their section and clears them after recovery', async () => {
+  const { controller, service } = fixture();
+  const host = controller as any;
+  host.section = 'rankings';
+  service.refreshBoard.mockRejectedValueOnce(new Error('timeout'));
+  await host.poll();
+  expect(host.errorMessage).toBeUndefined();
+  expect(host.backgroundErrors.get('2261/rankings')).toContain('Cached data');
+  expect(host.backgroundErrors.get('2261/prepare')).toBeUndefined();
+  expect(host.diagnostics.appendLine).toHaveBeenCalledWith(
+    expect.stringContaining('operation=rankings: timeout'),
+  );
+  host.lastBoard = 0;
+  await host.poll();
+  expect(host.backgroundErrors.has('2261/rankings')).toBe(false);
+});

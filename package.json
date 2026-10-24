@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -50,10 +50,6 @@
         "command": "cfide.addContest",
         "title": "%command.cfide.addContest%",
         "icon": "$(add)"
-      },
-      {
-        "command": "cfide.openContestProblem",
-        "title": "%command.cfide.openContestProblem%"
       },
       {
         "command": "cfide.switchLanguage",

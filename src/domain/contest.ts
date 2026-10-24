@@ -103,3 +103,13 @@ export function submissionLabel(s: CFSubmission): string {
 }
 
 export const maxDownloadAttempts = 4;
+
+// Official submissions only: a local sample pass does not imply official acceptance.
+export function problemAttemptState(
+  submissions: CFSubmission[],
+  index: string,
+): 'untried' | 'attempted' | 'passed' {
+  const attempts = submissions.filter((s) => s.problem.index === index);
+  if (attempts.some((s) => s.verdict === 'OK')) return 'passed';
+  return attempts.length ? 'attempted' : 'untried';
+}

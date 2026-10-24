@@ -322,5 +322,10 @@
   "Signed in as {handle}": "已登录：{handle}",
   "Not signed in": "未登录",
   "Refresh login status": "刷新登录状态",
-  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "登录后可使用一键提交。网站验证可能导致登录失败，仍可复制代码并前往官网提交。"
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "登录后可使用一键提交。网站验证可能导致登录失败，仍可复制代码并前往官网提交。",
+  "Not attempted": "未尝试",
+  "Attempted, not passed": "已尝试，未通过",
+  "Passed": "已通过",
+  "Rankings could not be refreshed. Cached data is shown; automatic retries will continue.": "排名暂时刷新失败，当前显示缓存数据，将自动重试。",
+  "Submissions could not be refreshed. Cached data is shown; automatic retries will continue.": "提交记录暂时刷新失败，当前显示缓存数据，将自动重试。"
 }

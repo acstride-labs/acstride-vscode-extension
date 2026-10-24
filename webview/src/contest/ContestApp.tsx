@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import type { ContestHostMessage, ContestViewState } from '../../../src/shared/contest-protocol';
-import { submissionLabel, maxDownloadAttempts } from '../../../src/domain/contest';
+import {
+  submissionLabel,
+  maxDownloadAttempts,
+  problemAttemptState,
+} from '../../../src/domain/contest';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
-import { ContestOptions } from './ContestOptions';
 
 export function ContestApp() {
   const { locale, t } = useI18n();
   const [state, setState] = useState<ContestViewState>();
-  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings' | 'options'>('prepare');
+  const [tab, setTab] = useState<'prepare' | 'submissions' | 'rankings'>('prepare');
   const [search, setSearch] = useState('');
-  const [optionsDirty, setOptionsDirty] = useState(false);
   const [clock, setClock] = useState(Date.now()),
     [offset, setOffset] = useState(0);
   useEffect(() => {
     const listener = (event: MessageEvent<ContestHostMessage>) => {
       if (event.data.type === 'contestState') {
         setState(event.data.state);
+        if (event.data.state.section) setTab(event.data.state.section);
         setOffset(event.data.state.serverNow - Date.now());
       }
     };
@@ -56,7 +59,7 @@ export function ContestApp() {
       <label className="contest-picker">
         {t('Current contest')}
         <select
-          disabled={disabled || optionsDirty}
+          disabled={disabled}
           aria-label={t('Current contest')}
           value={id ?? ''}
           onChange={(e) => send({ type: 'selectContest', contestId: Number(e.target.value) })}
@@ -72,18 +75,15 @@ export function ContestApp() {
           ))}
         </select>
       </label>
-      {optionsDirty && tab !== 'options' && (
-        <div className="actions" role="status">
-          <small>{t('Unsaved changes')}</small>
-          <button className="secondary" onClick={() => setTab('options')}>
-            {t('Contest settings')}
-          </button>
-        </div>
-      )}
       {state?.error && (
         <pre className="error" role="alert">
           {t(state.error)}
         </pre>
+      )}
+      {state?.refreshNotice && (
+        <p className="refresh-notice" role="status">
+          {t(state.refreshNotice)}
+        </p>
       )}
       {state?.busy && <p role="status">{t(state.busy)}</p>}
       {!record && (
@@ -122,18 +122,20 @@ export function ContestApp() {
             </div>
           </section>
           <nav className="tabs" aria-label={t('Contest sections')}>
-            {(['prepare', 'submissions', 'rankings', 'options'] as const).map((value) => (
+            {(['prepare', 'submissions', 'rankings'] as const).map((value) => (
               <button
                 className={tab === value ? '' : 'secondary'}
                 key={value}
-                onClick={() => setTab(value)}
+                onClick={() => {
+                  setTab(value);
+                  send({ type: 'contestSection', section: value });
+                }}
               >
                 {t(
                   {
                     prepare: 'Problems & preparation',
                     submissions: 'Public submissions',
                     rankings: 'Rankings',
-                    options: 'Contest settings',
                   }[value],
                 )}
               </button>
@@ -141,48 +143,59 @@ export function ContestApp() {
           </nav>
           {tab === 'prepare' && (
             <>
-              <div className="problem-grid">
+              <div
+                className="contest-problem-list"
+                role="list"
+                aria-label={t('Problems & preparation')}
+              >
                 {record.problems.map((problem) => {
-                  const submission = state.submissions.find(
-                    (s) => s.problem.index === problem.index,
+                  const attempt = problemAttemptState(state.submissions, problem.index);
+                  const status = t(
+                    {
+                      untried: 'Not attempted',
+                      attempted: 'Attempted, not passed',
+                      passed: 'Passed',
+                    }[attempt],
                   );
                   return (
-                    <section className="card problem-card" key={problem.index}>
-                      <div className="card-title">
-                        <h2>
+                    <div role="listitem" key={problem.index}>
+                      <button
+                        className="contest-problem-row"
+                        disabled={disabled}
+                        title={`${status} · ${problem.index} · ${problem.name}`}
+                        onClick={() =>
+                          send({ type: 'openProblem', contestId: id, index: problem.index })
+                        }
+                      >
+                        <span
+                          className={`problem-attempt-icon ${attempt}`}
+                          role="img"
+                          aria-label={status}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.3"
+                            aria-hidden="true"
+                          >
+                            <circle cx="8" cy="8" r="6" />
+                            {attempt === 'passed' ? (
+                              <path d="m4.8 8 2.1 2.1 4.3-4.3" />
+                            ) : attempt === 'attempted' ? (
+                              <path d="m5.8 5.8 4.4 4.4m0-4.4-4.4 4.4" />
+                            ) : (
+                              <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+                            )}
+                          </svg>
+                        </span>
+                        <span className="contest-problem-title">
                           {problem.index} · {problem.name}
-                        </h2>
-                        {submission && (
-                          <span className="badge">{t(submissionLabel(submission))}</span>
-                        )}
-                      </div>
-                      {!problem.ready && (
-                        <p
-                          role="status"
-                          className={
-                            problem.downloadAttempts >= maxDownloadAttempts && !!problem.error
-                              ? 'error'
-                              : undefined
-                          }
-                        >
-                          {t(
-                            problem.downloadAttempts >= maxDownloadAttempts && !!problem.error
-                              ? 'Problem download failed after multiple attempts.'
-                              : 'Downloading problem, please wait…',
-                          )}
-                        </p>
-                      )}
-                      <div className="actions">
-                        <button
-                          disabled={disabled}
-                          onClick={() =>
-                            send({ type: 'openProblem', contestId: id, index: problem.index })
-                          }
-                        >
-                          {t('Open solution')}
-                        </button>
-                      </div>
-                    </section>
+                        </span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -199,14 +212,6 @@ export function ContestApp() {
               )}
             </>
           )}
-          <div hidden={tab !== 'options'}>
-            <ContestOptions
-              key={id}
-              record={record}
-              disabled={disabled}
-              onDirty={setOptionsDirty}
-            />
-          </div>
           {tab === 'submissions' && (
             <>
               <div className="actions">

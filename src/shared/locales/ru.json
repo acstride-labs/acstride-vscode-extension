@@ -322,5 +322,10 @@
   "Signed in as {handle}": "Выполнен вход: {handle}",
   "Not signed in": "Вход не выполнен",
   "Refresh login status": "Обновить статус входа",
-  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "Войдите для отправки одним нажатием. Проверка сайта может помешать входу; код можно скопировать и отправить на Codeforces."
+  "Sign in to enable one-click submission. Website verification may prevent login; you can still copy code and submit on Codeforces.": "Войдите для отправки одним нажатием. Проверка сайта может помешать входу; код можно скопировать и отправить на Codeforces.",
+  "Not attempted": "Нет попыток",
+  "Attempted, not passed": "Есть попытки, не решено",
+  "Passed": "Решено",
+  "Rankings could not be refreshed. Cached data is shown; automatic retries will continue.": "Не удалось обновить таблицу. Показан кеш; обновление повторится автоматически.",
+  "Submissions could not be refreshed. Cached data is shown; automatic retries will continue.": "Не удалось обновить посылки. Показан кеш; обновление повторится автоматически."
 }
