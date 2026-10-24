@@ -683,7 +683,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       statement: this.mapAssets(id, statement, collection),
     } satisfies ContestHostMessage);
   }
-  private async translate(statement: import('../domain/contest').Statement) {
+  private async translate(
+    statement: import('../domain/contest').Statement,
+    onOutput?: (html: string) => void,
+  ) {
     const options = this.ai.translationOptions(),
       config = this.ai.config();
     const output = await this.aiClient.complete(
@@ -695,6 +698,16 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       ],
       undefined,
       120000,
+      (text) => {
+        sanitizeTranslation(text, statement.html);
+      },
+      (text) => {
+        if (onOutput) {
+          try {
+            onOutput(sanitizeTranslation(text, statement.html));
+          } catch {}
+        }
+      },
     );
     return sanitizeTranslation(output, statement.html);
   }
@@ -730,7 +743,9 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           code = document.getText();
         }
       }
-      const result = await this.assistance.run(kind, target, statement.html, code);
+      const result = await this.assistance.run(kind, target, statement.html, code, (text) => {
+        post({ type: 'assistantResult', requestId, status: 'pending', result: { text } });
+      });
       post({ type: 'assistantResult', requestId, status: 'ready', result });
     } catch (error) {
       post({
@@ -788,11 +803,15 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       return;
     }
     if (!target.statement.fetchedAt) return;
-    const pending = { status: 'pending' as const };
+    const pending: { status: 'pending'; html?: string } = { status: 'pending' };
     target.translation = pending;
     this.postTranslation(target);
     try {
-      const html = await this.translate(target.statement);
+      const html = await this.translate(target.statement, (html) => {
+        if (target.translation !== pending) return;
+        pending.html = html;
+        this.postTranslation(target);
+      });
       if (target.translation !== pending) return;
       target.translation = { status: 'ready', html };
     } catch (error) {

@@ -137,3 +137,23 @@ it('removes features from the toolbar immediately after their visibility setting
   expect(elements(render(), 'button').some((p) => p['aria-label'] === 'AI Debug')).toBe(false);
   expect(elements(render(), 'button').some((p) => p['aria-label'] === 'AI Hint')).toBe(true);
 });
+
+it('renders partial solution text while pending and enables copying only after completion', () => {
+  const requestId = open('AI Solution');
+  message({
+    type: 'assistantResult',
+    requestId,
+    status: 'pending',
+    result: { text: 'partial code' },
+  });
+  expect(elements(render(), 'textarea')[0].value).toBe('partial code');
+  expect(elements(render(), 'button').find((p) => p.children === 'Copy code').disabled).toBe(true);
+  message({
+    type: 'assistantResult',
+    requestId,
+    status: 'ready',
+    result: { text: 'complete code' },
+  });
+  expect(elements(render(), 'textarea')[0].value).toBe('complete code');
+  expect(elements(render(), 'button').find((p) => p.children === 'Copy code').disabled).toBe(false);
+});

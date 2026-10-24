@@ -177,6 +177,7 @@ it('AI Debug reads the captured solution document without saving it and uses ori
     expect.objectContaining({ index: 'A' }),
     'Original English statement',
     'unsaved editor text',
+    expect.any(Function),
   );
   expect(post).toHaveBeenLastCalledWith({
     type: 'assistantResult',

@@ -38,6 +38,7 @@ export function parseAssistantResult(
 /** Shared request path: original English statement, optional unsaved source, common AI cache. */
 export class AiAssistance {
   private pending = new Map<string, Promise<AssistantResult>>();
+  private observers = new Map<string, { latest: string; listeners: Set<(text: string) => void> }>();
   private abort = new AbortController();
   constructor(
     private settings: AiSettings,
@@ -48,6 +49,7 @@ export class AiAssistance {
     target: AssistantTarget,
     statement: string,
     code?: string,
+    onOutput?: (text: string) => void,
   ): Promise<AssistantResult> {
     const options = this.settings.assistanceOptions()[kind];
     if (!options.show) throw new Error('Enable this AI feature in AI assistance settings first.');
@@ -79,21 +81,51 @@ export class AiAssistance {
       .update(JSON.stringify({ kind, config, key, messages }))
       .digest('hex');
     const existing = this.pending.get(id);
-    if (existing) return existing;
+    if (existing) {
+      const stream = this.observers.get(id);
+      if (onOutput && stream) {
+        stream.listeners.add(onOutput);
+        if (stream.latest) onOutput(stream.latest);
+      }
+      try {
+        return await existing;
+      } finally {
+        if (onOutput) stream?.listeners.delete(onOutput);
+      }
+    }
+    const stream = { latest: '', listeners: new Set<(text: string) => void>() };
+    if (onOutput) stream.listeners.add(onOutput);
+    this.observers.set(id, stream);
+    const publish = (text: string) => {
+      stream.latest = text;
+      for (const listener of stream.listeners) listener(text);
+    };
     const task = this.client
-      .complete(config, key, messages, this.abort.signal, 120000, (output) => {
-        parseAssistantResult(kind, output, options.hintCount);
-      })
+      .complete(
+        config,
+        key,
+        messages,
+        this.abort.signal,
+        120000,
+        (output) => {
+          parseAssistantResult(kind, output, options.hintCount);
+        },
+        kind === 'hint' ? undefined : publish,
+      )
       .then((output) => parseAssistantResult(kind, output, options.hintCount));
     this.pending.set(id, task);
     try {
       return await task;
     } finally {
-      if (this.pending.get(id) === task) this.pending.delete(id);
+      if (this.pending.get(id) === task) {
+        this.pending.delete(id);
+        this.observers.delete(id);
+      }
     }
   }
   dispose() {
     this.abort.abort();
     this.pending.clear();
+    this.observers.clear();
   }
 }

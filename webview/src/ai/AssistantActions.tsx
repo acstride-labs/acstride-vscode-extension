@@ -159,12 +159,12 @@ export function AssistantActions({
             ))}
           </ol>
         )}
-        {status === 'ready' && open === 'debug' && (
+        {(status === 'ready' || status === 'pending') && result?.text && open === 'debug' && (
           <div className="assistant-markdown">
             <Markdown skipHtml>{result?.text ?? ''}</Markdown>
           </div>
         )}
-        {status === 'ready' && open === 'coding' && (
+        {(status === 'ready' || status === 'pending') && result?.text && open === 'coding' && (
           <>
             <p className="assistant-note">
               {t('AI-generated reference code. Review and test it before use.')}
@@ -183,6 +183,7 @@ export function AssistantActions({
             <div className="actions">
               <button
                 type="button"
+                disabled={status !== 'ready'}
                 onClick={() =>
                   send({ type: 'copyAiCode', requestId: request.current, text: result?.text ?? '' })
                 }

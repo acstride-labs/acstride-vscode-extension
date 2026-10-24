@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readChatStream } from './stream';
 import type { AiCacheOptions } from '../../shared/ai-protocol';
 import type { AiRequestCache } from './request-cache';
 import { aiConfigSchema, type AiConfig } from '../../shared/ai-protocol';
@@ -11,6 +13,10 @@ export function redactAiSecret(text: string, key: string) {
 }
 /** Shared OpenAI-compatible Chat Completions transport. */
 export class AiClient {
+  private streams = new Map<
+    string,
+    { task: Promise<string>; listeners: Set<(text: string) => void>; latest: string }
+  >();
   constructor(
     private request: typeof fetch = fetch,
     private timeoutMs = 30000,
@@ -29,21 +35,67 @@ export class AiClient {
     signal?: AbortSignal,
     timeoutMs = this.timeoutMs,
     validate?: (output: string) => void,
+    onOutput?: (text: string) => void,
   ): Promise<string> {
     const checked = aiConfigSchema.parse(config);
     const base = normalizeAiBaseUrl(checked.baseUrl);
     const endpoint = base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+    const listeners = new Set<(text: string) => void>();
+    const streamKey = createHash('sha256')
+      .update(JSON.stringify([endpoint, checked.model, key, messages]))
+      .digest('hex');
+    if (onOutput) {
+      const existing = this.streams.get(streamKey);
+      if (existing) {
+        existing.listeners.add(onOutput);
+        if (existing.latest) onOutput(existing.latest);
+        try {
+          return await existing.task;
+        } finally {
+          existing.listeners.delete(onOutput);
+        }
+      }
+      listeners.add(onOutput);
+    }
+    let lastPublished = 0;
+    const publish = (text: string, force = false) => {
+      const entry = this.streams.get(streamKey);
+      if (entry) entry.latest = text;
+      if (!force && Date.now() - lastPublished < 50) return;
+      lastPublished = Date.now();
+      for (const listener of listeners) {
+        try {
+          listener(text);
+        } catch {}
+      }
+    };
     const execute = async (requestSignal?: AbortSignal) => {
-      const output = await this.perform(checked, key, messages, requestSignal, timeoutMs);
+      const output = await this.perform(
+        checked,
+        key,
+        messages,
+        requestSignal,
+        timeoutMs,
+        onOutput ? publish : undefined,
+      );
       validate?.(output);
       return output;
     };
-    if (!this.cache) return execute(signal);
-    return this.cache.request(
-      { endpoint, model: checked.model, messages, stream: false },
-      (cacheSignal) => execute(signal ? AbortSignal.any([signal, cacheSignal]) : cacheSignal),
-      key,
-    );
+    const task = this.cache
+      ? this.cache.request(
+          { endpoint, model: checked.model, messages, stream: false },
+          (cacheSignal) => execute(signal ? AbortSignal.any([signal, cacheSignal]) : cacheSignal),
+          key,
+        )
+      : execute(signal);
+    if (onOutput) this.streams.set(streamKey, { task, listeners, latest: '' });
+    try {
+      const output = await task;
+      if (onOutput) publish(output, true);
+      return output;
+    } finally {
+      if (onOutput) this.streams.delete(streamKey);
+    }
   }
 
   private async perform(
@@ -52,6 +104,7 @@ export class AiClient {
     messages: { role: 'system' | 'user'; content: string }[],
     signal?: AbortSignal,
     timeoutMs = this.timeoutMs,
+    onOutput?: (text: string) => void,
   ): Promise<string> {
     const checked = aiConfigSchema.parse(config);
     const base = normalizeAiBaseUrl(checked.baseUrl);
@@ -68,10 +121,16 @@ export class AiClient {
         body: JSON.stringify({
           model: checked.model,
           messages,
-          stream: false,
+          stream: Boolean(onOutput),
         }),
         signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
       });
+      if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
+        return redactAiSecret(
+          await readChatStream(response, (text) => onOutput?.(redactAiSecret(text, key))),
+          key,
+        );
+      }
       let body: any;
       try {
         body = await response.json();
