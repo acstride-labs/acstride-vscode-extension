@@ -8,24 +8,46 @@ import type { WorkspaceController } from './workspace-controller';
 import { t } from './localization';
 type Group = 'contest' | 'standalone' | 'local';
 type SidebarNode =
-  | { kind: 'group'; group: Group }
   | { kind: 'contest'; record: ContestRecord }
   | { kind: 'problem'; group: 'standalone' | 'local'; problem: Problem };
-/** One native view lets VS Code place the global gear in the container header. */
+/** Three native peer views expose VS Code visibility toggles without redundant group nodes. */
 export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, vscode.Disposable {
   private changes = new vscode.EventEmitter<SidebarNode | undefined>();
   readonly onDidChangeTreeData = this.changes.event;
   private disposables: vscode.Disposable[] = [];
+  private views = new Map<Group, vscode.TreeView<SidebarNode>>();
   constructor(
     private workspace: WorkspaceController,
     private contests: ContestController,
   ) {}
   register() {
-    const view = vscode.window.createTreeView('cfide.contests', { treeDataProvider: this });
-    view.title = 'AC-Stride';
-    const refresh = () => this.changes.fire(undefined);
+    for (const [id, group] of [
+      ['cfide.contests', 'contest'],
+      ['cfide.codeforcesProblems', 'standalone'],
+      ['cfide.problems', 'local'],
+    ] as const) {
+      const provider: vscode.TreeDataProvider<SidebarNode> = {
+        onDidChangeTreeData: this.onDidChangeTreeData,
+        getChildren: (node) => this.getChildren(node, group),
+        getTreeItem: (node) => this.getTreeItem(node),
+      };
+      const view = vscode.window.createTreeView(id, { treeDataProvider: provider });
+      this.views.set(group, view);
+      this.disposables.push(view);
+    }
+    const refresh = () => {
+      for (const [group, view] of this.views)
+        view.title = t(
+          {
+            contest: 'Codeforces Contests',
+            standalone: 'Codeforces Problems',
+            local: 'Local Practice',
+          }[group],
+        );
+      this.changes.fire(undefined);
+    };
+    refresh();
     this.disposables.push(
-      view,
       this.changes,
       this.workspace.onDidChangeTreeData(refresh),
       this.contests.onDidChangeTreeData(refresh),
@@ -34,16 +56,10 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
       }),
     );
   }
-  async getChildren(node?: SidebarNode): Promise<SidebarNode[]> {
-    if (!node)
-      return ['contest', 'standalone', 'local'].map((group) => ({
-        kind: 'group',
-        group: group as Group,
-      }));
-    if (node.kind !== 'group') return [];
+  async getChildren(node?: SidebarNode, group: Group = 'contest'): Promise<SidebarNode[]> {
+    if (node) return [];
     try {
-      if (node.group === 'contest') return this.contests.getChildren();
-      const group = node.group;
+      if (group === 'contest') return this.contests.getChildren();
       const problems =
         group === 'standalone'
           ? await this.contests.standaloneProblems()
@@ -51,20 +67,9 @@ export class SidebarController implements vscode.TreeDataProvider<SidebarNode>, 
       return newestImportedFirst(problems).map((problem) => ({ kind: 'problem', group, problem }));
     } catch {
       return [];
-    } // Empty/no-folder workspaces still show the three import controls.
+    } // Empty views retain their native header import actions.
   }
   getTreeItem(node: SidebarNode): vscode.TreeItem {
-    if (node.kind === 'group') {
-      const title = {
-        contest: 'Codeforces Contests',
-        standalone: 'Codeforces Problems',
-        local: 'Local Practice',
-      }[node.group];
-      const item = new vscode.TreeItem(t(title), vscode.TreeItemCollapsibleState.Expanded);
-      item.id = `group:${node.group}`;
-      item.contextValue = `cfide.${node.group}Group`;
-      return item;
-    }
     if (node.kind === 'contest') return this.contests.getTreeItem(node);
     if (node.group === 'local') {
       const item = new vscode.TreeItem(`${node.problem.id} · ${node.problem.title}`);

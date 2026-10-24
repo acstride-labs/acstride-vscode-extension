@@ -1,6 +1,12 @@
 import type * as vscode from 'vscode';
 import {
   defaultTranslationOptions,
+  defaultAiCacheOptions,
+  aiCacheOptionsSchema,
+  type AiCacheOptions,
+  legacyTranslationPrompt,
+  previousEnglishTranslationPrompt,
+  defaultTranslationPrompt,
   translationOptionsSchema,
   type TranslationOptions,
   aiConfigSchema,
@@ -26,12 +32,27 @@ export class AiSettings {
     const parsed = translationOptionsSchema.safeParse(
       this.context.globalState.get('cfide.translationOptions'),
     );
-    return parsed.success ? parsed.data : { ...defaultTranslationOptions };
+    if (!parsed.success) return { ...defaultTranslationOptions };
+    return [legacyTranslationPrompt, previousEnglishTranslationPrompt].includes(parsed.data.prompt)
+      ? { ...parsed.data, prompt: defaultTranslationPrompt }
+      : parsed.data;
   }
   async saveTranslationOptions(options: TranslationOptions) {
     await this.context.globalState.update(
       'cfide.translationOptions',
       translationOptionsSchema.parse(options),
+    );
+  }
+  cacheOptions(): AiCacheOptions {
+    const parsed = aiCacheOptionsSchema.safeParse(
+      this.context.globalState.get('cfide.aiCacheOptions'),
+    );
+    return parsed.success ? parsed.data : { ...defaultAiCacheOptions };
+  }
+  async saveCacheOptions(options: AiCacheOptions) {
+    await this.context.globalState.update(
+      'cfide.aiCacheOptions',
+      aiCacheOptionsSchema.parse(options),
     );
   }
   async state() {

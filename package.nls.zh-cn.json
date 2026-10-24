@@ -14,6 +14,7 @@
   "command.cfide.addCodeforcesProblem": "AC-Stride: 导入 Codeforces 题目",
   "command.cfide.openCodeforcesProblem": "AC-Stride: 打开 Codeforces 题目",
   "view.contests": "Codeforces 比赛",
+  "view.codeforcesProblems": "Codeforces 题目",
   "view.practice": "本地练习",
   "view.tests": "测试",
   "view.testPanel": "AC-Stride · 测试",

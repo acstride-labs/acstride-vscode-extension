@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -114,8 +114,18 @@
       "cfide": [
         {
           "id": "cfide.contests",
-          "name": "AC-Stride",
-          "canToggleVisibility": false
+          "name": "%view.contests%",
+          "canToggleVisibility": true
+        },
+        {
+          "id": "cfide.codeforcesProblems",
+          "name": "%view.codeforcesProblems%",
+          "canToggleVisibility": true
+        },
+        {
+          "id": "cfide.problems",
+          "name": "%view.practice%",
+          "canToggleVisibility": true
         }
       ]
     },
@@ -129,26 +139,24 @@
       ],
       "view/title": [
         {
-          "command": "cfide.openSettings",
-          "when": "view == cfide.contests",
-          "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
           "command": "cfide.addContest",
-          "when": "view == cfide.contests && viewItem == cfide.contestGroup",
-          "group": "inline"
+          "when": "view == cfide.contests",
+          "group": "navigation@1"
         },
         {
           "command": "cfide.addCodeforcesProblem",
-          "when": "view == cfide.contests && viewItem == cfide.standaloneGroup",
-          "group": "inline"
+          "when": "view == cfide.codeforcesProblems",
+          "group": "navigation@1"
         },
         {
           "command": "cfide.createProblem",
-          "when": "view == cfide.contests && viewItem == cfide.localGroup",
-          "group": "inline"
+          "when": "view == cfide.problems",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cfide.openSettings",
+          "when": "view == cfide.contests",
+          "group": "navigation@2"
         }
       ]
     },

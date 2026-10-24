@@ -1,3 +1,5 @@
+import type { AiCacheOptions } from '../../shared/ai-protocol';
+import type { AiRequestCache } from './request-cache';
 import { aiConfigSchema, type AiConfig } from '../../shared/ai-protocol';
 export const aiTestMessage =
   'Please reply with a short greeting to confirm that this connection works.';
@@ -12,11 +14,39 @@ export class AiClient {
   constructor(
     private request: typeof fetch = fetch,
     private timeoutMs = 30000,
+    private cache?: AiRequestCache,
   ) {}
   async test(config: AiConfig, key: string, signal?: AbortSignal): Promise<string> {
-    return this.complete(config, key, [{ role: 'user', content: aiTestMessage }], signal);
+    return this.perform(config, key, [{ role: 'user', content: aiTestMessage }], signal);
+  }
+  configureCache(options: AiCacheOptions) {
+    return this.cache?.configure(options);
   }
   async complete(
+    config: AiConfig,
+    key: string,
+    messages: { role: 'system' | 'user'; content: string }[],
+    signal?: AbortSignal,
+    timeoutMs = this.timeoutMs,
+  ): Promise<string> {
+    const checked = aiConfigSchema.parse(config);
+    const base = normalizeAiBaseUrl(checked.baseUrl);
+    const endpoint = base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+    if (!this.cache) return this.perform(checked, key, messages, signal, timeoutMs);
+    return this.cache.request(
+      { endpoint, model: checked.model, messages, stream: false },
+      (cacheSignal) =>
+        this.perform(
+          checked,
+          key,
+          messages,
+          signal ? AbortSignal.any([signal, cacheSignal]) : cacheSignal,
+          timeoutMs,
+        ),
+      key,
+    );
+  }
+  private async perform(
     config: AiConfig,
     key: string,
     messages: { role: 'system' | 'user'; content: string }[],

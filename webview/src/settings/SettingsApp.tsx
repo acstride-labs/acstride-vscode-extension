@@ -3,6 +3,7 @@ import { send } from '../bridge';
 import { useI18n } from '../i18n';
 import type { SettingsState, SettingsValues } from '../../../src/shared/settings-protocol';
 import type { LocalePreference } from '../../../src/shared/i18n';
+import { AiCacheSettingsCard } from './AiCacheSettingsCard';
 import { TranslationSettingsCard } from './TranslationSettingsCard';
 import { AiSettingsCard } from './AiSettingsCard';
 import type { Language } from '../../../src/domain/models';
@@ -99,8 +100,15 @@ export function SettingsApp() {
         </p>
       )}
       {state?.notice && !dirty && <p role="status">{t(state.notice)}</p>}
-      <div hidden={tab !== 'assistance'} role="tabpanel" aria-labelledby="settings-tab-assistance">
+      <div
+        id="settings-panel-assistance"
+        hidden={tab !== 'assistance'}
+        role="tabpanel"
+        aria-labelledby="settings-tab-assistance"
+      >
+        <AiSettingsCard state={state?.ai} busy={disabled} />
         <TranslationSettingsCard options={state?.translationOptions} />
+        <AiCacheSettingsCard options={state?.aiCacheOptions} busy={disabled} />
       </div>
       <form
         noValidate
@@ -261,8 +269,6 @@ export function SettingsApp() {
             })}
             {dirty && <small>{t('Save changes before checking environments.')}</small>}
           </section>
-
-          <AiSettingsCard state={state?.ai} busy={disabled} />
         </div>
         <div
           role="tabpanel"

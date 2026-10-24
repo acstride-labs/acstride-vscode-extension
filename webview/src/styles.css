@@ -715,3 +715,21 @@ button.contest-problem-row:hover {
   align-items: center;
   padding: 4px;
 }
+
+.prompt-confirmation {
+  max-width: 440px;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  padding: 20px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  box-shadow: 0 6px 24px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.4));
+}
+.prompt-confirmation::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+.prompt-confirmation .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

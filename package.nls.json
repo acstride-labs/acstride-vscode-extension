@@ -14,6 +14,7 @@
   "command.cfide.addCodeforcesProblem": "AC-Stride: Import Codeforces problem",
   "command.cfide.openCodeforcesProblem": "AC-Stride: Open Codeforces problem",
   "view.contests": "Codeforces Contests",
+  "view.codeforcesProblems": "Codeforces Problems",
   "view.practice": "Local Practice",
   "view.tests": "Tests",
   "view.testPanel": "AC-Stride · Tests",

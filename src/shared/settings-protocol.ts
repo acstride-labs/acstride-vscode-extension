@@ -1,5 +1,7 @@
 import {
   translationOptionsSchema,
+  aiCacheOptionsSchema,
+  type AiCacheOptions,
   type TranslationOptions,
   aiConfigSchema,
   aiKeySchema,
@@ -40,6 +42,7 @@ export const settingsKeys = {
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }),
+  z.object({ type: z.literal('saveAiCacheSettings'), options: aiCacheOptionsSchema }).strict(),
   z
     .object({ type: z.literal('saveTranslationSettings'), options: translationOptionsSchema })
     .strict(),
@@ -72,6 +75,7 @@ export interface EnvironmentResult {
 }
 export interface SettingsState {
   ai: AiState;
+  aiCacheOptions: AiCacheOptions;
   translationOptions: TranslationOptions;
   account: AccountState;
   locale: Locale;

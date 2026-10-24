@@ -1,6 +1,7 @@
+import { renderTranslationPrompt } from '../shared/ai-protocol';
 import { AiSettings } from './ai-settings';
 import { AiClient } from '../infrastructure/ai/client';
-import { TranslationTasks } from '../application/translation-tasks';
+import { sanitizeTranslation } from '../infrastructure/ai/translation';
 import * as vscode from 'vscode';
 import path from 'node:path';
 import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
@@ -29,7 +30,6 @@ import { postLocale, t } from './localization';
 type Node = { kind: 'contest'; record: ContestRecord };
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private ai!: AiSettings;
-  private translations!: TranslationTasks;
   private queue = new RequestQueue();
   private api: CodeforcesApi;
   private cfTool: CfToolClient;
@@ -67,6 +67,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
+    private aiClient = new AiClient(),
   ) {
     const executable = cfToolExecutable(context.extensionUri.fsPath);
     this.cfTool = new CfToolClient(executable, undefined, (code) => {
@@ -97,10 +98,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       ),
     );
     this.ai = new AiSettings(context);
-    this.translations = new TranslationTasks(
-      path.join(context.globalStorageUri.fsPath, 'translations-lru.json'),
-    );
-    this.disposables.push(this.translations);
     this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
     this.workspaces = new CodeforcesWorkspaces(
       () => workspace.localStore().root,
@@ -627,24 +624,20 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       statement: this.mapAssets(id, statement, collection),
     } satisfies ContestHostMessage);
   }
-  private translate(statement: import('../domain/contest').Statement) {
+  private async translate(statement: import('../domain/contest').Statement) {
     const options = this.ai.translationOptions(),
       config = this.ai.config();
-    return this.translations.translate(
-      [1, config, options.prompt, statement.html],
-      statement.html,
-      async (signal) =>
-        new AiClient().complete(
-          config,
-          await this.ai.key(config),
-          [
-            { role: 'system', content: options.prompt },
-            { role: 'user', content: statement.html },
-          ],
-          signal,
-          120000,
-        ),
+    const output = await this.aiClient.complete(
+      config,
+      await this.ai.key(config),
+      [
+        { role: 'system', content: renderTranslationPrompt(options) },
+        { role: 'user', content: statement.html },
+      ],
+      undefined,
+      120000,
     );
+    return sanitizeTranslation(output, statement.html);
   }
   private async showTranslation(request: {
     contestId: number;

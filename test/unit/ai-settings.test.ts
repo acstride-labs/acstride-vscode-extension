@@ -2,7 +2,14 @@ import { expect, it, vi } from 'vitest';
 import type * as vscode from 'vscode';
 import { AiClient, aiTestMessage } from '../../src/infrastructure/ai/client';
 import { AiSettings } from '../../src/vscode/ai-settings';
-import { aiConfigSchema } from '../../src/shared/ai-protocol';
+import {
+  defaultTranslationPrompt,
+  legacyTranslationPrompt,
+  renderTranslationPrompt,
+  defaultTranslationOptions,
+  previousEnglishTranslationPrompt,
+  aiConfigSchema,
+} from '../../src/shared/ai-protocol';
 const config = { baseUrl: 'https://models.example/v1/', model: 'test-model' };
 it('sends one fixed message to the configured endpoint and returns the model text', async () => {
   const request = vi.fn(async () =>
@@ -116,4 +123,34 @@ it('rejects URL-embedded credentials and non-local unencrypted endpoints', () =>
     'https://models.example/v1?key=secret',
   ])
     expect(aiConfigSchema.safeParse({ ...config, baseUrl }).success).toBe(false);
+});
+
+it('upgrades only the old bundled translation prompt, preserving custom prompts and toggles', () => {
+  let value: unknown = { enabled: true, autoTranslate: true, prompt: legacyTranslationPrompt };
+  const store = new AiSettings({
+    globalState: { get: () => value },
+  } as unknown as vscode.ExtensionContext);
+  expect(store.translationOptions()).toEqual({
+    enabled: true,
+    autoTranslate: true,
+    targetLanguage: 'zh-CN',
+    prompt: defaultTranslationPrompt,
+  });
+  expect(defaultTranslationPrompt).toContain('{{language}}');
+  expect(defaultTranslationPrompt).not.toMatch(/[\u4e00-\u9fff]/);
+  value = { enabled: true, autoTranslate: false, prompt: previousEnglishTranslationPrompt };
+  expect(store.translationOptions().prompt).toBe(defaultTranslationPrompt);
+  value = { enabled: true, autoTranslate: false, prompt: 'My custom prompt' };
+  expect(store.translationOptions().prompt).toBe('My custom prompt');
+});
+
+it('replaces every language placeholder without changing the saved prompt', () => {
+  const options = {
+    ...defaultTranslationOptions,
+    targetLanguage: 'ja' as const,
+    prompt: 'Translate to {{language}}. Target: {{language}}.',
+  };
+  expect(renderTranslationPrompt(options)).toBe('Translate to Japanese. Target: Japanese.');
+  expect(options.prompt).toContain('{{language}}');
+  expect(renderTranslationPrompt({ ...options, targetLanguage: 'ru' })).toContain('Russian');
 });

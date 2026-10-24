@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.1
+
+- Replace nested sidebar groups with three toggleable native peer views; reuse the legacy local-practice view ID and remove duplicate group/welcome UI. Keep settings in the contest toolbar because stable APIs cannot add a multi-view container title button.
+- Move AI provider configuration into AI assistance, align translation checkboxes horizontally and update the instructions.
+- Localize all AI assistance controls in four UI languages. Use an English default translation prompt with `{{language}}`, nine target languages and documented substitution; preserve custom prompts and require confirmation before restoring the draft.
+- Move caching to a shared AI input/output layer. Configure enablement and LRU entry/storage limits, separate cache entries by request and credential digest, and always bypass caching for connection tests.
+
 ## 0.13.0
 
 - Unify the sidebar into contests, standalone Codeforces problems and local practice, with one plus per group and a global settings gear. Preserve original import timestamps and sort newest first.

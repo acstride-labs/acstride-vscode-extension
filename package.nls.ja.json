@@ -14,6 +14,7 @@
   "command.cfide.addCodeforcesProblem": "AC-Stride: Codeforces の問題をインポート",
   "command.cfide.openCodeforcesProblem": "AC-Stride: Codeforces の問題を開く",
   "view.contests": "Codeforces コンテスト",
+  "view.codeforcesProblems": "Codeforces の問題",
   "view.practice": "ローカル練習",
   "view.tests": "テスト",
   "view.testPanel": "AC-Stride · テスト",

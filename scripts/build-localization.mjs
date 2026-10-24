@@ -25,6 +25,7 @@ for (const [locale, suffix] of [
   for (const [id, key] of Object.entries(mapping.commands))
     values['command.' + id] = 'AC-Stride: ' + text(key);
   values['view.contests'] = text('Codeforces Contests');
+  values['view.codeforcesProblems'] = text('Codeforces Problems');
   values['view.practice'] = text('Local Practice');
   values['view.tests'] = text('Tests');
   values['view.testPanel'] = 'AC-Stride · ' + text('Tests');

@@ -18,7 +18,6 @@ import type { WorkspaceController } from './workspace-controller';
 
 export class SettingsController implements vscode.Disposable {
   private ai: AiSettings;
-  private aiClient = new AiClient();
   private aiResult?: AiState['result'];
   private aiNotice?: string;
   private aiAbort?: AbortController;
@@ -32,6 +31,7 @@ export class SettingsController implements vscode.Disposable {
   constructor(
     private context: vscode.ExtensionContext,
     private workspace: WorkspaceController,
+    private aiClient = new AiClient(),
   ) {
     this.ai = new AiSettings(context);
   }
@@ -151,8 +151,15 @@ export class SettingsController implements vscode.Disposable {
       );
     const message = parsed.data;
     if (message.type === 'ready') return this.publish();
+    if (message.type === 'saveAiCacheSettings') {
+      await this.ai.saveCacheOptions(message.options);
+      await this.aiClient.configureCache(message.options);
+      void this.panel?.webview.postMessage({ type: 'aiCacheSettingsSaved' });
+      return this.publish();
+    }
     if (message.type === 'saveTranslationSettings') {
       await this.ai.saveTranslationOptions(message.options);
+      void this.panel?.webview.postMessage({ type: 'translationSettingsSaved' });
       return this.publish();
     }
     if (this.busy) throw new Error('Settings operation in progress.');
@@ -333,6 +340,7 @@ export class SettingsController implements vscode.Disposable {
     }
     const state: SettingsState = {
       translationOptions: this.ai.translationOptions(),
+      aiCacheOptions: this.ai.cacheOptions(),
       ai: { ...(await this.ai.state()), result: this.aiResult, notice: this.aiNotice },
       account: this.workspace.submissions?.accountState ?? { status: 'signedOut' },
       locale: currentLocale(),

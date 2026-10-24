@@ -61,8 +61,8 @@ export function StatementView() {
             <span>{data ? `#${data.contestId} · ${data.index}` : t('STATEMENT')}</span>
             <button
               className="secondary translation-toggle"
-              title={translated ? '显示原文' : 'AI 题面翻译'}
-              aria-label="AI 题面翻译"
+              title={t(translated ? 'Show original' : 'AI statement translation')}
+              aria-label={t('AI statement translation')}
               aria-pressed={translated}
               disabled={!data?.statement.fetchedAt}
               onClick={() => {
@@ -105,7 +105,9 @@ export function StatementView() {
           )}
           {translated && translation?.status !== 'ready' && (
             <p role="status">
-              {translation?.status === 'failed' ? translation.error : '正在翻译中，请稍候…'}
+              {translation?.status === 'failed'
+                ? t(translation.error ?? '')
+                : t('Translating, please wait…')}
               {translation?.status === 'failed' && (
                 <button
                   onClick={() =>
@@ -118,7 +120,7 @@ export function StatementView() {
                     })
                   }
                 >
-                  重试
+                  {t('Retry')}
                 </button>
               )}
             </p>
