@@ -1,6 +1,9 @@
 import {
   assistantOptionsSchema,
   defaultAssistantOptions,
+  defaultAssistantPrompts,
+  previousAssistantPrompts,
+  assistantKinds,
   type AssistantOptions,
 } from '../shared/ai-assistance';
 import type * as vscode from 'vscode';
@@ -62,9 +65,15 @@ export class AiSettings {
     const parsed = assistantOptionsSchema.safeParse(
       this.context.globalState.get('cfide.assistanceOptions'),
     );
-    return parsed.success
+    const options = parsed.success
       ? parsed.data
       : defaultAssistantOptions(this.translationOptions().targetLanguage);
+    for (const kind of assistantKinds) {
+      if (options[kind].prompt === previousAssistantPrompts[kind]) {
+        options[kind].prompt = defaultAssistantPrompts[kind];
+      }
+    }
+    return options;
   }
   async saveAssistanceOptions(options: AssistantOptions) {
     await this.context.globalState.update(

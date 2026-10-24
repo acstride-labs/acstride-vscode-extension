@@ -5,12 +5,21 @@ import { translationLanguages, type TranslationLanguage } from './ai-protocol';
 
 export const assistantKinds = ['hint', 'debug', 'coding'] as const;
 export type AssistantKind = (typeof assistantKinds)[number];
-export const defaultAssistantPrompts: Record<AssistantKind, string> = {
-  hint: 'You are a competitive programming tutor. Read the original English statement and give exactly {{hintCount}} progressively more specific hints in {{language}}. Start with a gentle observation, then explain the key idea, and finish with an actionable algorithmic direction. Do not give complete source code. The selected programming language is {{programmingLanguage}}.',
+export const previousHintPrompt =
+  'You are a competitive programming tutor. Read the original English statement and give exactly {{hintCount}} progressively more specific hints in {{language}}. Start with a gentle observation, then explain the key idea, and finish with an actionable algorithmic direction. Do not give complete source code. The selected programming language is {{programmingLanguage}}.';
+export const previousAssistantPrompts: Partial<Record<AssistantKind, string>> = {
+  hint: previousHintPrompt,
   debug:
     "Review the provided original English problem statement and the user's current {{programmingLanguage}} source code. Respond in {{language}}. Identify concrete bugs, incorrect assumptions, edge cases and complexity issues. Explain why each issue matters and provide small counterexamples when justified. Only identify and explain problems; never provide a complete corrected solution or replacement code. If no definite bug is found, state that clearly and distinguish suspicions from verified facts.",
   coding:
     'Solve the problem described by the original English statement. Produce a complete reference solution in {{programmingLanguage}}, respecting all input/output constraints. Use class Main for Java and a top-level main() for Kotlin. Return only source code, without Markdown fences or prose. Any code comments should be in {{language}}.',
+};
+export const defaultAssistantPrompts: Record<AssistantKind, string> = {
+  hint: 'You are a competitive programming tutor. Read the problem statement and give exactly {{hintCount}} progressively more specific hints in {{language}}. Start with a gentle observation, then explain the key idea, and finish with an actionable algorithmic direction. Do not give complete source code.',
+  debug:
+    "Review the provided problem statement and the user's current {{programmingLanguage}} source code. Respond in {{language}}. Identify concrete bugs, incorrect assumptions, edge cases and complexity issues. Explain why each issue matters and provide small counterexamples when justified. Only identify and explain problems; never provide a complete corrected solution or replacement code. If no definite bug is found, state that clearly and distinguish suspicions from verified facts.",
+  coding:
+    'Solve the problem described by the problem statement. Produce a complete reference solution in {{programmingLanguage}}, respecting all input/output constraints. Use class Main for Java and a top-level main() for Kotlin. Return only source code, without Markdown fences or prose. Any code comments should be in {{language}}.',
 };
 export const assistantToolOptionsSchema = z
   .object({

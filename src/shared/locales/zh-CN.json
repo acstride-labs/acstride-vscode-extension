@@ -423,14 +423,13 @@
   "Saving…": "正在保存…",
   "Show this feature": "是否展示此功能",
   "Do not use this feature during an ongoing contest.": "请勿在正在进行的比赛中使用此功能。",
-  "Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.": "根据英文原题面生成循序渐进的提示，每条提示默认隐藏，点击眼睛按钮后显示。",
-  "Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "将英文原题面与当前代码（包括未保存的编辑）发送给 AI，只分析问题，不提供修正后的完整代码。",
-  "Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.": "根据英文原题面生成当前编程语言的参考代码，仅支持预览和复制，不会替换现有代码。",
+  "Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "将题面与当前代码（包括未保存的编辑）发送给 AI，只分析问题，不提供修正后的完整代码。",
+  "Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.": "根据题面生成当前编程语言的参考代码，仅支持预览和复制，不会替换现有代码。",
   "Response language": "回复语言",
   "Number of hints": "提示数量",
   "Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "占位符：{{language}} 为所选回复语言，{{programmingLanguage}} 为当前解答的编程语言，{{hintCount}} 为提示数量。发送请求前自动替换，保存的 Prompt 原文不变。",
   "Save AI assistance settings": "保存 AI 辅助设置",
-  "AI task is running, please wait.": "AI 任务正在执行中，请稍候。",
+  "AI task is running, please wait.": "已触发，AI 任务正在执行中，请稍候。",
   "Hint {number}": "提示 {number}",
   "Hide hint {number}": "隐藏提示 {number}",
   "Reveal hint {number}": "查看提示 {number}",
@@ -444,5 +443,7 @@
   "AI Hint": "AI Hint",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
-  "Configure the AI connection in AI assistance settings first.": "请先在 AI 辅助设置中配置 AI 连接。"
+  "Configure the AI connection in AI assistance settings first.": "请先在 AI 辅助设置中配置 AI 连接。",
+  "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "根据题面生成循序渐进的提示，每条提示默认隐藏，点击眼睛按钮后显示。",
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "占位符：{{language}} 为所选回复语言，{{hintCount}} 为提示数量。发送请求前自动替换，保存的 Prompt 原文不变。"
 }

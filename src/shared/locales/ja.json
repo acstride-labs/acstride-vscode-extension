@@ -423,9 +423,8 @@
   "Saving…": "保存中…",
   "Show this feature": "この機能を表示",
   "Do not use this feature during an ongoing contest.": "開催中のコンテストではこの機能を使用しないでください。",
-  "Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.": "英語の原文から段階的なヒントを生成します。各ヒントは表示するまで非表示です。",
-  "Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "英語の原文と未保存の編集を含む現在のコードを送信し、修正コードを出さずに問題点を分析します。",
-  "Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.": "英語の原文から選択した言語の参考コードを生成します。プレビューとコピーのみで、既存コードは置換しません。",
+  "Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "問題文と未保存の編集を含む現在のコードを送信し、修正コードを出さずに問題点を分析します。",
+  "Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.": "問題文から選択した言語の参考コードを生成します。プレビューとコピーのみで、既存コードは置換しません。",
   "Response language": "回答言語",
   "Number of hints": "ヒント数",
   "Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "{{language}} は回答言語、{{programmingLanguage}} は現在の解答言語、{{hintCount}} はヒント数です。送信前に置換し、保存済みプロンプトは変更しません。",
@@ -444,5 +443,7 @@
   "AI Hint": "AI Hint",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
-  "Configure the AI connection in AI assistance settings first.": "先に AI 支援設定で AI 接続を設定してください。"
+  "Configure the AI connection in AI assistance settings first.": "先に AI 支援設定で AI 接続を設定してください。",
+  "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "問題文から段階的なヒントを生成します。各ヒントは表示するまで非表示です。",
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "{{language}} は回答言語、{{hintCount}} はヒント数です。送信前に置換し、保存済みプロンプトは変更しません。"
 }

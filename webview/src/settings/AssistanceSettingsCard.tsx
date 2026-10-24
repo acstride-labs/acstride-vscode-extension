@@ -74,11 +74,11 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
           <p>
             {t(
               {
-                hint: 'Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.',
+                hint: 'Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.',
                 debug:
-                  'Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.',
+                  'Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.',
                 coding:
-                  'Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.',
+                  'Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.',
               }[kind],
             )}
           </p>
@@ -124,7 +124,9 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
           </label>
           <p>
             {t(
-              'Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.',
+              kind === 'hint'
+                ? 'Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.'
+                : 'Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.',
             )}
           </p>
           <div className="actions">

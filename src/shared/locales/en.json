@@ -423,9 +423,8 @@
   "Saving…": "Saving…",
   "Show this feature": "Show this feature",
   "Do not use this feature during an ongoing contest.": "Do not use this feature during an ongoing contest.",
-  "Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.": "Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.",
-  "Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.",
-  "Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.": "Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.",
+  "Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.",
+  "Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.": "Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.",
   "Response language": "Response language",
   "Number of hints": "Number of hints",
   "Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.",
@@ -444,5 +443,7 @@
   "AI Hint": "AI Hint",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
-  "Configure the AI connection in AI assistance settings first.": "Configure the AI connection in AI assistance settings first."
+  "Configure the AI connection in AI assistance settings first.": "Configure the AI connection in AI assistance settings first.",
+  "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.",
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged."
 }

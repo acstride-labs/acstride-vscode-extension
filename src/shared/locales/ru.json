@@ -423,9 +423,8 @@
   "Saving…": "Сохранение…",
   "Show this feature": "Показывать эту функцию",
   "Do not use this feature during an ongoing contest.": "Не используйте эту функцию во время текущего соревнования.",
-  "Generate progressive hints from the original English statement. Each hint is hidden until you reveal it.": "Постепенные подсказки по исходному английскому условию. Каждая скрыта, пока вы её не откроете.",
-  "Send the original English statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "Отправляются исходное английское условие и текущий код, включая несохранённые изменения. ИИ описывает проблемы без исправленного кода.",
-  "Generate reference code from the original English statement in the selected solution language. Preview and copy only; your source is never replaced.": "Генерируется эталонный код на выбранном языке по английскому условию. Только просмотр и копирование; исходный код не заменяется.",
+  "Send the problem statement and your current code, including unsaved edits. AI identifies issues without providing corrected code.": "Отправляются условие задачи и текущий код, включая несохранённые изменения. ИИ описывает проблемы без исправленного кода.",
+  "Generate reference code from the problem statement in the selected solution language. Preview and copy only; your source is never replaced.": "Генерируется эталонный код на выбранном языке по условию задачи. Только просмотр и копирование; исходный код не заменяется.",
   "Response language": "Язык ответа",
   "Number of hints": "Количество подсказок",
   "Placeholders: {{language}} is the selected response language; {{programmingLanguage}} is the current solution language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Подстановки: {{language}} — выбранный язык ответа; {{programmingLanguage}} — текущий язык решения; {{hintCount}} — число подсказок. Заменяются перед запросом, сохранённый промпт не меняется.",
@@ -444,5 +443,7 @@
   "AI Hint": "AI Hint",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
-  "Configure the AI connection in AI assistance settings first.": "Сначала настройте подключение к ИИ."
+  "Configure the AI connection in AI assistance settings first.": "Сначала настройте подключение к ИИ.",
+  "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "Постепенные подсказки по условию задачи. Каждая скрыта, пока вы её не откроете.",
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Подстановки: {{language}} — выбранный язык ответа; {{hintCount}} — число подсказок. Заменяются перед запросом, сохранённый промпт не меняется."
 }
