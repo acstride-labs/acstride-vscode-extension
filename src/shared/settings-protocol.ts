@@ -1,3 +1,4 @@
+import { assistantOptionsSchema, type AssistantOptions } from './ai-assistance';
 import { languageIds } from '../domain/models';
 import {
   translationOptionsSchema,
@@ -66,6 +67,7 @@ export const settingsKeys = {
   timeoutMs: 'run.timeoutMs',
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('saveAssistanceSettings'), options: assistantOptionsSchema }).strict(),
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('saveAiCacheSettings'), options: aiCacheOptionsSchema }).strict(),
   z
@@ -99,6 +101,7 @@ export interface EnvironmentResult {
   message?: string;
 }
 export interface SettingsState {
+  assistanceOptions: AssistantOptions;
   ai: AiState;
   aiCacheOptions: AiCacheOptions;
   translationOptions: TranslationOptions;

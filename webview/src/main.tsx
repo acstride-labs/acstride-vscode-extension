@@ -1,3 +1,4 @@
+import { AssistantActions } from './ai/AssistantActions';
 import { languages } from '../../src/domain/languages';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -171,6 +172,20 @@ function App() {
           </button>
         )}
         <span role="status">{t(notice)}</span>
+        {problem?.contestId && (
+          <div className="workbench-ai-actions">
+            <AssistantActions
+              kinds={['debug', 'coding']}
+              disabled={running || submitting}
+              target={{
+                contestId: problem.contestId,
+                index: problem.id,
+                collection: problem.collection ?? 'contest',
+                language: problem.language,
+              }}
+            />
+          </div>
+        )}
       </div>
       <div className="test-tabs" role="tablist" aria-label={t('Tests')}>
         {tests.map((test, index) => (

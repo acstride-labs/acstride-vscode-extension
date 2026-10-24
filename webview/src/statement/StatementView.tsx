@@ -1,3 +1,5 @@
+import { AssistantActions } from '../ai/AssistantActions';
+import { AiIcon } from '../ai/AiIcon';
 import React, { useEffect, useRef, useState } from 'react';
 import renderMathInElement from 'katex/contrib/auto-render';
 import 'katex/dist/katex.min.css';
@@ -116,17 +118,7 @@ export function StatementView() {
                   }
                 }}
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  aria-hidden="true"
-                >
-                  <path d="M2 4h9M6.5 2v2M4 4c.5 4 3 6 6 8M9 4c-.5 4-3 7-7 9M10 17l4-10 4 10M11.5 14h5" />
-                </svg>
+                <AiIcon kind="translation" />
               </button>
               {!translationEnabled && (
                 <span className="translation-hint" id="translation-disabled-hint">
@@ -137,6 +129,20 @@ export function StatementView() {
                 </span>
               )}
             </span>
+            <AssistantActions
+              kinds={['hint']}
+              disabled={!data?.statement.fetchedAt}
+              target={
+                data
+                  ? {
+                      contestId: data.contestId,
+                      index: data.index,
+                      collection: data.collection ?? 'contest',
+                      language: data.language,
+                    }
+                  : undefined
+              }
+            />
           </div>
         </header>
         <div className="statement-scroll" ref={viewport}>

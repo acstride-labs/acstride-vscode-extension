@@ -1,8 +1,10 @@
 import { expect, it, vi } from 'vitest';
 vi.mock('vscode', () => ({
   env: { language: 'en' },
+  Uri: { file: (fsPath: string) => ({ fsPath }) },
   workspace: {
     isTrusted: true,
+    openTextDocument: vi.fn(async () => ({ getText: () => 'unsaved editor text', save: vi.fn() })),
     getConfiguration: () => ({ get: (_key: string, fallback: unknown) => fallback }),
   },
   TreeItemCollapsibleState: { None: 0 },
@@ -143,6 +145,75 @@ it('delivers a completed translation with its problem identity after switching s
       collection: 'contest',
       status: 'ready',
       html: 'Translated A',
+    }),
+  );
+});
+
+it('AI Debug reads the captured solution document without saving it and uses original statement HTML', async () => {
+  const controller = Object.create(ContestController.prototype) as any;
+  controller.runtime = () => ({
+    repo: { statement: async () => ({ fetchedAt: 1, html: 'Original English statement' }) },
+  });
+  controller.workspace = {
+    active: () => ({
+      problem: { contestId: 2261, id: 'A', language: 'cpp' },
+      store: { sourcePath: () => '/tmp/Main.cpp' },
+    }),
+  };
+  const run = vi.fn(async () => ({ text: 'Issues only' }));
+  controller.assistance = { run };
+  const post = vi.fn();
+  await controller.runAssistance(
+    {
+      type: 'aiAssist',
+      requestId: 'debug',
+      kind: 'debug',
+      target: { contestId: 2261, index: 'A', collection: 'contest', language: 'cpp' },
+    },
+    post,
+  );
+  expect(run).toHaveBeenCalledWith(
+    'debug',
+    expect.objectContaining({ index: 'A' }),
+    'Original English statement',
+    'unsaved editor text',
+  );
+  expect(post).toHaveBeenLastCalledWith({
+    type: 'assistantResult',
+    requestId: 'debug',
+    status: 'ready',
+    result: { text: 'Issues only' },
+  });
+});
+
+it('rejects debug requests for a different active problem and unavailable original statements', async () => {
+  const controller = Object.create(ContestController.prototype) as any;
+  const run = vi.fn();
+  controller.assistance = { run };
+  controller.workspace = {
+    active: () => ({ problem: { contestId: 2261, id: 'B', language: 'cpp' } }),
+  };
+  controller.runtime = () => ({
+    repo: { statement: async () => ({ fetchedAt: 1, html: 'original' }) },
+  });
+  const request = {
+    type: 'aiAssist',
+    requestId: 'debug',
+    kind: 'debug',
+    target: { contestId: 2261, index: 'A', collection: 'contest', language: 'cpp' },
+  };
+  const post = vi.fn();
+  await controller.runAssistance(request, post);
+  expect(post).toHaveBeenLastCalledWith(
+    expect.objectContaining({ status: 'failed', error: 'Problem changed; retry the operation.' }),
+  );
+  controller.runtime = () => ({ repo: { statement: async () => null } });
+  await controller.runAssistance({ ...request, kind: 'hint' }, post);
+  expect(run).not.toHaveBeenCalled();
+  expect(post).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      status: 'failed',
+      error: 'Wait for the original statement to download before using AI assistance.',
     }),
   );
 });

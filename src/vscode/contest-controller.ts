@@ -1,3 +1,5 @@
+import { AiAssistance } from '../application/ai-assistance';
+import type { AssistantHostMessage, AssistantRequest } from '../shared/ai-assistance';
 import { languageIds } from '../domain/models';
 import { renderTranslationPrompt } from '../shared/ai-protocol';
 import { AiSettings } from './ai-settings';
@@ -31,6 +33,7 @@ import { postLocale, t } from './localization';
 type Node = { kind: 'contest'; record: ContestRecord };
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private ai!: AiSettings;
+  private assistance!: AiAssistance;
   private queue = new RequestQueue();
   private api: CodeforcesApi;
   private cfTool: CfToolClient;
@@ -100,6 +103,10 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       ),
     );
     this.ai = new AiSettings(context);
+    this.assistance = new AiAssistance(this.ai, this.aiClient);
+    this.disposables.push(this.assistance);
+    workspace.assistantOptions = () => this.ai.assistanceOptions();
+    workspace.assistanceHandler = (request, post) => this.runAssistance(request, post);
     this.disposables.push(
       this.ai.onTranslationChanged(() => this.publishTranslationAvailability()),
     );
@@ -442,6 +449,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
   private async handleMessage(message: import('zod').infer<typeof contestRequestSchema>) {
     await this.initialized;
     if (message.type === 'ready') {
+      this.publishAssistantOptions();
       await this.publish();
       if (
         this.dashboardMode === 'statement' &&
@@ -455,6 +463,28 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           statement: this.mapAssets(this.statementTarget.contestId, this.statementTarget.statement),
         });
       return;
+    }
+    if (message.type === 'assistantReady') {
+      this.publishAssistantOptions();
+      return;
+    }
+    if (message.type === 'copyAiCode') {
+      await vscode.env.clipboard.writeText(message.text);
+      void this.dashboard?.webview.postMessage({
+        type: 'assistantCopied',
+        requestId: message.requestId,
+      });
+      void this.statementPanel?.webview.postMessage({
+        type: 'assistantCopied',
+        requestId: message.requestId,
+      });
+      return;
+    }
+    if (message.type === 'aiAssist') {
+      const panel = message.target.collection === 'contest' ? this.dashboard : this.statementPanel;
+      return this.runAssistance(message, (reply) => {
+        void panel?.webview.postMessage(reply);
+      });
     }
     if (message.type === 'translateStatement') return this.showTranslation(message);
     if (message.type === 'openContestDetails') return this.openCenter(message.contestId);
@@ -606,10 +636,17 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             else if (message.type === 'openContestDetails')
               await this.openCenter(message.contestId).catch((e) => this.report(e));
             else if (message.type === 'translateStatement') await this.showTranslation(message);
+            else if (message.type === 'aiAssist')
+              await this.runAssistance(message, (reply) => {
+                void this.statementPanel?.webview.postMessage(reply);
+              });
+            else if (message.type === 'assistantReady' || message.type === 'copyAiCode')
+              await this.handleMessage(message).catch((e) => this.report(e));
             else if (message.type === 'openAiSettings')
               await this.handleMessage(message).catch((e) => this.report(e));
             return;
           }
+          this.publishAssistantOptions();
           if (this.statementTarget) {
             postLocale(this.statementPanel?.webview);
             const target = this.statementTarget;
@@ -661,7 +698,60 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     );
     return sanitizeTranslation(output, statement.html);
   }
+  private async runAssistance(
+    request: AssistantRequest,
+    post: (message: AssistantHostMessage) => void,
+  ) {
+    const { requestId, kind, target } = request;
+    post({ type: 'assistantResult', requestId, status: 'pending' });
+    try {
+      this.trust();
+      const statement = await this.runtime(target.collection).repo.statement(
+        target.contestId,
+        target.index,
+      );
+      if (!statement?.fetchedAt)
+        throw new Error('Wait for the original statement to download before using AI assistance.');
+      let code: string | undefined;
+      if (kind !== 'hint') {
+        const active = this.workspace.active();
+        if (
+          !active ||
+          active.problem.contestId !== target.contestId ||
+          active.problem.id !== target.index ||
+          active.problem.language !== target.language ||
+          (active.problem.collection ?? 'contest') !== target.collection
+        )
+          throw new Error('Problem changed; retry the operation.');
+        if (kind === 'debug') {
+          const document = await vscode.workspace.openTextDocument(
+            vscode.Uri.file(active.store.sourcePath(active.problem.id, active.problem.language)),
+          );
+          code = document.getText();
+        }
+      }
+      const result = await this.assistance.run(kind, target, statement.html, code);
+      post({ type: 'assistantResult', requestId, status: 'ready', result });
+    } catch (error) {
+      post({
+        type: 'assistantResult',
+        requestId,
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  private publishAssistantOptions() {
+    const message: AssistantHostMessage = {
+      type: 'assistantOptions',
+      options: this.ai.assistanceOptions(),
+    };
+    void this.dashboard?.webview.postMessage(message);
+    void this.statementPanel?.webview.postMessage(message);
+    this.workspace.publishAssistantOptions();
+  }
   private publishTranslationAvailability() {
+    this.publishAssistantOptions();
     const message: ContestHostMessage = {
       type: 'translationAvailability',
       enabled: this.ai.translationOptions().enabled,

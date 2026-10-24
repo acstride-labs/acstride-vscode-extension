@@ -177,3 +177,27 @@ it('notifies open views after translation preferences are saved through another 
   await editorSettings.saveTranslationOptions({ ...defaultTranslationOptions, enabled: true });
   expect(observed).toEqual([true, false]);
 });
+
+it('persists independent assistant prompts, languages, visibility and hint count', async () => {
+  const { defaultAssistantOptions } = await import('../../src/shared/ai-assistance');
+  const data = new Map<string, unknown>();
+  const settings = new AiSettings({
+    globalState: {
+      get: (key: string) => data.get(key),
+      update: async (key: string, value: unknown) => {
+        data.set(key, value);
+      },
+    },
+    secrets: { get: async () => undefined },
+  } as unknown as vscode.ExtensionContext);
+  const options = defaultAssistantOptions('ru');
+  options.hint.hintCount = 5;
+  options.debug.show = false;
+  options.coding.prompt = 'My prompt {{programmingLanguage}}';
+  const listener = vi.fn(),
+    subscription = settings.onTranslationChanged(listener);
+  await settings.saveAssistanceOptions(options);
+  expect(settings.assistanceOptions()).toEqual(options);
+  expect(listener).toHaveBeenCalledTimes(1);
+  subscription.dispose();
+});

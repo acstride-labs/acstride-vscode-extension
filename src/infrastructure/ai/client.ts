@@ -28,24 +28,24 @@ export class AiClient {
     messages: { role: 'system' | 'user'; content: string }[],
     signal?: AbortSignal,
     timeoutMs = this.timeoutMs,
+    validate?: (output: string) => void,
   ): Promise<string> {
     const checked = aiConfigSchema.parse(config);
     const base = normalizeAiBaseUrl(checked.baseUrl);
     const endpoint = base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
-    if (!this.cache) return this.perform(checked, key, messages, signal, timeoutMs);
+    const execute = async (requestSignal?: AbortSignal) => {
+      const output = await this.perform(checked, key, messages, requestSignal, timeoutMs);
+      validate?.(output);
+      return output;
+    };
+    if (!this.cache) return execute(signal);
     return this.cache.request(
       { endpoint, model: checked.model, messages, stream: false },
-      (cacheSignal) =>
-        this.perform(
-          checked,
-          key,
-          messages,
-          signal ? AbortSignal.any([signal, cacheSignal]) : cacheSignal,
-          timeoutMs,
-        ),
+      (cacheSignal) => execute(signal ? AbortSignal.any([signal, cacheSignal]) : cacheSignal),
       key,
     );
   }
+
   private async perform(
     config: AiConfig,
     key: string,

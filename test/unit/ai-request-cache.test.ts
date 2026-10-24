@@ -116,3 +116,29 @@ it('sanitizes cached translation output only at rendering, preserving formulas a
   expect(html).toContain('$$$x$$$');
   expect(html).toContain('cfide-asset:' + asset);
 });
+
+it('does not cache semantically invalid assistant output so retry reaches the model', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'ai-validate-'));
+  const cache = new AiRequestCache(path.join(dir, 'cache.json'), defaultAiCacheOptions);
+  const fetcher = vi.fn(async () =>
+    Response.json({ choices: [{ message: { content: 'invalid' } }] }),
+  );
+  const client = new AiClient(fetcher as unknown as typeof fetch, 30000, cache);
+  const validate = (output: string) => {
+    if (output !== 'valid') throw new Error('invalid hints');
+  };
+  const config = { baseUrl: 'https://models.example/v1', model: 'test' };
+  try {
+    await expect(
+      client.complete(config, '', input('hint').messages, undefined, 30000, validate),
+    ).rejects.toThrow('invalid hints');
+    fetcher.mockResolvedValueOnce(Response.json({ choices: [{ message: { content: 'valid' } }] }));
+    await expect(
+      client.complete(config, '', input('hint').messages, undefined, 30000, validate),
+    ).resolves.toBe('valid');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  } finally {
+    cache.dispose();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

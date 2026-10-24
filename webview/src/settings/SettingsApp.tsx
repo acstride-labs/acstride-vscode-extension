@@ -1,3 +1,4 @@
+import { AssistanceSettingsCard } from './AssistanceSettingsCard';
 import { languageIds } from '../../../src/domain/models';
 import { languages } from '../../../src/domain/languages';
 import React, { useEffect, useState } from 'react';
@@ -125,6 +126,7 @@ export function SettingsApp() {
       >
         <AiSettingsCard state={state?.ai} busy={disabled} />
         <TranslationSettingsCard options={state?.translationOptions} />
+        <AssistanceSettingsCard options={state?.assistanceOptions} />
         <AiCacheSettingsCard options={state?.aiCacheOptions} busy={disabled} />
       </div>
       <form

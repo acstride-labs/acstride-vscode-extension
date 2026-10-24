@@ -193,6 +193,18 @@ export class SettingsController implements vscode.Disposable {
       void this.panel?.webview.postMessage({ type: 'aiCacheSettingsSaved' });
       return this.publish();
     }
+    if (message.type === 'saveAssistanceSettings') {
+      try {
+        await this.ai.saveAssistanceOptions(message.options);
+        void this.panel?.webview.postMessage({ type: 'assistanceSettingsSaved' });
+      } catch (error) {
+        void this.panel?.webview.postMessage({
+          type: 'assistanceSettingsFailed',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return this.publish();
+    }
     if (message.type === 'saveTranslationSettings') {
       await this.ai.saveTranslationOptions(message.options);
       void this.panel?.webview.postMessage({ type: 'translationSettingsSaved' });
@@ -368,6 +380,7 @@ export class SettingsController implements vscode.Disposable {
     }
     const state: SettingsState = {
       translationOptions: this.ai.translationOptions(),
+      assistanceOptions: this.ai.assistanceOptions(),
       aiCacheOptions: this.ai.cacheOptions(),
       ai: { ...(await this.ai.state()), result: this.aiResult, notice: this.aiNotice },
       account: this.workspace.submissions?.accountState ?? { status: 'signedOut' },

@@ -1,3 +1,9 @@
+import {
+  assistantReadySchema,
+  assistantCopySchema,
+  assistantRequestSchema,
+  type AssistantHostMessage,
+} from './ai-assistance';
 import { languageIds } from '../domain/models';
 import { z } from 'zod';
 import type { Problem, RunResult, TestCase, TestResult } from '../domain/models';
@@ -14,6 +20,9 @@ export interface AccountState {
   error?: string;
 }
 export const requestSchema = z.discriminatedUnion('type', [
+  assistantRequestSchema,
+  assistantReadySchema,
+  assistantCopySchema,
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('draftState'), dirty: z.boolean() }),
   z.object({
@@ -34,6 +43,7 @@ export const requestSchema = z.discriminatedUnion('type', [
 ]);
 export type WebviewRequest = z.infer<typeof requestSchema>;
 export type HostMessage =
+  | AssistantHostMessage
   | { type: 'accountState'; account: AccountState }
   | { type: 'state'; problem: Problem; tests: TestCase[] }
   | { type: 'submitting'; submitting: boolean }

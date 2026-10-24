@@ -1,3 +1,8 @@
+import type {
+  AssistantHostMessage,
+  AssistantRequest,
+  AssistantOptions,
+} from '../shared/ai-assistance';
 import { languageIds } from '../domain/models';
 import {
   languageRunner,
@@ -37,6 +42,15 @@ export class WorkspaceController implements vscode.Disposable {
       type: 'accountState',
       account: this.submissions?.accountState ?? { status: 'signedOut' },
     });
+  }
+  assistanceHandler?: (
+    request: AssistantRequest,
+    post: (message: AssistantHostMessage) => void,
+  ) => Promise<void>;
+  assistantOptions?: () => AssistantOptions;
+  publishAssistantOptions() {
+    if (this.assistantOptions)
+      this.send({ type: 'assistantOptions', options: this.assistantOptions() });
   }
   submitHandler?: (snapshot: SubmissionSnapshot) => Promise<void>;
   private mutation: Promise<unknown> = Promise.resolve();
@@ -349,6 +363,21 @@ export class WorkspaceController implements vscode.Disposable {
           return;
         }
         const message = parsed.data;
+        if (message.type === 'assistantReady') {
+          this.publishAssistantOptions();
+          return;
+        }
+        if (message.type === 'copyAiCode') {
+          void vscode.env.clipboard.writeText(message.text).then(
+            () => this.send({ type: 'assistantCopied', requestId: message.requestId }),
+            (e) => this.error(e),
+          );
+          return;
+        }
+        if (message.type === 'aiAssist') {
+          void this.assistanceHandler?.(message, (reply) => this.send(reply));
+          return;
+        }
         if (message.type === 'stop') {
           this.abort?.abort();
           return;
@@ -378,6 +407,7 @@ export class WorkspaceController implements vscode.Disposable {
           .then(async () => {
             if (message.type === 'ready') {
               this.publishAccount();
+              this.publishAssistantOptions();
               void this.submissions?.refreshAccount();
               postLocale(this.view?.webview);
               await this.state();

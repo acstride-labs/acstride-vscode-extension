@@ -1,3 +1,9 @@
+import {
+  assistantReadySchema,
+  assistantCopySchema,
+  assistantRequestSchema,
+  type AssistantHostMessage,
+} from './ai-assistance';
 import { z } from 'zod';
 import {
   contestIdSchema,
@@ -9,6 +15,9 @@ import {
 } from '../domain/contest';
 import type { Language } from '../domain/models';
 export const contestRequestSchema = z.discriminatedUnion('type', [
+  assistantRequestSchema,
+  assistantReadySchema,
+  assistantCopySchema,
   z.object({ type: z.literal('ready') }),
   z
     .object({
@@ -62,6 +71,7 @@ export interface ContestViewState {
   defaultLanguage?: Language;
 }
 export type ContestHostMessage =
+  | AssistantHostMessage
   | { type: 'contestState'; state: ContestViewState }
   | { type: 'contestOverview' }
   | { type: 'translationAvailability'; enabled: boolean }

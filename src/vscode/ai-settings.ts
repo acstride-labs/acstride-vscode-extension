@@ -1,3 +1,8 @@
+import {
+  assistantOptionsSchema,
+  defaultAssistantOptions,
+  type AssistantOptions,
+} from '../shared/ai-assistance';
 import type * as vscode from 'vscode';
 import {
   defaultTranslationOptions,
@@ -50,6 +55,21 @@ export class AiSettings {
     await this.context.globalState.update(
       'cfide.translationOptions',
       translationOptionsSchema.parse(options),
+    );
+    for (const listener of AiSettings.translationListeners) listener();
+  }
+  assistanceOptions(): AssistantOptions {
+    const parsed = assistantOptionsSchema.safeParse(
+      this.context.globalState.get('cfide.assistanceOptions'),
+    );
+    return parsed.success
+      ? parsed.data
+      : defaultAssistantOptions(this.translationOptions().targetLanguage);
+  }
+  async saveAssistanceOptions(options: AssistantOptions) {
+    await this.context.globalState.update(
+      'cfide.assistanceOptions',
+      assistantOptionsSchema.parse(options),
     );
     for (const listener of AiSettings.translationListeners) listener();
   }

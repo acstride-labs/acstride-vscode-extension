@@ -778,3 +778,112 @@ button.contest-problem-row:hover {
     animation: none;
   }
 }
+
+/* Original AI glyph family and scoped assistant dialogs. */
+.ai-actions,
+.ai-action-button,
+.ai-settings-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-actions {
+  flex-wrap: wrap;
+}
+button.ai-action-button {
+  padding: 3px 6px;
+  font-size: 12px;
+  background: transparent;
+}
+button.ai-action-button:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+.ai-action-button svg {
+  flex-shrink: 0;
+}
+.workbench-ai-actions {
+  margin-left: auto;
+}
+.settings-section p.ai-competition-notice {
+  color: var(--vscode-editorWarning-foreground, var(--vscode-descriptionForeground));
+}
+.assistant-dialog {
+  width: min(760px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 6px;
+  padding: 20px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  box-shadow: 0 6px 24px var(--vscode-widget-shadow, #0006);
+}
+.assistant-dialog::backdrop {
+  background: #0007;
+}
+.assistant-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.assistant-dialog-header h2 {
+  font-size: 15px;
+}
+.assistant-dialog button {
+  flex-shrink: 0;
+}
+.assistant-prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.assistant-hints {
+  padding-left: 22px;
+}
+.assistant-hints li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.assistant-hint-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hint-eye {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+}
+.assistant-hidden,
+.assistant-note {
+  color: var(--vscode-descriptionForeground);
+}
+.assistant-editor {
+  border: 1px solid var(--vscode-panel-border);
+}
+.assistant-editor-title {
+  padding: 8px 12px;
+  background: var(--vscode-editorGroupHeader-tabsBackground);
+  font-family: var(--vscode-editor-font-family);
+}
+.assistant-editor textarea {
+  width: 100%;
+  height: min(56vh, 520px);
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+  line-height: 1.6;
+  border: 0;
+  border-radius: 0;
+  padding: 12px;
+  white-space: pre;
+  overflow: auto;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground, var(--vscode-foreground));
+  tab-size: 4;
+}

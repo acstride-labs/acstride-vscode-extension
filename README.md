@@ -151,3 +151,13 @@ Install a JDK (17 or newer recommended). Kotlin also requires the standalone Kot
 - Configure `cfide.java.compiler` (`javac`) or `cfide.kotlin.compiler` (`kotlinc`), `.args` for compiler arguments, `.runtime` (`java`) and `.runtimeArgs` for JVM flags. Each command accepts an executable name or absolute path, without embedded arguments. On Windows, the official Kotlin distribution's `bin/kotlinc.bat` is supported through a shell-free Java launcher.
 - Compilation has a separate 60-second limit; each test uses the configured local execution timeout. Temporary source snapshots and build outputs are removed after completion or cancellation.
 - Switch languages from the workbench selector. Existing source files are preserved. Codeforces submission offers the matching Java or Kotlin compiler versions supplied by the contest; choose a version compatible with your code and local toolchain.
+
+### AI Hint, Debug and Coding
+
+Configure and test your provider under **Settings → AI assistance**. The original English statement is used even while a translated view is selected. Please do not use these features during an ongoing contest.
+
+- **AI Hint**: open it beside the statement identity. By default three progressive hints are generated; each stays hidden until its eye button is clicked. Configure 1–10 hints.
+- **AI Debug**: open it on the workbench. It sends the English statement and the current solution text, including unsaved editor changes, and asks for issues and explanations without corrected source code.
+- **AI Coding**: open a read-only editor-style dialog with reference code in the current solution language. Copy it if needed; the extension never replaces source files or submits generated code. Generated references still need review and testing.
+
+Each feature has a visibility switch, response-language selector, and editable prompt. Save AI assistance settings to apply them. Restoring a default prompt requires confirmation and updates only the draft until saved. `{{language}}`, `{{programmingLanguage}}`, and `{{hintCount}}` are substituted before requesting the model; the original prompt is preserved. Statement/source data is provided separately. Tasks share the configured input/output cache and duplicate in-flight requests are merged. Results for an old problem cannot appear in another problem’s dialog.

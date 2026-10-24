@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0
+
+- Add AI Hint with individually hidden progressive hints, AI Debug with issue-only analysis of the current unsaved source, and AI Coding with a read-only reference-code dialog and copy action. Always use the original English statement and the shared AI client/cache. No source replacement or automatic submission is provided.
+- Add per-feature visibility, response language, editable English prompts with metadata placeholders, configurable hint count, and confirmation before restoring defaults. Show an ongoing-contest usage warning beside each visibility switch.
+- Draw an original SVG icon family for translation, hints, debugging and reference coding with a shared AI badge.
+
 ## 0.15.5
 
 - Remove the redundant Python downloader note and show Java/Kotlin-specific setup guidance for the selected language.
