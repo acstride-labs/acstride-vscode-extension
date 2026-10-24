@@ -135,11 +135,7 @@ function App() {
             <span
               className="submission-action"
               tabIndex={account.status !== 'signedIn' ? 0 : undefined}
-              title={
-                account.status === 'signedIn'
-                  ? t('One-click submit')
-                  : t('Sign in on the Settings page to enable one-click submission.')
-              }
+              aria-describedby={account.status !== 'signedIn' ? 'submission-login-hint' : undefined}
             >
               <button
                 className="secondary"
@@ -148,19 +144,19 @@ function App() {
               >
                 {t(submitting ? 'Preparing submission…' : 'One-click submit')}
               </button>
+              {account.status !== 'signedIn' && (
+                <span className="submission-login-hint" id="submission-login-hint">
+                  {t(
+                    account.status === 'checking'
+                      ? 'Checking Codeforces login…'
+                      : 'Sign in on the Settings page to enable one-click submission.',
+                  )}{' '}
+                  <button className="text-link" onClick={() => send({ type: 'openLogin' })}>
+                    {t('Go to sign in')}
+                  </button>
+                </span>
+              )}
             </span>
-            {account.status !== 'signedIn' && (
-              <span className="submission-login-hint">
-                {t(
-                  account.status === 'checking'
-                    ? 'Checking Codeforces login…'
-                    : 'Sign in on the Settings page to enable one-click submission.',
-                )}{' '}
-                <button className="text-link" onClick={() => send({ type: 'openLogin' })}>
-                  {t('Go to sign in')}
-                </button>
-              </span>
-            )}
           </>
         )}
         {running && (

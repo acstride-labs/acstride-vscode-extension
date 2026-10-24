@@ -584,13 +584,31 @@ button:focus-visible,
 
 .submission-action {
   display: inline-flex;
+  position: relative;
 }
 .submission-action button:disabled {
   pointer-events: none;
 }
 .submission-login-hint {
-  color: var(--vscode-descriptionForeground);
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editor-background));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, #0005);
   font-size: 12px;
+  white-space: normal;
+}
+.submission-action:hover .submission-login-hint,
+.submission-action:focus-within .submission-login-hint {
+  display: block;
 }
 button.text-link {
   background: transparent;
