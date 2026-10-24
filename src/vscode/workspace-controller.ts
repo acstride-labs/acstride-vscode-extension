@@ -1,3 +1,9 @@
+import { languageIds } from '../domain/models';
+import {
+  languageRunner,
+  languageRunConfig,
+  environmentProbe,
+} from '../infrastructure/execution/language-runner';
 import * as vscode from 'vscode';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -6,8 +12,7 @@ import type { Language, Problem, ProblemTarget } from '../domain/models';
 import { languages } from '../domain/languages';
 import { FileWorkspaceStore } from '../infrastructure/storage/file-workspace-store';
 import { instantiateTemplate, readSourceTemplate } from '../infrastructure/storage/source-template';
-import { CppRunner } from '../infrastructure/execution/cpp-runner';
-import { PythonRunner } from '../infrastructure/execution/python-runner';
+
 import { RunTests } from '../application/run-tests';
 import { requestSchema, type HostMessage } from '../shared/protocol';
 import { webviewHtml } from './webview-html';
@@ -107,7 +112,7 @@ export class WorkspaceController implements vscode.Disposable {
         if (!resolved) {
           const store = this.localStore();
           for (const p of await store.listProblems())
-            for (const language of ['cpp', 'python'] as const)
+            for (const language of languageIds)
               if (store.sourcePath(p.id, language) === file)
                 resolved = { store, problem: { ...p, language } };
         }
@@ -153,22 +158,12 @@ export class WorkspaceController implements vscode.Disposable {
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'cfide-env-'));
     try {
       const file = path.join(folder, languages[language].sourceFile);
-      await fs.writeFile(
-        file,
-        language === 'cpp' ? '#include <iostream>\nint main(){std::cout << 5;}' : 'print(5)\n',
-      );
+      await fs.writeFile(file, environmentProbe[language]);
       const config = vscode.workspace.getConfiguration('cfide');
-      const result = await (language === 'cpp' ? new CppRunner() : new PythonRunner()).run(
+      const result = await languageRunner(language).run(
         file,
         [{ id: 'check', input: '', expected: '5' }],
-        {
-          command: config.get<string>(
-            language === 'cpp' ? 'cpp.compiler' : 'python.interpreter',
-            language === 'cpp' ? 'g++' : 'python3',
-          ),
-          args: config.get<string[]>(language + '.args', []),
-          timeoutMs: 3000,
-        },
+        { ...languageRunConfig(language, config), timeoutMs: 3000 },
         new AbortController().signal,
       );
       if (result.compileError || result.results[0]?.verdict !== 'AC')
@@ -509,24 +504,17 @@ export class WorkspaceController implements vscode.Disposable {
     this.send({ type: 'running', running: true, testId });
     try {
       const { store, problem } = await this.snapshot();
-      const config = vscode.workspace.getConfiguration('cfide'),
-        python = problem.language === 'python';
-      const command = python
-        ? config.get<string>('python.interpreter', 'python3')
-        : config.get<string>('cpp.compiler', 'g++');
+      const config = languageRunConfig(
+        problem.language,
+        vscode.workspace.getConfiguration('cfide'),
+      );
+      const command = config.command;
       this.output.appendLine(
         'Running ' + store.sourcePath(problem.id, problem.language) + ' with ' + command,
       );
-      const result = await new RunTests(
-        store,
-        python ? new PythonRunner() : new CppRunner(),
-      ).execute(
+      const result = await new RunTests(store, languageRunner(problem.language)).execute(
         problem.id,
-        {
-          command,
-          args: config.get<string[]>(python ? 'python.args' : 'cpp.args', []),
-          timeoutMs: config.get<number>('run.timeoutMs', 2000),
-        },
+        config,
         this.abort.signal,
         (result) => this.send({ type: 'progress', result }),
         testId,

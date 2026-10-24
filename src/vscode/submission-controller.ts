@@ -1,3 +1,4 @@
+import { matchesSubmissionLanguage } from '../domain/languages';
 import * as vscode from 'vscode';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -175,9 +176,7 @@ export class SubmissionController implements vscode.Disposable {
       const account = { handle: this.accountState.handle! };
       const offered = await this.tool.languages(problem.contestId);
       const choices = offered.filter((language) =>
-        problem.language === 'python'
-          ? /python|pypy/i.test(language.name)
-          : /(?:c|g)\+\+/i.test(language.name),
+        matchesSubmissionLanguage(problem.language, language.name),
       );
       if (!choices.length)
         throw new Error(t('No matching submission language is available for this solution.'));

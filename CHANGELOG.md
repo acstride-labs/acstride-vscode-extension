@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0
+
+- Add Java and Kotlin throughout default-language selection, templates, environment checks, local compilation/testing, and Codeforces submission language selection. Preserve independent source files when switching languages.
+- Add compiler and JVM settings, with localized labels in all four interfaces. Reuse existing timeout, cancellation, output limits and difference reporting.
+
 ## 0.14.2
 
 - Rename the local test panel to Workbench across all four interface languages.

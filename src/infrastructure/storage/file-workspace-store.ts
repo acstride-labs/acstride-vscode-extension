@@ -1,3 +1,4 @@
+import { languageIds } from '../../domain/models';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { importTimestamp } from './import-order';
@@ -15,7 +16,7 @@ const manifestSchema = z.object({
     z.object({
       id: identifier,
       title: z.string().max(200),
-      language: z.enum(['cpp', 'python']).default('cpp'),
+      language: z.enum(languageIds).default('cpp'),
       importedAt: z.number().optional(),
     }),
   ),
@@ -104,7 +105,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
   async createProblem(id: string, title: string, source: string, language: Language = 'cpp') {
     return this.exclusive(async () => {
       identifier.parse(id);
-      z.enum(['cpp', 'python']).parse(language);
+      z.enum(languageIds).parse(language);
       z.string().min(1).max(200).parse(title);
       const manifest = await this.manifest();
       if (manifest.problems.some((p) => p.id === id))
@@ -124,7 +125,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
   }
   async selectLanguage(id: string, language: Language, template: string) {
     return this.exclusive(async () => {
-      z.enum(['cpp', 'python']).parse(language);
+      z.enum(languageIds).parse(language);
       const manifest = await this.manifest(),
         problem = manifest.problems.find((p) => p.id === id);
       if (!problem) throw new Error('Unknown problem.');

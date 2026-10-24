@@ -1,9 +1,10 @@
+import { languageIds } from '../domain/models';
 import { z } from 'zod';
 import type { Problem, RunResult, TestCase, TestResult } from '../domain/models';
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/);
 export const problemTargetSchema = z.object({
   id,
-  language: z.enum(['cpp', 'python']),
+  language: z.enum(languageIds),
   contestId: z.number().int().positive().optional(),
   collection: z.literal('standalone').optional(),
 });

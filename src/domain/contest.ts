@@ -1,3 +1,4 @@
+import { languageIds } from './models';
 import { z } from 'zod';
 
 export const contestIdSchema = z.number().int().positive().max(999999999);
@@ -15,7 +16,7 @@ export const contestRecordSchema = z.object({
   schemaVersion: z.literal(1),
   contest: contestSchema,
   archived: z.boolean().default(false),
-  defaultLanguage: z.enum(['cpp', 'python']).default('cpp'),
+  defaultLanguage: z.enum(languageIds).default('cpp'),
   problems: z
     .array(
       z.object({

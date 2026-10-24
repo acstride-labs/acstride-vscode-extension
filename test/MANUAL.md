@@ -99,3 +99,7 @@ Earlier versions' C++/Python AC/WA GUI checks remain relevant for the local runn
 - Both embedded components were built from the same pinned clean CF Tool commit. `npm run package` and `npm run verify:vsix` passed for `ac-stride-0.11.0-darwin-arm64.vsix`, including extracted executable startup, target/hashes/notices and no system Go/Python requirement.
 - The extension contains no direct network calls, Codeforces sample parser, image downloader or source-development fallback. Webview CSP blocks remote image loads; successful CLI assets map to local Webview resources. Existing workspace layouts, code, custom tests and cached statements remain supported.
 - Windows/Linux/macOS Intel CI must independently complete; these local checks establish macOS arm64 only. This is not a Marketplace publication or a real automatic-submission verification.
+
+## Java / Kotlin
+
+Install JDK and Kotlin compiler. Run each environment check; configure absolute tool paths and JVM arguments if needed. Choose Java/Kotlin as default, import a contest, standalone problem and local problem. Run the bundled two-integer sum template with matching and mismatching expectations; inspect the first-token difference, run one case, stop a run, and test a loop timeout. Switch languages and back, verifying source files and shared test drafts remain intact. Verify submission choices only offer the selected language and cancellation of the confirmation sends nothing. On Windows test an official kotlinc.bat installation under a path containing spaces.

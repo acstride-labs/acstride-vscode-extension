@@ -34,5 +34,17 @@
   "setting.cfide.cpp.args": "コンパイラー引数。シェルを介さずに渡されます。",
   "setting.cfide.run.timeoutMs": "テストごとの制限時間（ミリ秒）",
   "setting.cfide.cpp.templatePath": "C++ テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
-  "setting.cfide.solution.defaultLanguage": "新規コンテスト、Codeforces の問題、ローカル練習の既定言語。"
+  "setting.cfide.solution.defaultLanguage": "新規コンテスト、Codeforces の問題、ローカル練習の既定言語。",
+  "setting.cfide.java.compiler": "コンパイラー",
+  "setting.cfide.java.args": "コンパイラー引数（JSON 配列）",
+  "setting.cfide.java.runtime": "JVM 実行コマンド",
+  "setting.cfide.java.runtimeArgs": "JVM 引数（JSON 配列）",
+  "setting.cfide.java.templatePath": "Java テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
+  "setting.cfide.java.templateCode": "新しい Java 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
+  "setting.cfide.kotlin.compiler": "コンパイラー",
+  "setting.cfide.kotlin.args": "コンパイラー引数（JSON 配列）",
+  "setting.cfide.kotlin.runtime": "JVM 実行コマンド",
+  "setting.cfide.kotlin.runtimeArgs": "JVM 引数（JSON 配列）",
+  "setting.cfide.kotlin.templatePath": "Kotlin テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
+  "setting.cfide.kotlin.templateCode": "新しい Kotlin 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。"
 }

@@ -36,6 +36,7 @@ vi.mock('vscode', () => ({
     }),
   },
 }));
+import { settingsKeys } from '../../src/shared/settings-protocol';
 import { SettingsController } from '../../src/vscode/settings-controller';
 import type { WorkspaceController } from '../../src/vscode/workspace-controller';
 import type { ContestController } from '../../src/vscode/contest-controller';
@@ -124,6 +125,8 @@ describe('settings persistence adapter', () => {
     expect(f.workspace.checkEnvironment.mock.calls).toEqual([
       ['cpp', false],
       ['python', false],
+      ['java', false],
+      ['kotlin', false],
     ]);
     expect(f.environments().cpp.status).toBe('failed');
     expect(f.environments().cpp.message).toBe('compiler missing');
@@ -163,7 +166,7 @@ describe('settings persistence adapter', () => {
     expect(mock.workspace.get('run.timeoutMs')).toBe(3000);
     expect(mock.user.get('run.timeoutMs')).toBe(2500);
     expect(mock.updates.some((u) => u.key === 'ui.language')).toBe(false);
-    expect(mock.updates.length).toBe(22);
+    expect(mock.updates.length).toBe(Object.keys(settingsKeys).length * 2);
   });
   it('validates first and blocks untrusted execution settings, unavailable workspaces and stale scopes', async () => {
     const f = fixture();

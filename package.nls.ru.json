@@ -34,5 +34,17 @@
   "setting.cfide.cpp.args": "Аргументы компилятора передаются без оболочки.",
   "setting.cfide.run.timeoutMs": "Лимит времени на тест (мс)",
   "setting.cfide.cpp.templatePath": "Необязательный полный путь к шаблону C++; поддерживается ${PROBLEM_ID}.",
-  "setting.cfide.solution.defaultLanguage": "Язык по умолчанию для новых соревнований, задач Codeforces и локальных задач."
+  "setting.cfide.solution.defaultLanguage": "Язык по умолчанию для новых соревнований, задач Codeforces и локальных задач.",
+  "setting.cfide.java.compiler": "Компилятор",
+  "setting.cfide.java.args": "Аргументы компилятора (JSON-массив)",
+  "setting.cfide.java.runtime": "Среда выполнения JVM",
+  "setting.cfide.java.runtimeArgs": "Аргументы JVM (массив JSON)",
+  "setting.cfide.java.templatePath": "Необязательный полный путь к шаблону Java; поддерживается ${PROBLEM_ID}.",
+  "setting.cfide.java.templateCode": "Начальный код новых решений на Java. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется.",
+  "setting.cfide.kotlin.compiler": "Компилятор",
+  "setting.cfide.kotlin.args": "Аргументы компилятора (JSON-массив)",
+  "setting.cfide.kotlin.runtime": "Среда выполнения JVM",
+  "setting.cfide.kotlin.runtimeArgs": "Аргументы JVM (массив JSON)",
+  "setting.cfide.kotlin.templatePath": "Необязательный полный путь к шаблону Kotlin; поддерживается ${PROBLEM_ID}.",
+  "setting.cfide.kotlin.templateCode": "Начальный код новых решений на Kotlin. Поддерживает ${PROBLEM_ID}. Пустое значение — использовать файл шаблона или стандартный шаблон. Существующий код не меняется."
 }

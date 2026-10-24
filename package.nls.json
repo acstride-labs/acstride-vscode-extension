@@ -34,5 +34,17 @@
   "setting.cfide.cpp.args": "Compiler arguments, passed without a shell.",
   "setting.cfide.run.timeoutMs": "Time limit per test (ms)",
   "setting.cfide.cpp.templatePath": "Optional absolute path to a C++ template; supports ${PROBLEM_ID}.",
-  "setting.cfide.solution.defaultLanguage": "Default programming language for newly imported contests, Codeforces problems and local practice."
+  "setting.cfide.solution.defaultLanguage": "Default programming language for newly imported contests, Codeforces problems and local practice.",
+  "setting.cfide.java.compiler": "Compiler",
+  "setting.cfide.java.args": "Compiler arguments (JSON array)",
+  "setting.cfide.java.runtime": "JVM runtime",
+  "setting.cfide.java.runtimeArgs": "JVM arguments (JSON array)",
+  "setting.cfide.java.templatePath": "Optional absolute path to a Java template; supports ${PROBLEM_ID}.",
+  "setting.cfide.java.templateCode": "Starter Java code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
+  "setting.cfide.kotlin.compiler": "Compiler",
+  "setting.cfide.kotlin.args": "Compiler arguments (JSON array)",
+  "setting.cfide.kotlin.runtime": "JVM runtime",
+  "setting.cfide.kotlin.runtimeArgs": "JVM arguments (JSON array)",
+  "setting.cfide.kotlin.templatePath": "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.",
+  "setting.cfide.kotlin.templateCode": "Starter Kotlin code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced."
 }

@@ -1,3 +1,5 @@
+import { languageIds } from '../domain/models';
+import { languageRunConfig } from '../infrastructure/execution/language-runner';
 import { AiSettings } from './ai-settings';
 import { AiClient } from '../infrastructure/ai/client';
 import type { AiState } from '../shared/ai-protocol';
@@ -73,6 +75,11 @@ export class SettingsController implements vscode.Disposable {
             'cfide.cpp.args',
             'cfide.python.interpreter',
             'cfide.python.args',
+            ...['java', 'kotlin'].flatMap((language) =>
+              ['compiler', 'args', 'runtime', 'runtimeArgs'].map(
+                (key) => `cfide.${language}.${key}`,
+              ),
+            ),
           ].some((key) => event.affectsConfiguration(key))
         )
           this.environments = {};
@@ -92,9 +99,20 @@ export class SettingsController implements vscode.Disposable {
   private executionFingerprint() {
     const config = vscode.workspace.getConfiguration('cfide');
     return JSON.stringify(
-      ['cpp.compiler', 'cpp.args', 'python.interpreter', 'python.args'].map((key) =>
-        config.get(key),
-      ),
+      [
+        'cpp.compiler',
+        'cpp.args',
+        'python.interpreter',
+        'python.args',
+        'java.compiler',
+        'java.args',
+        'java.runtime',
+        'java.runtimeArgs',
+        'kotlin.compiler',
+        'kotlin.args',
+        'kotlin.runtime',
+        'kotlin.runtimeArgs',
+      ].map((key) => config.get(key)),
     );
   }
   private async open(tab?: string) {
@@ -283,15 +301,9 @@ export class SettingsController implements vscode.Disposable {
           throw new Error('Trust this workspace before changing execution settings.');
         const config = vscode.workspace.getConfiguration('cfide');
         const before = this.executionFingerprint();
-        const selected =
-          message.type === 'checkAllEnvironments'
-            ? (['cpp', 'python'] as const)
-            : [message.language];
+        const selected = message.type === 'checkAllEnvironments' ? languageIds : [message.language];
         for (const language of selected) {
-          const command = config.get<string>(
-            language === 'cpp' ? 'cpp.compiler' : 'python.interpreter',
-            language === 'cpp' ? 'g++' : 'python3',
-          );
+          const command = languageRunConfig(language, config).command;
           this.environments[language] = { status: 'checking', command };
           await this.publish();
           try {
@@ -332,10 +344,10 @@ export class SettingsController implements vscode.Disposable {
     ) as SettingsValues;
     const account = this.workspace.submissions?.accountState;
     if (account?.status === 'signedIn' && account.handle) values.handle = account.handle;
-    const defaultTemplates = { cpp: '', python: '' };
-    const templatePreviews = { cpp: '', python: '' };
+    const defaultTemplates = { cpp: '', python: '', java: '', kotlin: '' };
+    const templatePreviews = { cpp: '', python: '', java: '', kotlin: '' };
     const templateWarnings: SettingsState['templateWarnings'] = {};
-    for (const language of ['cpp', 'python'] as const) {
+    for (const language of languageIds) {
       const bundled = path.join(
         this.context.extensionPath,
         'resources',
@@ -345,10 +357,8 @@ export class SettingsController implements vscode.Disposable {
       defaultTemplates[language] = await readSourceTemplate({ bundled });
       try {
         templatePreviews[language] = await readSourceTemplate({
-          code: values[language === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode'],
-          file: vscode.workspace.isTrusted
-            ? values[language === 'cpp' ? 'cppTemplate' : 'pythonTemplate']
-            : undefined,
+          code: values[`${language}TemplateCode`],
+          file: vscode.workspace.isTrusted ? values[`${language}Template`] : undefined,
           bundled,
         });
       } catch {

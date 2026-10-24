@@ -1,3 +1,4 @@
+import { languages } from '../../src/domain/languages';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { AccountState, HostMessage, WebviewRequest } from '../../src/shared/protocol';
@@ -115,7 +116,7 @@ function App() {
           title={t('Switch language')}
           onClick={() => send({ type: 'switchLanguage' })}
         >
-          {problem?.language === 'python' ? 'Python 3' : 'C++'} ▾
+          {languages[problem?.language || 'cpp'].label} ▾
         </button>
         <button
           disabled={running || anyDirty || !problem}

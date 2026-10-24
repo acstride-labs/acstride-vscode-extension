@@ -74,6 +74,10 @@ try {
     )
   )
     throw new Error('VSIX leaked build tools or the unbundled helper');
+  for (const template of ['default.cpp', 'default.py', 'default.java', 'default.kt']) {
+    if (!names.includes(`extension/resources/templates/${template}`))
+      throw new Error(`Missing solution template: ${template}`);
+  }
   const bundle = path.join(temp, 'extension', 'resources', 'downloader');
   await verifyCfTool(path.join(temp, 'extension', 'resources', 'cf-tool'));
   const embeddedManifest = JSON.parse(

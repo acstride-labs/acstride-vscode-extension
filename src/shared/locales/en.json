@@ -406,5 +406,12 @@
   "Go to AI assistance settings": "Go to AI assistance settings",
   "Changes are saved automatically.": "Changes are saved automatically.",
   "Translation prompt cannot be empty.": "Translation prompt cannot be empty.",
-  "This restores the default prompt and saves it immediately.": "This restores the default prompt and saves it immediately."
+  "This restores the default prompt and saves it immediately.": "This restores the default prompt and saves it immediately.",
+  "JVM runtime": "JVM runtime",
+  "JVM arguments (JSON array)": "JVM arguments (JSON array)",
+  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().",
+  "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Optional absolute path to a Java template; supports ${PROBLEM_ID}.",
+  "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Java code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced.",
+  "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.",
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "Starter Kotlin code for new solutions. Supports ${PROBLEM_ID}. Leave empty to use the template file or built-in default. Existing code is never replaced."
 }

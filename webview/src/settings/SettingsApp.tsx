@@ -1,3 +1,5 @@
+import { languageIds } from '../../../src/domain/models';
+import { languages } from '../../../src/domain/languages';
 import React, { useEffect, useState } from 'react';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
@@ -14,7 +16,13 @@ export function SettingsApp() {
   const [state, setState] = useState<SettingsState>();
   const [values, setValues] = useState<SettingsValues>();
   const [templateLanguage, setTemplateLanguage] = useState<Language>('cpp');
-  const [templateDrafts, setTemplateDrafts] = useState({ cpp: '', python: '' });
+  const [templateDrafts, setTemplateDrafts] = useState({
+    cpp: '',
+    python: '',
+    java: '',
+    kotlin: '',
+  });
+  const [jvmArgs, setJvmArgs] = useState<Record<string, string>>({});
   const [cppArgs, setCppArgs] = useState('[]'),
     [pythonArgs, setPythonArgs] = useState('[]');
   const [dirty, setDirty] = useState(false),
@@ -40,6 +48,14 @@ export function SettingsApp() {
     if (!state || dirty) return;
     setValues(state.values);
     setTemplateDrafts(state.templatePreviews);
+    setJvmArgs(
+      Object.fromEntries(
+        ['javaArgs', 'javaRuntimeArgs', 'kotlinArgs', 'kotlinRuntimeArgs'].map((key) => [
+          key,
+          JSON.stringify(state.values[key as keyof SettingsValues]),
+        ]),
+      ),
+    );
     setCppArgs(JSON.stringify(state.values.cppArgs));
     setPythonArgs(JSON.stringify(state.values.pythonArgs));
   }, [state, dirty]);
@@ -120,11 +136,23 @@ export function SettingsApp() {
               p: unknown = JSON.parse(pythonArgs);
             if (![c, p].every((a) => Array.isArray(a) && a.every((v) => typeof v === 'string')))
               throw new Error();
+            const parsedJvm: Record<string, string[]> = {};
+            for (const [key, text] of Object.entries(jvmArgs)) {
+              const parsed: unknown = JSON.parse(text);
+              if (!Array.isArray(parsed) || !parsed.every((v) => typeof v === 'string'))
+                throw new Error();
+              parsedJvm[key] = parsed;
+            }
             setError('');
             send({
               type: 'saveSettings',
               scope: state.scope,
-              values: { ...values, cppArgs: c as string[], pythonArgs: p as string[] },
+              values: {
+                ...values,
+                ...parsedJvm,
+                cppArgs: c as string[],
+                pythonArgs: p as string[],
+              },
             });
           } catch {
             setError('Arguments must be JSON arrays of strings.');
@@ -221,12 +249,12 @@ export function SettingsApp() {
                 {t('Auto-check')}
               </button>
             </div>
-            {(['cpp', 'python'] as const).map((language) => {
+            {languageIds.map((language) => {
               const result = state?.environments[language];
               return (
                 <div className="environment-item" key={language}>
                   <div className="environment-row">
-                    <strong>{language === 'cpp' ? 'C++' : 'Python 3'}</strong>
+                    <strong>{languages[language].label}</strong>
                     <code>{result?.command}</code>
                     <span
                       className={
@@ -342,8 +370,11 @@ export function SettingsApp() {
                     value={values.defaultLanguage}
                     onChange={(e) => update('defaultLanguage', e.target.value)}
                   >
-                    <option value="cpp">C++</option>
-                    <option value="python">Python 3</option>
+                    {languageIds.map((language) => (
+                      <option key={language} value={language}>
+                        {languages[language].label}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <small>
@@ -359,8 +390,11 @@ export function SettingsApp() {
                         value={templateLanguage}
                         onChange={(e) => setTemplateLanguage(e.target.value as Language)}
                       >
-                        <option value="cpp">C++</option>
-                        <option value="python">Python 3</option>
+                        {languageIds.map((language) => (
+                          <option key={language} value={language}>
+                            {languages[language].label}
+                          </option>
+                        ))}
                       </select>
                     </label>
                     <button
@@ -369,10 +403,7 @@ export function SettingsApp() {
                       onClick={() => {
                         const code = state.defaultTemplates[templateLanguage];
                         setTemplateDrafts((old) => ({ ...old, [templateLanguage]: code }));
-                        update(
-                          templateLanguage === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode',
-                          code,
-                        );
+                        update(`${templateLanguage}TemplateCode`, code);
                       }}
                     >
                       {t('Restore default template')}
@@ -391,10 +422,7 @@ export function SettingsApp() {
                       onChange={(e) => {
                         const code = e.target.value;
                         setTemplateDrafts((old) => ({ ...old, [templateLanguage]: code }));
-                        update(
-                          templateLanguage === 'cpp' ? 'cppTemplateCode' : 'pythonTemplateCode',
-                          code,
-                        );
+                        update(`${templateLanguage}TemplateCode`, code);
                       }}
                     />
                   </label>
@@ -410,6 +438,52 @@ export function SettingsApp() {
                   </small>
                 )}
               </section>
+              {(['java', 'kotlin'] as const).map((language) => (
+                <section className="card settings-section" key={language}>
+                  <h2>{languages[language].label}</h2>
+                  <label>
+                    {t('Compiler')}
+                    <input
+                      required
+                      value={values[`${language}Compiler`]}
+                      onChange={(e) => update(`${language}Compiler`, e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    {t('Compiler arguments (JSON array)')}
+                    <input
+                      value={jvmArgs[`${language}Args`] || '[]'}
+                      onChange={(e) => {
+                        setJvmArgs((d) => ({ ...d, [`${language}Args`]: e.target.value }));
+                        setDirty(true);
+                      }}
+                    />
+                  </label>
+                  <label>
+                    {t('JVM runtime')}
+                    <input
+                      required
+                      value={values[`${language}Runtime`]}
+                      onChange={(e) => update(`${language}Runtime`, e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    {t('JVM arguments (JSON array)')}
+                    <input
+                      value={jvmArgs[`${language}RuntimeArgs`] || '[]'}
+                      onChange={(e) => {
+                        setJvmArgs((d) => ({ ...d, [`${language}RuntimeArgs`]: e.target.value }));
+                        setDirty(true);
+                      }}
+                    />
+                  </label>
+                  <small>
+                    {t(
+                      'Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().',
+                    )}
+                  </small>
+                </section>
+              ))}
               <section className="card settings-section">
                 <h2>C++</h2>
                 <label>

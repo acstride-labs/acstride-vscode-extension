@@ -1,8 +1,8 @@
 {
   "name": "cfide",
   "displayName": "AC-Stride",
-  "description": "Codeforces workbench: automatic problem downloads, C++/Python tests, confirmed submission and official verdict notifications.",
-  "version": "0.14.2",
+  "description": "Codeforces workbench: automatic problem downloads, C++/Python/Java/Kotlin tests, confirmed submission and official verdict notifications.",
+  "version": "0.15.0",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -266,10 +266,92 @@
           "type": "string",
           "enum": [
             "cpp",
-            "python"
+            "python",
+            "java",
+            "kotlin"
           ],
           "default": "cpp",
           "description": "%setting.cfide.solution.defaultLanguage%"
+        },
+        "cfide.java.compiler": {
+          "type": "string",
+          "default": "javac",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.java.compiler%"
+        },
+        "cfide.java.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%setting.cfide.java.args%"
+        },
+        "cfide.java.runtime": {
+          "type": "string",
+          "default": "java",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.java.runtime%"
+        },
+        "cfide.java.runtimeArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%setting.cfide.java.runtimeArgs%"
+        },
+        "cfide.java.templatePath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.java.templatePath%"
+        },
+        "cfide.java.templateCode": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1000000,
+          "description": "%setting.cfide.java.templateCode%"
+        },
+        "cfide.kotlin.compiler": {
+          "type": "string",
+          "default": "kotlinc",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.kotlin.compiler%"
+        },
+        "cfide.kotlin.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%setting.cfide.kotlin.args%"
+        },
+        "cfide.kotlin.runtime": {
+          "type": "string",
+          "default": "java",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.kotlin.runtime%"
+        },
+        "cfide.kotlin.runtimeArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%setting.cfide.kotlin.runtimeArgs%"
+        },
+        "cfide.kotlin.templatePath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "%setting.cfide.kotlin.templatePath%"
+        },
+        "cfide.kotlin.templateCode": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1000000,
+          "description": "%setting.cfide.kotlin.templateCode%"
         }
       }
     }

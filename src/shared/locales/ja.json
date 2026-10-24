@@ -406,5 +406,12 @@
   "Go to AI assistance settings": "AI アシスト設定へ",
   "Changes are saved automatically.": "変更は自動的に保存されます。",
   "Translation prompt cannot be empty.": "翻訳プロンプトは空にできません。",
-  "This restores the default prompt and saves it immediately.": "既定のプロンプトに戻し、すぐに保存します。"
+  "This restores the default prompt and saves it immediately.": "既定のプロンプトに戻し、すぐに保存します。",
+  "JVM runtime": "JVM 実行コマンド",
+  "JVM arguments (JSON array)": "JVM 引数（JSON 配列）",
+  "Install a JDK for Java. Kotlin also requires the Kotlin compiler. Java solutions must use class Main; Kotlin solutions must define main().": "Java には JDK、Kotlin には追加で Kotlin コンパイラが必要です。Java は Main クラス、Kotlin は main() 関数を使用してください。",
+  "Optional absolute path to a Java template; supports ${PROBLEM_ID}.": "Java テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
+  "Initial Java code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Java 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。",
+  "Optional absolute path to a Kotlin template; supports ${PROBLEM_ID}.": "Kotlin テンプレートの絶対パス（任意）。${PROBLEM_ID} に対応します。",
+  "Initial Kotlin code for new solutions. Supports ${PROBLEM_ID}. Empty uses the template file or built-in default. Existing code is never overwritten.": "新しい Kotlin 解答の初期コード。${PROBLEM_ID} に対応しています。空欄ならファイル指定または標準テンプレートを使います。既存のコードは上書きしません。"
 }

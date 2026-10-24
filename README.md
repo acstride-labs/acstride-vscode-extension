@@ -9,13 +9,13 @@ The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compati
 with existing installations. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.13 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. Version 0.13 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
 - Multiple contest folders, independent problems, countdowns and incremental downloads when problems are released. The sidebar groups Codeforces contests, independent Codeforces problems and local practice; each contest opens a compact problem list with official attempt-state icons.
 - Public statements with sanitized HTML, local math rendering, supported image caching and official samples.
-- Separate C++ and Python solutions for each problem, sharing read-only official samples and editable custom tests.
+- Separate C++, Python, Java and Kotlin solutions for each problem, sharing read-only official samples and editable custom tests.
 - Compilation/execution, cancellation, stdout/stderr, local AC/WA/RE/TLE/OLE/CE and first-token output differences.
 - Public submissions by a configurable handle, official verdicts including pretests vs final acceptance, cached rankings, top 100, nearby-handle and search views.
 - One-click submission with an official-language picker and a native confirmation dialog showing the account, problem, language and file. Receipt reconciliation binds notifications to an exact submission ID; pretests and final acceptance remain distinct.
@@ -71,7 +71,7 @@ Environment checks are at the top of Settings. **Check all** (自动检测) chec
 
 Under **Code templates**, choose C++ or Python on the left and paste starter code in the editor on the right. Drafts are independent, so switching the language does not lose edits. Save Settings to persist them at the selected user/workspace scope; Restore default fills the built-in template. `${PROBLEM_ID}` inserts the problem index. Templates are used only when creating a new solution file (including the first switch to a language); existing solutions are never replaced. Inline code takes priority over the legacy template-file setting. Empty inline code falls back to that file or the bundled default.
 
-- `cfide.solution.defaultLanguage`: `cpp` or `python` for newly imported contests/problems and local practice.
+- `cfide.solution.defaultLanguage`: `cpp`, `python`, `java` or `kotlin` for newly imported contests/problems and local practice.
 - `cfide.ui.language`: `auto` (follow VS Code), `en`, `zh-CN`, `ru`, `ja`.
 - `cfide.codeforces.handle`: optional public read-only handle; no password is needed.
 - `cfide.cpp.compiler`: compiler executable/path, default `g++`; `clang++` is supported.
@@ -79,8 +79,8 @@ Under **Code templates**, choose C++ or Python on the left and paste starter cod
 - `cfide.python.interpreter`: solution interpreter, default `python3`; independent of the download helper and Microsoft's Python extension.
 - `cfide.python.args`: additional solution interpreter arguments.
 - `cfide.run.timeoutMs`: per-test timeout, default 2000 ms.
-- `cfide.cpp.templateCode` / `cfide.python.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
-- `cfide.cpp.templatePath` / `cfide.python.templatePath`: legacy optional template files, used only when inline code is empty.
+- `cfide.{cpp,python,java,kotlin}.templateCode`: editable starter code with `${PROBLEM_ID}` substitution.
+- `cfide.{cpp,python,java,kotlin}.templatePath`: legacy optional template files, used only when inline code is empty.
 
 C++ completion comes from your installed language extension, not AC-Stride. Python syntax/runtime errors show tracebacks. Every test uses a fresh process. C++ source snapshots compile once per run; Python executes a source snapshot with UTF-8/unbuffered mode. The macOS compiler helper detects the active Apple SDK where needed.
 
@@ -141,3 +141,13 @@ Settings has four tabs: Environment checks, Basic settings, Coding settings and 
 Under AI assistance, enable statement translation, optionally translate automatically after import, and edit the English default prompt. Choose a target language; every `{{language}}` placeholder is replaced with its English language name before sending, without changing the saved prompt. Simplified Chinese is the default, with traditional Chinese, English, Russian, Japanese, Korean, German, French and Spanish also supported. Restoring the default prompt requires confirmation and changes only the draft until saved. Translation is off by default. Clicking the translation icon next to a problem ID toggles original/translated statements; unfinished tasks show progress and failed tasks can be retried. Only problem HTML is sent to the configured model. Code and tests are not sent. Mathematics, samples and allowed local images are retained; generated HTML is sanitized before display.
 
 AI requests use a shared input/output cache before transport. It coalesces identical in-flight requests, runs at most two model calls concurrently, and uses a persisted LRU under extension global storage. Configure its enable switch, entry limit (default 100) and storage limit (default 50 MB) in AI assistance. Either limit evicts least recently used entries; oversized results are returned without displacing existing entries. Disabling caching preserves saved entries but skips request reads/writes. Connection tests always bypass caching. Cache identity covers the actual endpoint, model and fully rendered messages, partitioned by a credential digest; raw API keys are never persisted. Failures are not cached. Translation rendering separately sanitizes cached/generated HTML.
+
+## Java and Kotlin
+
+Install a JDK (17 or newer recommended). Kotlin also requires the standalone Kotlin compiler on PATH. These solution toolchains are detected locally, rather than bundled into the extension. In Settings → Coding, choose Java or Kotlin as the default language and customize the starter code. Settings → Environment checks compiles and runs a small program for each language.
+
+- Java uses `Main.java` with a `Main` class and `public static void main(String[] args)`.
+- Kotlin uses `Main.kt` with a top-level `fun main()`; its JAR includes the Kotlin runtime.
+- Configure `cfide.java.compiler` (`javac`) or `cfide.kotlin.compiler` (`kotlinc`), `.args` for compiler arguments, `.runtime` (`java`) and `.runtimeArgs` for JVM flags. Each command accepts an executable name or absolute path, without embedded arguments. On Windows, the official Kotlin distribution's `bin/kotlinc.bat` is supported through a shell-free Java launcher.
+- Compilation has a separate 60-second limit; each test uses the configured local execution timeout. Temporary source snapshots and build outputs are removed after completion or cancellation.
+- Switch languages from the workbench selector. Existing source files are preserved. Codeforces submission offers the matching Java or Kotlin compiler versions supplied by the contest; choose a version compatible with your code and local toolchain.

@@ -34,5 +34,17 @@
   "setting.cfide.cpp.args": "编译器参数，不经过 Shell 执行。",
   "setting.cfide.run.timeoutMs": "单个用例时限（毫秒）",
   "setting.cfide.cpp.templatePath": "可选的 C++ 模板绝对路径，支持 ${PROBLEM_ID}。",
-  "setting.cfide.solution.defaultLanguage": "新导入比赛、Codeforces 题目和本地练习所用的默认编程语言。"
+  "setting.cfide.solution.defaultLanguage": "新导入比赛、Codeforces 题目和本地练习所用的默认编程语言。",
+  "setting.cfide.java.compiler": "编译器",
+  "setting.cfide.java.args": "编译参数（JSON 数组）",
+  "setting.cfide.java.runtime": "JVM 运行命令",
+  "setting.cfide.java.runtimeArgs": "JVM 参数（JSON 数组）",
+  "setting.cfide.java.templatePath": "可选的 Java 模板绝对路径，支持 ${PROBLEM_ID}。",
+  "setting.cfide.java.templateCode": "新建 Java 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。",
+  "setting.cfide.kotlin.compiler": "编译器",
+  "setting.cfide.kotlin.args": "编译参数（JSON 数组）",
+  "setting.cfide.kotlin.runtime": "JVM 运行命令",
+  "setting.cfide.kotlin.runtimeArgs": "JVM 参数（JSON 数组）",
+  "setting.cfide.kotlin.templatePath": "可选的 Kotlin 模板绝对路径，支持 ${PROBLEM_ID}。",
+  "setting.cfide.kotlin.templateCode": "新建 Kotlin 解答时使用的初始代码，支持 ${PROBLEM_ID}。留空时使用模板文件或内置模板，不会覆盖已有代码。"
 }

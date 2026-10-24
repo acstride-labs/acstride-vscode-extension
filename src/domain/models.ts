@@ -1,4 +1,5 @@
-export type Language = 'cpp' | 'python';
+export const languageIds = ['cpp', 'python', 'java', 'kotlin'] as const;
+export type Language = (typeof languageIds)[number];
 export interface Problem {
   id: string;
   title: string;
@@ -38,4 +39,6 @@ export interface RunConfig {
   command: string;
   args: string[];
   timeoutMs: number;
+  runtimeCommand?: string;
+  runtimeArgs?: string[];
 }

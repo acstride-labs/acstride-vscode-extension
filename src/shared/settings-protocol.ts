@@ -1,3 +1,4 @@
+import { languageIds } from '../domain/models';
 import {
   translationOptionsSchema,
   aiCacheOptionsSchema,
@@ -13,7 +14,7 @@ import { locales, type Locale, type LocalePreference } from './i18n';
 const args = z.array(z.string().max(10000)).max(100);
 export const settingsValuesSchema = z
   .object({
-    defaultLanguage: z.enum(['cpp', 'python']).default('cpp'),
+    defaultLanguage: z.enum(languageIds).default('cpp'),
     handle: z.string().regex(/^(?:[A-Za-z0-9_.-]{1,64})?$/),
     compiler: z.string().trim().min(1).max(4096),
     cppArgs: args,
@@ -23,6 +24,18 @@ export const settingsValuesSchema = z
     pythonArgs: args,
     pythonTemplate: z.string().max(4096),
     pythonTemplateCode: z.string().max(1_000_000).default(''),
+    javaCompiler: z.string().trim().min(1).max(4096).default('javac'),
+    javaArgs: args.default([]),
+    javaRuntime: z.string().trim().min(1).max(4096).default('java'),
+    javaRuntimeArgs: args.default([]),
+    javaTemplate: z.string().max(4096).default(''),
+    javaTemplateCode: z.string().max(1_000_000).default(''),
+    kotlinCompiler: z.string().trim().min(1).max(4096).default('kotlinc'),
+    kotlinArgs: args.default([]),
+    kotlinRuntime: z.string().trim().min(1).max(4096).default('java'),
+    kotlinRuntimeArgs: args.default([]),
+    kotlinTemplate: z.string().max(4096).default(''),
+    kotlinTemplateCode: z.string().max(1_000_000).default(''),
     timeoutMs: z.number().int().min(100).max(60000),
   })
   .strict();
@@ -38,6 +51,18 @@ export const settingsKeys = {
   pythonArgs: 'python.args',
   pythonTemplate: 'python.templatePath',
   pythonTemplateCode: 'python.templateCode',
+  javaCompiler: 'java.compiler',
+  javaArgs: 'java.args',
+  javaRuntime: 'java.runtime',
+  javaRuntimeArgs: 'java.runtimeArgs',
+  javaTemplate: 'java.templatePath',
+  javaTemplateCode: 'java.templateCode',
+  kotlinCompiler: 'kotlin.compiler',
+  kotlinArgs: 'kotlin.args',
+  kotlinRuntime: 'kotlin.runtime',
+  kotlinRuntimeArgs: 'kotlin.runtimeArgs',
+  kotlinTemplate: 'kotlin.templatePath',
+  kotlinTemplateCode: 'kotlin.templateCode',
   timeoutMs: 'run.timeoutMs',
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
@@ -65,7 +90,7 @@ export const settingsRequestSchema = z.discriminatedUnion('type', [
       values: settingsValuesSchema,
     })
     .strict(),
-  z.object({ type: z.literal('checkEnvironment'), language: z.enum(['cpp', 'python']) }),
+  z.object({ type: z.literal('checkEnvironment'), language: z.enum(languageIds) }),
   z.object({ type: z.literal('checkAllEnvironments') }).strict(),
 ]);
 export interface EnvironmentResult {
@@ -84,10 +109,10 @@ export interface SettingsState {
   workspaceAvailable: boolean;
   trusted: boolean;
   values: SettingsValues;
-  templatePreviews: { cpp: string; python: string };
-  defaultTemplates: { cpp: string; python: string };
-  templateWarnings: { cpp?: boolean; python?: boolean };
-  environments: { cpp?: EnvironmentResult; python?: EnvironmentResult };
+  templatePreviews: Record<import('../domain/models').Language, string>;
+  defaultTemplates: Record<import('../domain/models').Language, string>;
+  templateWarnings: Partial<Record<import('../domain/models').Language, boolean>>;
+  environments: Partial<Record<import('../domain/models').Language, EnvironmentResult>>;
   busy: boolean;
   notice?: string;
   error?: string;

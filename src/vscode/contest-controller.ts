@@ -1,3 +1,4 @@
+import { languageIds } from '../domain/models';
 import { renderTranslationPrompt } from '../shared/ai-protocol';
 import { AiSettings } from './ai-settings';
 import { AiClient } from '../infrastructure/ai/client';
@@ -182,7 +183,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         for (const record of await repo.list()) {
           const store = repo.problems(record.contest.id);
           for (const problem of await store.listProblems())
-            for (const language of ['cpp', 'python'] as const)
+            for (const language of languageIds)
               if (store.sourcePath(problem.id, language) === source)
                 return { store, problem: { ...problem, language } };
         }
