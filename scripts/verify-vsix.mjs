@@ -79,6 +79,11 @@ try {
   const embeddedManifest = JSON.parse(
     await fs.readFile(path.join(bundle, 'manifest.json'), 'utf8'),
   );
+  const sourcePin = JSON.parse(
+    await fs.readFile(path.join(root, 'packaging', 'cf-tool.json'), 'utf8'),
+  );
+  if (embeddedManifest.revision !== sourcePin.revision)
+    throw new Error('Extracted transport source pin mismatch');
   const actual = await hashes(bundle);
   delete actual['manifest.json'];
   if (

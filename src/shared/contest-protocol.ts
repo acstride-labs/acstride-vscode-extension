@@ -48,7 +48,6 @@ export const contestRequestSchema = z.discriminatedUnion('type', [
 export interface ContestViewState {
   contests: ContestRecord[];
   selectedId?: number;
-  downloaderReady: boolean;
   watchHandle?: string;
   submissions: CFSubmission[];
   submissionsUpdatedAt: number;

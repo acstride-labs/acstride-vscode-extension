@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { sanitizeStatement } from './statement-sanitizer';
+import type { Statement } from '../../domain/contest';
+import type { TestCase } from '../../domain/models';
 import { executeProcess } from '../execution/process-executor';
 
 const envelope = z.object({
@@ -32,15 +35,23 @@ export class CfToolClient {
       `Codeforces tool failed (${code}). Cached data is retained.`,
   ) {}
 
-  private async run(args: string[]) {
+  private async run(args: string[], problem = false) {
     const requestId = randomUUID();
     const result = await this.executor(
       this.executable,
-      [...args, '--json', '--non-interactive', '--request-id', requestId, '--timeout', '25s'],
+      [
+        ...args,
+        '--json',
+        '--non-interactive',
+        '--request-id',
+        requestId,
+        '--timeout',
+        problem ? '210s' : '25s',
+      ],
       {
         cwd: path.dirname(this.executable),
-        timeoutMs: 30000,
-        outputLimit: 14000000,
+        timeoutMs: problem ? 220000 : 30000,
+        outputLimit: 50000000,
         signal: this.abort.signal,
       },
     ).catch(() => {
@@ -67,7 +78,7 @@ export class CfToolClient {
       const caps = z
         .object({ protocol: z.literal(1), anonymous: z.array(z.string()) })
         .safeParse(data);
-      if (!caps.success || !caps.data.anonymous.includes('api'))
+      if (!caps.success || !['api', 'problem.read'].every((op) => caps.data.anonymous.includes(op)))
         throw new Error(this.formatError('protocol_mismatch'));
     }));
   }
@@ -103,6 +114,59 @@ export class CfToolClient {
     if (params.count !== undefined) args.push('--count', String(params.count));
     if (method === 'contest.standings') args.push('--all-rows');
     return this.run(args);
+  }
+
+  async problem(
+    id: number,
+    index: string,
+    assetsDir: string,
+  ): Promise<{ statement: Statement; samples: TestCase[] }> {
+    if (
+      !Number.isInteger(id) ||
+      id < 1 ||
+      id > 999999999 ||
+      !/^[A-Z][0-9]{0,2}$/.test(index) ||
+      !path.isAbsolute(assetsDir)
+    )
+      throw new Error('Invalid Codeforces problem request.');
+    await this.ready();
+    const value = z
+      .object({
+        contestId: z.literal(id),
+        index: z.literal(index),
+        name: z.string(),
+        url: z.literal(`https://codeforces.com/contest/${id}/problem/${index}`),
+        statementHtml: z.string().max(24_000_000),
+        timeLimit: z.string(),
+        memoryLimit: z.string(),
+        fetchedAt: z.string().datetime(),
+        imageFailures: z.number().int().nonnegative(),
+        assets: z.array(z.string().regex(/^[a-f0-9]{64}\.(png|jpg|gif|webp)$/)).max(50),
+        samples: z.array(z.object({ input: z.string(), output: z.string() })),
+      })
+      .parse(
+        await this.run(
+          ['problem', 'read', String(id), index, '--bundled', '--assets-dir', assetsDir],
+          true,
+        ),
+      );
+    return {
+      statement: {
+        title: value.name,
+        html: sanitizeStatement(value.statementHtml, value.assets),
+        timeLimit: value.timeLimit,
+        memoryLimit: value.memoryLimit,
+        fetchedAt: Date.parse(value.fetchedAt),
+        imageWarning: value.imageFailures
+          ? `${value.imageFailures} image(s) could not be cached and are unavailable offline.`
+          : undefined,
+      },
+      samples: value.samples.map((sample, i) => ({
+        id: `sample-${i + 1}`,
+        input: sample.input,
+        expected: sample.output,
+      })),
+    };
   }
 
   dispose() {

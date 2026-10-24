@@ -16,7 +16,9 @@ function fake(mode = 'success') {
               requestId: mode === 'wrong-id' ? 'another-request' : requestId,
               type: 'result',
               ok: mode !== 'failure',
-              data: capabilities ? { protocol: 1, anonymous: ['api'] } : [{ id: 1 }],
+              data: capabilities
+                ? { protocol: 1, anonymous: ['api', 'problem.read'] }
+                : [{ id: 1 }],
               ...(mode === 'failure'
                 ? {
                     error: {
@@ -76,4 +78,49 @@ describe('bundled CF Tool bridge', () => {
       ),
     ).toBe(true);
   });
+});
+
+it('accepts only matching structured problem identities and declared local assets', async () => {
+  const asset = 'a'.repeat(64) + '.png';
+  const run = fake();
+  const transport = vi.fn(async (exe: string, args: string[]) => {
+    const base = await run(exe, args);
+    if (args[0] === 'capabilities') return base;
+    const requestId = args[args.indexOf('--request-id') + 1];
+    return {
+      ...base,
+      stdout: JSON.stringify({
+        protocol: 1,
+        requestId,
+        type: 'result',
+        ok: true,
+        data: {
+          contestId: 1,
+          index: 'A',
+          name: 'A. Sum',
+          url: 'https://codeforces.com/contest/1/problem/A',
+          statementHtml: `<p>$$$a+b$$$</p><script>bad()</script><img src="acstride-asset:${asset}" onerror="bad()"><img src="acstride-asset:../x"><img src="https://codeforces.com/image">`,
+          timeLimit: '2 seconds',
+          memoryLimit: '256 MB',
+          fetchedAt: new Date().toISOString(),
+          imageFailures: 1,
+          assets: [asset],
+          samples: [{ input: '你好\n\n', output: '\n' }],
+        },
+      }),
+    };
+  });
+  const client = new CfToolClient('/bundle/acstride-cf', transport);
+  const result = await client.problem(1, 'A', path.resolve('/assets'));
+  expect(result.samples).toEqual([{ id: 'sample-1', input: '你好\n\n', expected: '\n' }]);
+  expect(result.statement.html).toContain(`cfide-asset:${asset}`);
+  expect(result.statement.html).toContain('$$$a+b$$$');
+  expect(result.statement.html).not.toMatch(
+    /<script|onerror|\.\.\/x|https:\/\/codeforces.com\/image/,
+  );
+  expect(transport.mock.calls.at(-1)![1]).toContain('--bundled');
+  expect(transport.mock.calls.at(-1)![1]).not.toContain('--public-helper');
+  await expect(client.problem(0, 'A', '/assets')).rejects.toThrow();
+  await expect(client.problem(1, '../A', '/assets')).rejects.toThrow();
+  client.dispose();
 });

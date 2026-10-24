@@ -4,8 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { root, hostTarget } from './downloader-common.mjs';
-const pin = JSON.parse(await fs.readFile(path.join(root, 'packaging', 'cf-tool.json'), 'utf8'));
-if (!/^[a-f0-9]{40}$/.test(pin.revision)) throw new Error('CF Tool must be pinned to a commit.');
+import { pin, cfToolSource } from './cf-tool-source.mjs';
 const go = process.env.ACSTRIDE_BUILD_GO || 'go';
 const env = { ...process.env, CGO_ENABLED: '0', GOTOOLCHAIN: 'local' };
 // Let the notice generator locate this same Go tool, without changing user PATH.
@@ -24,25 +23,7 @@ function run(command, args, cwd) {
   return result.stdout.trim();
 }
 hostTarget();
-await fs.mkdir(path.join(root, '.build'), { recursive: true });
-let source = process.env.ACSTRIDE_CF_TOOL_SOURCE;
-if (!source) {
-  source = await fs.mkdtemp(path.join(root, '.build', 'cf-tool-'));
-  run('git', ['init', source], root);
-  run(
-    'git',
-    ['remote', 'add', 'origin', 'https://github.com/acstride-labs/acstride-cf-tool.git'],
-    source,
-  );
-  run('git', ['fetch', '--depth', '1', 'origin', pin.revision], source);
-  run('git', ['checkout', '--detach', 'FETCH_HEAD'], source);
-}
-source = path.resolve(source);
-if (
-  run('git', ['rev-parse', 'HEAD'], source) !== pin.revision ||
-  run('git', ['status', '--porcelain'], source)
-)
-  throw new Error('CF Tool source must be clean and match the pinned commit.');
+const source = await cfToolSource();
 const bundle = path.join(root, 'resources', 'cf-tool');
 await fs.mkdir(bundle, { recursive: true });
 const name = process.platform === 'win32' ? 'acstride-cf.exe' : 'acstride-cf';

@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { ContestRepository } from '../../src/infrastructure/storage/contest-repository';
 import { ContestService } from '../../src/application/contest-service';
-import { fixtureContest, statementHtml } from '../fixtures/codeforces';
+import { fixtureContest, structuredProblem } from '../fixtures/codeforces';
 import type { CFSubmission, Contest } from '../../src/domain/contest';
 
 const folders: string[] = [];
@@ -30,7 +30,7 @@ async function fixture() {
     submissions: vi.fn(async (): Promise<CFSubmission[]> => []),
   };
   const session = {
-    page: vi.fn(async () => ({ html: statementHtml(), url: 'https://codeforces.com' })),
+    problem: vi.fn(async () => structuredProblem()),
   };
   const changed = vi.fn();
   const service = new ContestService(
@@ -76,20 +76,17 @@ describe('multiple contest workspace', () => {
     ]);
     await service.refreshSubmissions(1234, 'public-handle');
     expect((await repo.submissions(1234, 'public-handle')).submissions[0].id).toBe(42);
-    expect(session.page).not.toHaveBeenCalled();
+    expect(session.problem).not.toHaveBeenCalled();
   });
   it('retries a failed download while preserving code and custom tests', async () => {
     const { repo, service, session } = await fixture();
     await service.add(1234, 'python');
-    session.page.mockRejectedValue(new Error('Anonymous download blocked'));
+    session.problem.mockRejectedValue(new Error('Anonymous download blocked'));
     await service.sync(1234);
     const store = repo.problems(1234);
     await fs.writeFile(store.sourcePath('A', 'python'), 'print("keep solution")');
     await store.saveTest('A', { id: 'custom-1', input: '1', expected: '2' });
-    session.page.mockResolvedValue({
-      html: statementHtml('A. Sum'),
-      url: 'https://codeforces.com',
-    });
+    session.problem.mockResolvedValue(structuredProblem('A. Sum'));
     await service.sync(1234, 'A');
     expect((await repo.get(1234)).problems[0].ready).toBe(true);
     expect(await fs.readFile(store.sourcePath('A', 'python'), 'utf8')).toBe(
@@ -128,10 +125,7 @@ describe('multiple contest workspace', () => {
     await fs.writeFile(first.sourcePath('A'), '// keep my source');
     await first.selectLanguage('A', 'python', 'print("keep python")');
     await first.saveTest('A', { id: 'custom-1', input: '1', expected: '2' });
-    session.page.mockResolvedValue({
-      html: statementHtml('A. Updated', '9'),
-      url: 'https://codeforces.com',
-    });
+    session.problem.mockResolvedValue(structuredProblem('A. Updated', '9'));
     await service.sync(1234, 'A');
     expect(await fs.readFile(first.sourcePath('A'), 'utf8')).toBe('// keep my source');
     expect(await fs.readFile(first.sourcePath('A', 'python'), 'utf8')).toBe('print("keep python")');
@@ -147,8 +141,8 @@ describe('multiple contest workspace', () => {
   it('keeps successful downloads when another problem fails and retries only the missing problem', async () => {
     const { repo, service, session } = await fixture();
     await service.add(1234, 'cpp');
-    session.page
-      .mockResolvedValueOnce({ html: statementHtml(), url: 'https://codeforces.com' })
+    session.problem
+      .mockResolvedValueOnce(structuredProblem())
       .mockRejectedValueOnce(new Error('Temporary site error'));
     await service.sync(1234);
     const partial = await repo.get(1234);
@@ -156,13 +150,13 @@ describe('multiple contest workspace', () => {
     expect(partial.problems[1].error).toContain('Temporary');
     expect(partial.nextRetryAt).toBeGreaterThan(Date.now());
     await service.sync(1234);
-    expect(session.page).toHaveBeenCalledTimes(3);
+    expect(session.problem).toHaveBeenCalledTimes(3);
     expect((await repo.get(1234)).error).toBeUndefined();
   });
   it('allows coding and custom tests when all statement downloads fail, without pretending samples exist', async () => {
     const { repo, service, session } = await fixture();
     await service.add(1234, 'python');
-    session.page.mockRejectedValue(new Error('Website HTTP 403'));
+    session.problem.mockRejectedValue(new Error('Website HTTP 403'));
     await service.sync(1234);
     expect((await repo.get(1234)).problems.every((p) => !p.ready && p.error?.includes('403'))).toBe(
       true,
@@ -189,25 +183,25 @@ describe('multiple contest workspace', () => {
     api.contest.mockResolvedValue(future);
     await service.add(1234, 'cpp');
     await service.tick();
-    expect(session.page).not.toHaveBeenCalled();
+    expect(session.problem).not.toHaveBeenCalled();
     await repo.update(1234, (r) => {
       r.contest = fixtureContest;
       r.archived = true;
     });
     await service.tick();
-    expect(session.page).not.toHaveBeenCalled();
+    expect(session.problem).not.toHaveBeenCalled();
     await repo.update(1234, (r) => {
       r.archived = false;
       r.autoDownload = false;
     });
     await service.tick();
-    expect(session.page).not.toHaveBeenCalled();
+    expect(session.problem).not.toHaveBeenCalled();
     api.contest.mockResolvedValue(fixtureContest);
     await repo.update(1234, (r) => {
       r.autoDownload = true;
     });
     await service.tick();
-    expect(session.page).toHaveBeenCalledTimes(2);
+    expect(session.problem).toHaveBeenCalledTimes(2);
   });
   it('resumes a persisted overdue contest and retains cache after API failure', async () => {
     const { root, repo, service, api } = await fixture();

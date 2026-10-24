@@ -1,18 +1,12 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
-import { existsSync } from 'node:fs';
 import { CfToolClient, cfToolExecutable } from '../infrastructure/codeforces/cf-tool-client';
 import * as cheerio from 'cheerio';
 import { parseContestId, type ContestRecord } from '../domain/contest';
 import type { Language, Problem } from '../domain/models';
 import { languages } from '../domain/languages';
 import { CodeforcesApi } from '../infrastructure/codeforces/api-client';
-import {
-  PublicProblemClient,
-  downloaderExecutable,
-} from '../infrastructure/codeforces/public-problem-client';
 import { RequestQueue } from '../infrastructure/codeforces/request-queue';
-import { cacheStatementAssets } from '../infrastructure/codeforces/asset-cache';
 import { ContestRepository } from '../infrastructure/storage/contest-repository';
 import { ContestService } from '../application/contest-service';
 import {
@@ -36,10 +30,8 @@ type Node =
     };
 export class ContestController implements vscode.Disposable, vscode.TreeDataProvider<Node> {
   private queue = new RequestQueue();
-  private api = new CodeforcesApi(this.queue);
-  private cfTool?: CfToolClient;
-  private reader: PublicProblemClient;
-  private downloaderReady = false;
+  private api: CodeforcesApi;
+  private cfTool: CfToolClient;
   private initialized: Promise<void>;
   private service?: ContestService;
   private repo?: ContestRepository;
@@ -71,29 +63,18 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     private workspace: WorkspaceController,
   ) {
     const executable = cfToolExecutable(context.extensionUri.fsPath);
-    // Source checkouts may omit native bundles. Packaged builds require a verified tool.
-    if (existsSync(executable) || context.extensionMode === vscode.ExtensionMode.Production) {
-      this.cfTool = new CfToolClient(executable, undefined, (code) => {
-        if (code === 'tool_unavailable' || code === 'protocol_mismatch')
-          return t(
-            'The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.',
-          );
-        if (code === 'verification_required')
-          return t(
-            'Codeforces requires site verification. Use the official website and retry later.',
-          );
-        return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
-      });
-      this.api = new CodeforcesApi(this.queue, fetch, (method, params) =>
-        this.cfTool!.call(method, params),
-      );
-    }
-    this.reader = new PublicProblemClient(
-      this.queue,
-      downloaderExecutable(context.extensionUri.fsPath),
-    );
-    this.initialized = this.reader.ready().then((ready) => {
-      this.downloaderReady = ready;
+    this.cfTool = new CfToolClient(executable, undefined, (code) => {
+      if (code === 'tool_unavailable' || code === 'protocol_mismatch')
+        return t('The bundled Codeforces tool is unavailable. Reinstall the VSIX for this system.');
+      if (code === 'verification_required')
+        return t(
+          'Codeforces requires site verification. Use the official website and retry later.',
+        );
+      return t('Codeforces connection failed ({code}). Cached data is retained.', { code });
+    });
+    this.api = new CodeforcesApi(this.queue, (method, params) => this.cfTool.call(method, params));
+    this.initialized = this.cfTool.ready().catch(() => {
+      // Report installation errors on operations while allowing local/cached work.
     });
     this.selectedId = context.workspaceState.get<number>('cfide.selectedContest');
   }
@@ -110,10 +91,12 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       this.service = new ContestService(
         repository,
         this.api,
-        this.reader,
+        {
+          problem: (id, index, assetsDir) =>
+            this.queue.schedule(() => this.cfTool.problem(id, index, assetsDir)),
+        },
         (language, index) => this.workspace.template(language, index),
         (id) => this.changed(id),
-        (id, statement) => cacheStatementAssets(statement, repository.assets(id), this.queue),
       );
       this.lastStatus.clear();
       this.pendingContests.clear();
@@ -193,7 +176,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         if (!vscode.workspace.isTrusted) return;
         try {
           const { service } = this.runtime();
-          void service.tick(Date.now() + this.api.clockOffset).catch(() => {});
+          void service.tick(Date.now()).catch(() => {});
         } catch {
           /* No open workspace. */
         }
@@ -229,7 +212,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
           )
             this.pendingContests.add(record.contest.id);
         }
-        void service.tick(Date.now() + this.api.clockOffset).catch(() => {});
+        void service.tick(Date.now()).catch(() => {});
         await this.workspace.restoreLast();
       } catch {
         /* Empty/new workspaces need no restoration. */
@@ -543,6 +526,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
             )
             .toString(),
         );
+      else $(node).removeAttr('src');
     });
     return { ...statement, html: $.html() };
   }
@@ -623,7 +607,6 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
       const state: ContestViewState = {
         contests,
         selectedId: selected,
-        downloaderReady: this.downloaderReady,
         watchHandle: handle,
         submissions: status.submissions,
         submissionsUpdatedAt: status.fetchedAt,
@@ -634,7 +617,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
         rankMode: this.rankMode,
         busy: this.busy,
         error: this.errorMessage,
-        serverNow: Date.now() + this.api.clockOffset,
+        serverNow: Date.now(),
       };
       if (selected !== this.selectedId || repo !== this.repo) return;
       void this.dashboard?.webview.postMessage({
@@ -670,7 +653,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     try {
       const record = await this.runtime().repo.get(this.selectedId),
         c = record.contest;
-      const now = Math.floor((Date.now() + this.api.clockOffset) / 1000),
+      const now = Math.floor(Date.now() / 1000),
         start = c.startTimeSeconds;
       const remaining = start
         ? now < start
@@ -686,8 +669,7 @@ export class ContestController implements vscode.Disposable, vscode.TreeDataProv
     }
   }
   dispose() {
-    this.cfTool?.dispose();
-    this.reader.dispose();
+    this.cfTool.dispose();
     this.service?.dispose();
     this.queue.dispose();
     this.timers.forEach(clearInterval);

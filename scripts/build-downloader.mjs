@@ -2,6 +2,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { root, bundle, hostTarget, run, hashes, cleanEnvironment } from './downloader-common.mjs';
 
+import { pin, cfToolSource } from './cf-tool-source.mjs';
+const source = await cfToolSource();
 const target = hostTarget();
 const build = path.join(root, '.build', 'downloader');
 const venv = path.join(build, 'venv');
@@ -19,7 +21,7 @@ await run(python, [
   '--disable-pip-version-check',
   '--only-binary=:all:',
   '-r',
-  path.join(root, 'packaging', 'downloader-requirements.txt'),
+  path.join(source, 'packaging', 'downloader-requirements.txt'),
 ]);
 await run(
   python,
@@ -45,7 +47,7 @@ await run(
     path.join(build, 'work'),
     '--specpath',
     build,
-    path.join(root, 'resources', 'helpers', 'public-fetch.py'),
+    path.join(source, 'packaging', 'public-fetch.py'),
   ],
   {
     env: { ...cleanEnvironment(), PYINSTALLER_CONFIG_DIR: path.join(build, 'cache') },
@@ -59,7 +61,7 @@ await fs.cp(path.join(build, 'output', 'cfide-downloader'), path.join(bundle, 'c
   dereference: true,
 });
 await run(python, [
-  path.join(root, 'packaging', 'collect-notices.py'),
+  path.join(source, 'packaging', 'collect-notices.py'),
   path.join(bundle, 'notices'),
 ]);
 await fs.writeFile(
@@ -67,6 +69,7 @@ await fs.writeFile(
   JSON.stringify(
     {
       protocol: 1,
+      revision: pin.revision,
       target,
       python: 'private frozen runtime',
       files: await hashes(bundle),

@@ -3,13 +3,8 @@ import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  downloaderExecutable,
-  downloaderEnvironment,
-  PublicProblemClient,
-} from '../../src/infrastructure/codeforces/public-problem-client';
 import { executeProcess } from '../../src/infrastructure/execution/process-executor';
-import { RequestQueue } from '../../src/infrastructure/codeforces/request-queue';
+import { downloaderEnvironment, downloaderExecutable } from '../fixtures/downloader';
 
 const executable = downloaderExecutable(path.resolve('.'));
 describe.skipIf(!existsSync(executable))(
@@ -48,10 +43,7 @@ describe.skipIf(!existsSync(executable))(
       }
     }, 30000);
     it('uses the real embedded transport and rejects unsupported paths/arguments before any network request', async () => {
-      const queue = new RequestQueue(0),
-        client = new PublicProblemClient(queue, executable);
-      try {
-        expect(await client.ready()).toBe(true);
+      {
         const options = {
           cwd: path.dirname(executable),
           timeoutMs: 20000,
@@ -65,9 +57,6 @@ describe.skipIf(!existsSync(executable))(
         expect(JSON.parse(result.stdout)).toEqual({ error: 'invalid_problem_path' });
         const args = await executeProcess(executable, ['--install'], options);
         expect(JSON.parse(args.stdout)).toEqual({ error: 'invalid_arguments' });
-      } finally {
-        client.dispose();
-        queue.dispose();
       }
     }, 30000);
   },

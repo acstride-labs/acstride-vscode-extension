@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { bundle, executable, hostTarget, hashes, cleanEnvironment } from './downloader-common.mjs';
 
 export async function verifyDownloader() {
+  const pin = JSON.parse(
+    await fs.readFile(new URL('../packaging/cf-tool.json', import.meta.url), 'utf8'),
+  );
   let manifest;
   try {
     manifest = JSON.parse(await fs.readFile(path.join(bundle, 'manifest.json'), 'utf8'));
@@ -13,7 +16,11 @@ export async function verifyDownloader() {
       'Bundled downloader missing. Developers: run npm run build:downloader before packaging. End users never run Python/pip setup.',
     );
   }
-  if (manifest.protocol !== 1 || manifest.target !== hostTarget())
+  if (
+    manifest.protocol !== 1 ||
+    manifest.target !== hostTarget() ||
+    manifest.revision !== pin.revision
+  )
     throw new Error('Downloader target/protocol does not match this packaging host.');
   const actual = await hashes(path.join(bundle, 'cfide-downloader'));
   const notices = await hashes(path.join(bundle, 'notices'));

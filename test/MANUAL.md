@@ -54,7 +54,7 @@ The extension has no login, Cookie import, browser connection, in-IDE submission
 
 ## Automated and live verification
 
-Default unit/integration tests cover local C++/Python execution, contest isolation, reimport preservation, read-only samples, release scheduling/retry/offline cache, download retry preservation, public API tracking, GET-only anonymous transport, isolated child environment and rejection/removal of obsolete setup/account commands/messages. When a generated bundle exists, tests run the actual binary offline with empty PATH/invalid Python settings and check that its temporary HOME remains empty. Source-only checks skip these two frozen-binary tests; CI builds the bundle first so they are required there. `npm run package` checks bundle hashes/health/target before packaging; `npm run verify:vsix` checks the final extracted archive with no system Python on PATH.
+Default unit/integration tests cover local C++/Python execution, contest isolation, reimport preservation, read-only samples, release scheduling/retry/offline cache, download retry preservation, public API mapping, the no-network extension boundary, structured CLI identity/asset validation, isolated frozen transport startup and rejection/removal of obsolete setup/account commands/messages. Codeforces DOM/HTTP/image-policy coverage lives in CF Tool. When a generated bundle exists, tests run the actual binary offline with empty PATH/invalid Python settings and check that its temporary HOME remains empty. Source-only checks skip these two frozen-binary tests; CI builds the bundle first so they are required there. `npm run package` checks bundle hashes/health/target before packaging; `npm run verify:vsix` checks the final extracted archive with no system Python on PATH.
 
 Opt-in live command:
 
@@ -69,3 +69,13 @@ The 0.5 macOS Extension Development Host previously imported all three problems 
 The 0.6 macOS arm64 Extension Development Host showed “Built-in public downloads ready” immediately after reload, with no setup/repair button. Refreshing contest 1/A completed and updated its statement cache timestamp. The final platform VSIX also passed extraction/file-hash/target/executable-permission/private-runtime startup verification with empty PATH.
 
 Earlier versions' C++/Python AC/WA GUI checks remain relevant for the local runner, but their browser/login/submission acceptance steps no longer apply. Four-platform CI is configured; only macOS arm64 live verification has been performed locally. Other targets require their CI build/startup/archive checks before distribution. Signing/notarization/Marketplace publication are not claimed.
+
+
+## 0.11 client-layer migration verification (2026-10-24)
+
+- CF Tool: full `go test -race ./...` and `go vet ./...` passed locally on macOS arm64, including structured editor responses, multiline/Unicode/empty samples, official image caching/policy, shared pacing/cancellation and existing account/submission fixture tests. No real account was used.
+- Extension: `npm run check` passed with 69 tests and the opt-in live test skipped. After removing the redundant host throttling timer, typecheck and affected scheduling/boundary tests passed again; packaging rebuilt the final extension.
+- `CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts` passed through the actual embedded CF Tool: contest metadata, tourist's public submissions, standings, isolated workspace import with the exact Theatre Square sample `6 6 4 → 4`, and two additional statements. No direct TypeScript or Python development transport was used.
+- Both embedded components were built from the same pinned clean CF Tool commit. `npm run package` and `npm run verify:vsix` passed for `ac-stride-0.11.0-darwin-arm64.vsix`, including extracted executable startup, target/hashes/notices and no system Go/Python requirement.
+- The extension contains no direct network calls, Codeforces sample parser, image downloader or source-development fallback. Webview CSP blocks remote image loads; successful CLI assets map to local Webview resources. Existing workspace layouts, code, custom tests and cached statements remain supported.
+- Windows/Linux/macOS Intel CI must independently complete; these local checks establish macOS arm64 only. This is not a Marketplace publication or a real automatic-submission verification.

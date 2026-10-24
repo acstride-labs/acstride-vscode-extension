@@ -1,6 +1,6 @@
 # Private public-downloader distribution
 
-End users install only the matching VSIX. They never execute pip, download a Python runtime, or configure a helper path. Build-time Python is a developer/CI dependency, not a product prerequisite. Runtime sources stay in `resources/helpers/public-fetch.py`; that source script and build tools are excluded from VSIX. Only its frozen onedir output, manifest and collected notices ship.
+End users install only the matching VSIX. They never execute pip, download a Python runtime, or configure a helper path. Build-time Python is a developer/CI dependency, not a product prerequisite. Transport sources, locked Python requirements and notice collector live in the pinned CF Tool repository under `packaging/`; the extension contains no duplicate downloader source. Source scripts and build tools are excluded from VSIX. Only its frozen onedir output, manifest and collected notices ship.
 
 ## Build and validate
 
@@ -23,10 +23,10 @@ Supported targets: `darwin-arm64`, `darwin-x64`, `win32-x64`, `linux-x64`. Linux
 
 ## Runtime boundaries
 
-- The extension host launches the immutable installed executable by absolute path with `shell: false`. There is no system-Python lookup, pip fallback, PATH update, file association, registry entry, daemon or local listening port.
+- The extension host launches only CF Tool by absolute path with `shell: false`; CF Tool resolves and invokes the immutable install-relative downloader internally. There is no system-Python lookup, pip fallback, PATH update, file association, registry entry, daemon or local listening port.
 - The child gets a copied environment stripped of Python/venv/Conda/native-library injection, impersonate.pro account/config overrides and external CA overrides. curl_cffi is pointed at a private, unused config location in the bundle instead of the user's curl_cffi configuration/cache. Parent environment and solution execution are unchanged. Standard proxy settings remain honored. TLS verification uses the bundled certifi store.
 - `--self-test` is offline: load native libcurl, confirm CA data, report protocol/embedded status. Normal mode accepts one bounded stdin JSON public problem path; only anonymous GETs to the same HTTPS Codeforces problem page are allowed. No login/Cookie input, arbitrary URL or POST interface exists.
-- stdin/stdout JSON, fixed time/output/page limits, cancellation and static diagnostics are retained. No persistent account state or helper runtime files are written. Imported statements are still parsed/sanitized by TypeScript.
+- stdin/stdout JSON, fixed time/output/page limits, cancellation and static diagnostics are retained. No persistent account state or helper runtime files are written. CF Tool parses statements/samples and downloads official images. TypeScript validates the structured result and sanitizes HTML only for display.
 - Wrong/incomplete/incompatible installs show an explicit reinstall-the-correct-package error and leave local code/tests intact. Retry later or continue with cached/local work. Site verification/network failures are distinct from installation failures.
 
 ## Embedded CF Tool
@@ -43,12 +43,9 @@ notices, file hashes and target/source metadata. `verify:cf-tool` runs offline
 capabilities with empty PATH and checks request/protocol identity. `package` and
 `verify:vsix` require it, including validation of the extracted final binary.
 
-Production installs always use the extension-owned executable and report an
-installation/protocol failure rather than silently changing transport. A source
-development host without a built bundle can retain the original TypeScript API
-client. The bridge only exposes three public API reads; it does not activate
-keyring, credentials, cookies, website POSTs, self-update or local code execution.
-The existing frozen curl_cffi downloader still handles anonymous statements.
+Both `build:cf-tool` and `build:downloader` use `scripts/cf-tool-source.mjs` to resolve the same exact clean commit. Downloader manifests record this source revision too. No binaries or frozen runtimes are committed to Git; CI packages generated platform-specific outputs in the VSIX.
+
+Production and development hosts always use the extension-owned CF Tool. Missing/incompatible bundles report an installation failure; no TypeScript network fallback exists. The bridge exposes anonymous API reads and `problem read --bundled --assets-dir DIR`. It does not activate keyring, credentials, cookies, website POSTs or self-update. CF Tool owns webpage parsing, samples, image transport/cache and cross-process request pacing. Only local rendering sanitization and workspace orchestration remain in the extension. Uncached remote images are blocked by the Webview CSP.
 
 ## Dependencies and release hygiene
 

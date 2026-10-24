@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+- Make bundled CF Tool the sole Codeforces client for API reads, statement parsing, samples and official image downloads.
+- Remove the direct TypeScript API fallback, old helper client, webpage parser and image downloader. Keep host-side protocol validation, display sanitization, workspace scheduling and C++/Python testing.
+- Move anonymous downloader sources, Python dependency pins and notice collection into CF Tool; build both components from one exact source revision without committing binaries.
+- Add cross-process request pacing in CF Tool, structured problem/asset results, strict local asset mapping and a Webview policy that blocks remote image requests.
+- Preserve existing `.cfide` data, saved statements, code and custom tests.
+
 ## 0.10.0
 
 - Bundle ACStride CF Tool at a fixed Git commit for anonymous contest metadata, public submission records and rankings, using versioned JSON, request IDs and strict method/argument validation.

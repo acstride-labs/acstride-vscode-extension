@@ -38,44 +38,13 @@ const standingsSchema = z.object({
   ),
 });
 export class CodeforcesApi {
-  clockOffset = 0;
   private contests?: { time: number; values: Contest[] };
   constructor(
     private queue: RequestQueue,
-    private fetcher: typeof fetch = fetch,
-    private toolCall?: (
-      method: string,
-      params: Record<string, string | number>,
-    ) => Promise<unknown>,
+    private toolCall: (method: string, params: Record<string, string | number>) => Promise<unknown>,
   ) {}
-  private call(
-    method: string,
-    params: Record<string, string | number>,
-    priority = 10,
-  ): Promise<unknown> {
-    return this.queue.schedule(async () => {
-      if (this.toolCall) return this.toolCall(method, params);
-      const url = new URL(`https://codeforces.com/api/${method}`);
-      for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
-      const response = await this.fetcher(url, {
-        signal: AbortSignal.timeout(20000),
-        headers: { Accept: 'application/json' },
-      });
-      const serverTime = Date.parse(response.headers.get('date') || '');
-      if (Number.isFinite(serverTime)) this.clockOffset = serverTime - Date.now();
-      if (!response.ok)
-        throw new Error(`Codeforces API HTTP ${response.status}. Cached data is retained.`);
-      const envelope = z
-        .object({
-          status: z.string(),
-          comment: z.string().optional(),
-          result: z.unknown().optional(),
-        })
-        .parse(await response.json());
-      if (envelope.status !== 'OK')
-        throw new Error(envelope.comment || 'Codeforces API request failed.');
-      return envelope.result;
-    }, priority);
+  private call(method: string, params: Record<string, string | number>, priority = 10) {
+    return this.queue.schedule(() => this.toolCall(method, params), priority);
   }
   async contest(id: number, force = false): Promise<Contest> {
     if (force || !this.contests || Date.now() - this.contests.time > 60000)

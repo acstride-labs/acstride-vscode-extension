@@ -2,8 +2,15 @@ import type { Language } from '../domain/models';
 import type { Statement } from '../domain/contest';
 import { ContestRepository } from '../infrastructure/storage/contest-repository';
 import type { CodeforcesApi } from '../infrastructure/codeforces/api-client';
-import type { PublicProblemReader } from '../infrastructure/codeforces/public-problem-client';
-import { parseStatement } from '../infrastructure/codeforces/statement-parser';
+import type { TestCase } from '../domain/models';
+
+export interface ProblemReader {
+  problem(
+    id: number,
+    index: string,
+    assetsDir: string,
+  ): Promise<{ statement: Statement; samples: TestCase[] }>;
+}
 
 type Api = Pick<CodeforcesApi, 'contest' | 'standings' | 'submissions'>;
 export class ContestService {
@@ -15,13 +22,9 @@ export class ContestService {
   constructor(
     readonly repository: ContestRepository,
     private api: Api,
-    private reader: PublicProblemReader,
+    private reader: ProblemReader,
     private template: (language: Language, index: string) => Promise<string>,
     private changed: (id: number) => void = () => {},
-    private cacheStatement: (id: number, statement: Statement) => Promise<Statement> = async (
-      _,
-      statement,
-    ) => statement,
   ) {}
   async add(id: number, language: Language) {
     const record = await this.repository.add(await this.api.contest(id), language);
@@ -76,16 +79,10 @@ export class ContestService {
         try {
           // Source creation must not depend on website access. Download failure must not block coding.
           await this.ensureSolution(id, problem.index);
-          const url = `/contest/${id}/problem/${encodeURIComponent(problem.index)}`;
-          const page = await this.reader.page(url);
-          const parsed = parseStatement(page.html, `https://codeforces.com${url}`);
+          const parsed = await this.reader.problem(id, problem.index, this.repository.assets(id));
           const store = this.repository.problems(id);
           await store.importSamples(problem.index, parsed.samples);
-          await this.repository.saveStatement(
-            id,
-            problem.index,
-            await this.cacheStatement(id, parsed.statement),
-          );
+          await this.repository.saveStatement(id, problem.index, parsed.statement);
           await this.repository.update(id, (r) => {
             const p = r.problems.find((p) => p.index === problem.index)!;
             p.ready = true;

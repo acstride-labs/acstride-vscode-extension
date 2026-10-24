@@ -9,7 +9,7 @@ The extension ID, `cfide.*` commands/settings and `.cfide` workspace data remain
 unchanged for compatibility with existing installations. Build environment variables
 retain their `CFIDE_` prefix.
 
-A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.10 adds a pinned, embedded ACStride CF Tool for public contest metadata, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
+A Codeforces extension for desktop VS Code, with C++ and Python support and English, 简体中文, Русский and 日本語 interfaces. Version 0.11 uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
 ## What is included
 
@@ -28,8 +28,10 @@ The separately developed CLI has opt-in experimental account/submission commands
 but the extension's bridge exposes **only anonymous API reads**. It never loads
 CLI keyring sessions, forwards cookies/passwords, or submits source. Its protocol,
 request IDs, operation schemas and exit status are checked before accepting data.
-The existing curl_cffi statement path and TypeScript sanitization/image cache are
-retained; there is no second browser connection or downloader setup screen.
+The CLI owns webpage parsing, sample extraction and image downloads. The extension
+validates protocol data and sanitizes HTML for display, without direct Codeforces
+requests or a second transport fallback. The client internally uses the bundled
+curl_cffi public reader; there is no downloader setup screen.
 
 ## Start here
 
@@ -44,7 +46,7 @@ The built-in anonymous downloader is **not a guarantee against site verification
 
 ### No system Python changes
 
-The private runtime lives only inside AC-Stride's extension directory and is launched by absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
+The private runtime lives only inside AC-Stride's extension directory and is launched by CF Tool using an install-relative absolute path as a short-lived child process. It does not install a system interpreter, modify PATH/environment variables, register file associations, install packages in user environments, start a browser or listen on a port. Python/native-library injection variables are removed only from the child's environment. HTTPS uses the bundled certifi CA store; standard proxy environment settings remain available. New CA/native-library versions ship with extension updates, not runtime component installers. Existing OS security controls are not bypassed.
 
 This runtime is exclusively for public downloads, not for executing solutions. The solution Python interpreter/compiler remains user-configurable and separate.
 
@@ -122,8 +124,8 @@ CFIDE_LIVE=1 npm test -- test/live/codeforces.test.ts
 
 Set `CFIDE_BUILD_PYTHON` to an absolute build interpreter path if needed. `npm run package` refuses to produce a VSIX without the matching, hash-verified working downloader. It always sets the VSIX platform target. CI builds all four targets independently, verifies frozen startup with empty PATH and invalid PYTHONHOME/PYTHONPATH, and extracts the final VSIX to check file hashes/executable permissions/startup. Package notices accompany the binary. See `packaging/README.md` for distribution details.
 
-On 2026-10-24 the macOS arm64 frozen downloader passed offline isolation checks and all three public live checks, including Theatre Square's real `6 6 4 → 4` sample and two additional statements. The other platform builds must pass their CI jobs before distribution; configuring CI does not establish that those jobs passed. No check logs in, starts a browser, registers or submits code. This does not guarantee all future contests/network environments will work. See `test/MANUAL.md` for acceptance steps.
+Live public checks are opt-in (`CFIDE_LIVE=1`) and exercise the actual bundled CLI for metadata, public submissions, standings, structured statements and workspace sample import. Fixture and offline checks do not establish live website availability or success on other platforms. See `test/MANUAL.md` for acceptance steps.
 
-Architecture: `domain` contains models/checking; `application` handles contest scheduling/imports/public tracking; `infrastructure/codeforces` separates JSON API reads, anonymous problem downloads, sanitization and a serialized request queue; `infrastructure/storage` isolates contest files/caches; `vscode` adapts native views/commands; React `webview` renders the center, statements and tests. Public API calls and problem downloads are throttled with at least 2.1 seconds between queued request starts.
+Architecture: `domain` contains local models/checking; `application` handles scheduling and workspace imports; `infrastructure/codeforces` contains the CLI adapter, typed data mapping, display sanitization and a priority queue. All network requests, Codeforces DOM parsing, samples and image caching belong to CF Tool. The extension owns solutions/custom tests, native views, countdowns and React UI. CF Tool coordinates request starts across its processes with a shared 2.1-second minimum interval. The extension has no direct network transport, including in source development mode; build the embedded tools before testing Codeforces features.
 
 Only regular public contests and desktop single-folder file workspaces are supported. Gym/group/private contests, virtual participation, stress testing, custom checkers and web-only VS Code are out of scope. Public API data may be unavailable, frozen, delayed or limited to recent submissions. The publisher is a development placeholder, no Marketplace release is configured, and no open-source license has been selected.

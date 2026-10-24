@@ -46,7 +46,7 @@ export async function verifyCfTool(folder = path.join(root, 'resources', 'cf-too
     value.requestId !== 'verify-bundle' ||
     !value.ok ||
     value.data.protocol !== 1 ||
-    !value.data.anonymous.includes('api')
+    !['api', 'problem.read'].every((op) => value.data.anonymous.includes(op))
   )
     throw new Error('Bundled CF Tool protocol mismatch.');
   console.log(
