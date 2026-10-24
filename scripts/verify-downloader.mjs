@@ -59,6 +59,22 @@ export async function verifyDownloader() {
     health.curlCffi !== '0.16.3'
   )
     throw new Error('Bundled downloader failed dependency/CA/isolation verification.');
+  // Exercise the actual frozen persistent protocol without making any network request.
+  const session = spawnSync(executable, ['--serve'], {
+    cwd: path.dirname(executable),
+    encoding: 'utf8',
+    timeout: 20000,
+    input: JSON.stringify({ path: '/invalid' }) + '\n' + JSON.stringify({ path: '/enter' }) + '\n',
+    env: { ...cleanEnvironment(), PATH: '', PYINSTALLER_RESET_ENVIRONMENT: '1' },
+  });
+  if (session.error || session.status !== 0)
+    throw new Error('Bundled downloader persistent startup failed.');
+  const responses = session.stdout
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  if (responses.length !== 2 || responses.some((value) => value.error !== 'invalid_problem_path'))
+    throw new Error('Bundled downloader persistent protocol mismatch.');
   console.log(
     `Verified ${manifest.target}: private Python + curl_cffi + CA bundle; system Python is not required.`,
   );
