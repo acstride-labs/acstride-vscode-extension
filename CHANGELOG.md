@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1
+
+- Update CF Tool to remove fixed response, statement, image and asset-count limits that rejected large public contest data.
+- Remove matching CLI-output/statement/asset-count limits from the extension adapter while retaining identity validation, timeouts, cancellation and local-runner output limits.
+
 ## 0.11.0
 
 - Make bundled CF Tool the sole Codeforces client for API reads, statement parsing, samples and official image downloads.

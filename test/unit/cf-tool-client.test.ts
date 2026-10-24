@@ -65,7 +65,7 @@ describe('bundled CF Tool bridge', () => {
       ['enter', {}],
       ['contest.list', { gym: 'true' }],
       ['contest.status', { contestId: 1, handle: 'tester; --experimental' }],
-      ['contest.status', { contestId: 1, count: 101 }],
+      ['contest.status', { contestId: 1, count: 0 }],
       ['contest.standings', { contestId: '../1' }],
     ] as const)
       await expect(client.call(method, params)).rejects.toThrow();
@@ -104,7 +104,10 @@ it('accepts only matching structured problem identities and declared local asset
           memoryLimit: '256 MB',
           fetchedAt: new Date().toISOString(),
           imageFailures: 1,
-          assets: [asset],
+          assets: [
+            asset,
+            ...Array.from({ length: 60 }, (_, i) => i.toString(16).padStart(64, '0') + '.png'),
+          ],
           samples: [{ input: '你好\n\n', output: '\n' }],
         },
       }),

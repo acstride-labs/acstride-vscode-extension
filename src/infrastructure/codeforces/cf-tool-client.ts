@@ -51,7 +51,7 @@ export class CfToolClient {
       {
         cwd: path.dirname(this.executable),
         timeoutMs: problem ? 220000 : 30000,
-        outputLimit: 50000000,
+        outputLimit: Number.POSITIVE_INFINITY,
         signal: this.abort.signal,
       },
     ).catch(() => {
@@ -104,7 +104,7 @@ export class CfToolClient {
       throw new Error('Only recent submissions are supported.');
     if (
       params.count !== undefined &&
-      (!Number.isInteger(params.count) || Number(params.count) < 1 || Number(params.count) > 100)
+      (!Number.isSafeInteger(params.count) || Number(params.count) < 1)
     )
       throw new Error('Invalid result count.');
     await this.ready();
@@ -136,12 +136,12 @@ export class CfToolClient {
         index: z.literal(index),
         name: z.string(),
         url: z.literal(`https://codeforces.com/contest/${id}/problem/${index}`),
-        statementHtml: z.string().max(24_000_000),
+        statementHtml: z.string(),
         timeLimit: z.string(),
         memoryLimit: z.string(),
         fetchedAt: z.string().datetime(),
         imageFailures: z.number().int().nonnegative(),
-        assets: z.array(z.string().regex(/^[a-f0-9]{64}\.(png|jpg|gif|webp)$/)).max(50),
+        assets: z.array(z.string().regex(/^[a-f0-9]{64}\.(png|jpg|gif|webp)$/)),
         samples: z.array(z.object({ input: z.string(), output: z.string() })),
       })
       .parse(
