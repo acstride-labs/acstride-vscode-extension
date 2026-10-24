@@ -195,7 +195,10 @@ export class SettingsController implements vscode.Disposable {
     }
     if (message.type === 'saveAssistanceSettings') {
       try {
-        await this.ai.saveAssistanceOptions(message.options);
+        await this.ai.saveAssistanceOptions({
+          ...this.ai.assistanceOptions(),
+          [message.kind]: message.options[message.kind],
+        });
         void this.panel?.webview.postMessage({ type: 'assistanceSettingsSaved' });
       } catch (error) {
         void this.panel?.webview.postMessage({
@@ -206,8 +209,15 @@ export class SettingsController implements vscode.Disposable {
       return this.publish();
     }
     if (message.type === 'saveTranslationSettings') {
-      await this.ai.saveTranslationOptions(message.options);
-      void this.panel?.webview.postMessage({ type: 'translationSettingsSaved' });
+      try {
+        await this.ai.saveTranslationOptions(message.options);
+        void this.panel?.webview.postMessage({ type: 'translationSettingsSaved' });
+      } catch (error) {
+        void this.panel?.webview.postMessage({
+          type: 'translationSettingsFailed',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
       return this.publish();
     }
     if (this.busy) throw new Error('Settings operation in progress.');

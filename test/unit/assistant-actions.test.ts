@@ -111,7 +111,7 @@ it('ignores an old request after the problem changes', () => {
   expect(JSON.stringify(render(other))).not.toContain('stale result');
 });
 it('coding provides copy only and never a source replacement action', () => {
-  const requestId = open('AI Coding');
+  const requestId = open('AI Solution');
   message({
     type: 'assistantResult',
     requestId,

@@ -67,7 +67,13 @@ export const settingsKeys = {
   timeoutMs: 'run.timeoutMs',
 } as const;
 export const settingsRequestSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('saveAssistanceSettings'), options: assistantOptionsSchema }).strict(),
+  z
+    .object({
+      type: z.literal('saveAssistanceSettings'),
+      kind: z.enum(['hint', 'debug', 'coding']),
+      options: assistantOptionsSchema,
+    })
+    .strict(),
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('saveAiCacheSettings'), options: aiCacheOptionsSchema }).strict(),
   z

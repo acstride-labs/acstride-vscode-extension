@@ -80,18 +80,14 @@ export function StatementView() {
           <div className="statement-identity">
             <span>{data ? `#${data.contestId} · ${data.index}` : t('STATEMENT')}</span>
             <span
-              className="translation-action"
+              className="translation-action ai-tooltip"
+              data-tooltip={t('AI Translation')}
               tabIndex={!translationEnabled ? 0 : undefined}
               aria-describedby={!translationEnabled ? 'translation-disabled-hint' : undefined}
             >
               <button
                 className="secondary translation-toggle"
-                title={
-                  translationEnabled
-                    ? t(translated ? 'Show original' : 'AI statement translation')
-                    : undefined
-                }
-                aria-label={t('AI statement translation')}
+                aria-label={t('AI Translation')}
                 aria-pressed={translated}
                 disabled={!translationEnabled || !data?.statement.fetchedAt}
                 onClick={() => {

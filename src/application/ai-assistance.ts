@@ -59,7 +59,7 @@ export class AiAssistance {
       kind === 'hint'
         ? `Return only a JSON object {"hints":[...]} with exactly ${options.hintCount} nonempty strings, ordered from least to most revealing. Do not provide complete source code.`
         : kind === 'debug'
-          ? 'Only describe problems. Never output complete corrected or reference source code.'
+          ? 'Respond in Markdown format. Only describe problems. Never output complete corrected or reference source code.'
           : 'Return only complete source code in the selected programming language, without Markdown fences.';
     const messages: { role: 'system' | 'user'; content: string }[] = [
       {

@@ -440,10 +440,13 @@
   "AI returned invalid hints. Please retry.": "ヒントの形式または数が不正です。再試行してください。",
   "Enable this AI feature in AI assistance settings first.": "AI 支援設定でこの機能の表示を有効にしてください。",
   "Wait for the original statement to download before using AI assistance.": "原文のダウンロード後に AI 支援を使用してください。",
-  "AI Hint": "AI Hint",
+  "AI Hint": "AI ヒント",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
   "Configure the AI connection in AI assistance settings first.": "先に AI 支援設定で AI 接続を設定してください。",
   "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "問題文から段階的なヒントを生成します。各ヒントは表示するまで非表示です。",
-  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "{{language}} は回答言語、{{hintCount}} はヒント数です。送信前に置換し、保存済みプロンプトは変更しません。"
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "{{language}} は回答言語、{{hintCount}} はヒント数です。送信前に置換し、保存済みプロンプトは変更しません。",
+  "AI Translation": "AI 翻訳",
+  "AI Solution": "AI 解答",
+  "Save": "保存"
 }

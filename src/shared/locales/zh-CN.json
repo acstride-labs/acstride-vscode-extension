@@ -440,10 +440,13 @@
   "AI returned invalid hints. Please retry.": "AI 返回的提示格式或数量不符合要求，请重试。",
   "Enable this AI feature in AI assistance settings first.": "请先在 AI 辅助设置中展示此功能。",
   "Wait for the original statement to download before using AI assistance.": "请等待原题面下载完成后再使用 AI 辅助。",
-  "AI Hint": "AI Hint",
+  "AI Hint": "AI 提示",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
   "Configure the AI connection in AI assistance settings first.": "请先在 AI 辅助设置中配置 AI 连接。",
   "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "根据题面生成循序渐进的提示，每条提示默认隐藏，点击眼睛按钮后显示。",
-  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "占位符：{{language}} 为所选回复语言，{{hintCount}} 为提示数量。发送请求前自动替换，保存的 Prompt 原文不变。"
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "占位符：{{language}} 为所选回复语言，{{hintCount}} 为提示数量。发送请求前自动替换，保存的 Prompt 原文不变。",
+  "AI Translation": "AI 翻译",
+  "AI Solution": "AI 解答",
+  "Save": "保存"
 }

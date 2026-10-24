@@ -69,7 +69,18 @@ export class AiSettings {
       ? parsed.data
       : defaultAssistantOptions(this.translationOptions().targetLanguage);
     for (const kind of assistantKinds) {
-      if (options[kind].prompt === previousAssistantPrompts[kind]) {
+      if (
+        options[kind].prompt === previousAssistantPrompts[kind] ||
+        (kind === 'coding' &&
+          options.coding.prompt ===
+            defaultAssistantPrompts.coding.replace(
+              ' Use competitive programming style with fast standard input and buffered output appropriate for the selected language.',
+              '',
+            )) ||
+        (kind === 'debug' &&
+          options.debug.prompt ===
+            defaultAssistantPrompts.debug.replace(' using Markdown format', ''))
+      ) {
         options[kind].prompt = defaultAssistantPrompts[kind];
       }
     }

@@ -75,7 +75,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 it('keeps submitted prompts while the host acknowledges before publishing updated settings', () => {
   elements(render(), 'textarea')[0].onChange({ target: { value: 'Custom {{language}}' } });
-  button('Save AI assistance settings').onClick();
+  button('Save').onClick();
   message({ type: 'assistanceSettingsSaved' });
   expect(elements(render(), 'textarea')[0].value).toBe('Custom {{language}}');
   expect(harness.send).toHaveBeenLastCalledWith(
@@ -104,8 +104,25 @@ it('restores a default only after confirmation and still requires explicit save'
 });
 it('unlocks saving after a persistence failure and keeps the unsaved draft', () => {
   elements(render(), 'textarea')[1].onChange({ target: { value: 'Debug draft' } });
-  button('Save AI assistance settings').onClick();
+  elements(render(), 'button')
+    .filter((p) => p.children === 'Save')[1]
+    .onClick();
   message({ type: 'assistanceSettingsFailed', error: 'disk unavailable' });
   expect(elements(render(), 'textarea')[1].value).toBe('Debug draft');
-  expect(button('Save AI assistance settings').disabled).toBe(false);
+  expect(elements(render(), 'button').filter((p) => p.children === 'Save')[1].disabled).toBe(false);
+});
+
+it('saves only the selected card and leaves other drafts unsaved', () => {
+  elements(render(), 'textarea')[0].onChange({ target: { value: 'Hint draft' } });
+  elements(render(), 'textarea')[1].onChange({ target: { value: 'Debug draft' } });
+  elements(render(), 'button')
+    .filter((p) => p.children === 'Save')[1]
+    .onClick();
+  const request = harness.send.mock.calls.at(-1)![0];
+  expect(request.kind).toBe('debug');
+  expect(request.options.hint.prompt).toBe(options.hint.prompt);
+  expect(request.options.debug.prompt).toBe('Debug draft');
+  message({ type: 'assistanceSettingsSaved' });
+  expect(elements(render(), 'textarea')[0].value).toBe('Hint draft');
+  expect(elements(render(), 'button').filter((p) => p.children === 'Save')[0].disabled).toBe(false);
 });

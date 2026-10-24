@@ -2,7 +2,7 @@
   "name": "cfide",
   "displayName": "AC-Stride",
   "description": "Codeforces workbench: automatic problem downloads, C++/Python/Java/Kotlin tests, confirmed submission and official verdict notifications.",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "publisher": "cfide-dev",
   "license": "UNLICENSED",
   "repository": {
@@ -372,10 +372,12 @@
     "package": "node scripts/package.mjs"
   },
   "dependencies": {
+    "@vscode/codicons": "^0.0.46-24",
     "cheerio": "^1.2.0",
     "katex": "^0.19.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
     "sanitize-html": "^2.18.1",
     "zod": "^4.6.7"
   },

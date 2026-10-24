@@ -440,10 +440,13 @@
   "AI returned invalid hints. Please retry.": "Неверный формат или число подсказок. Повторите запрос.",
   "Enable this AI feature in AI assistance settings first.": "Сначала включите отображение функции в настройках ИИ.",
   "Wait for the original statement to download before using AI assistance.": "Дождитесь загрузки исходного условия.",
-  "AI Hint": "AI Hint",
+  "AI Hint": "ИИ-подсказки",
   "AI Debug": "AI Debug",
   "AI Coding": "AI Coding",
   "Configure the AI connection in AI assistance settings first.": "Сначала настройте подключение к ИИ.",
   "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "Постепенные подсказки по условию задачи. Каждая скрыта, пока вы её не откроете.",
-  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Подстановки: {{language}} — выбранный язык ответа; {{hintCount}} — число подсказок. Заменяются перед запросом, сохранённый промпт не меняется."
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Подстановки: {{language}} — выбранный язык ответа; {{hintCount}} — число подсказок. Заменяются перед запросом, сохранённый промпт не меняется.",
+  "AI Translation": "ИИ-перевод",
+  "AI Solution": "ИИ-решение",
+  "Save": "Сохранить"
 }

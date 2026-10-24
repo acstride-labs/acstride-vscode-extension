@@ -11,20 +11,23 @@ import { translationLanguages, type TranslationLanguage } from '../../../src/sha
 import { AiIcon } from '../ai/AiIcon';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
-const names = { hint: 'AI Hint', debug: 'AI Debug', coding: 'AI Coding' };
+const names = { hint: 'AI Hint', debug: 'AI Debug', coding: 'AI Solution' };
 export function AssistanceSettingsCard({ options }: { options?: AssistantOptions }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState(defaultAssistantOptions);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState<Partial<Record<AssistantKind, boolean>>>({});
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<Partial<Record<AssistantKind, string>>>({});
+  const activeSave = useRef<AssistantKind>();
   const [restore, setRestore] = useState<AssistantKind>();
   const confirmation = useRef<HTMLDialogElement>(null);
   const submitted = useRef<string>();
+  const baseline = useRef(defaultAssistantOptions());
   useEffect(() => {
-    if (!options || dirty || saving) return;
+    if (!options || Object.values(dirty).some(Boolean) || saving) return;
     if (submitted.current && JSON.stringify(options) !== submitted.current) return;
     submitted.current = undefined;
+    baseline.current = options;
     setDraft(options);
   }, [options, dirty, saving]);
   useEffect(() => {
@@ -35,13 +38,19 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
     const listener = (event: MessageEvent) => {
       if (event.data.type === 'assistanceSettingsSaved') {
         setSaving(false);
-        setDirty(false);
-        setError('');
+        if (activeSave.current) {
+          const kind = activeSave.current;
+          setDirty((old) => ({ ...old, [kind]: false }));
+          setError((old) => ({ ...old, [kind]: '' }));
+        }
       }
       if (event.data.type === 'assistanceSettingsFailed') {
         setSaving(false);
         submitted.current = undefined;
-        setError(event.data.error);
+        if (activeSave.current) {
+          const kind = activeSave.current;
+          setError((old) => ({ ...old, [kind]: event.data.error }));
+        }
       }
     };
     window.addEventListener('message', listener);
@@ -49,7 +58,7 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
   }, []);
   const change = (kind: AssistantKind, patch: Partial<AssistantOptions[AssistantKind]>) => {
     setDraft((old) => ({ ...old, [kind]: { ...old[kind], ...patch } }));
-    setDirty(true);
+    setDirty((old) => ({ ...old, [kind]: true }));
   };
   return (
     <>
@@ -57,7 +66,7 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
         <section className="card settings-section" key={kind}>
           <h2 className="ai-settings-heading">
             <AiIcon kind={kind} />
-            {names[kind]}
+            {t(names[kind])}
           </h2>
           <label className="checkbox-label">
             <input
@@ -132,6 +141,43 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
           <div className="actions">
             <button
               type="button"
+              disabled={
+                !dirty[kind] ||
+                saving ||
+                !draft[kind].prompt.trim() ||
+                (kind === 'hint' &&
+                  (!Number.isInteger(draft.hint.hintCount) ||
+                    draft.hint.hintCount < 1 ||
+                    draft.hint.hintCount > 10))
+              }
+              onClick={() => {
+                const value = assistantOptionsSchema.parse({
+                  ...baseline.current,
+                  [kind]: draft[kind],
+                });
+                baseline.current = value;
+                submitted.current = JSON.stringify(value);
+                activeSave.current = kind;
+
+                setSaving(true);
+                setError((old) => ({ ...old, [kind]: '' }));
+                send({ type: 'saveAssistanceSettings', kind, options: value });
+              }}
+            >
+              {t('Save')}
+            </button>
+            <span role="status">
+              {t(
+                saving && activeSave.current === kind
+                  ? 'Saving…'
+                  : dirty[kind]
+                    ? 'Unsaved changes'
+                    : 'Saved',
+              )}
+            </span>
+
+            <button
+              type="button"
               className="secondary"
               disabled={saving}
               onClick={() => setRestore(kind)}
@@ -139,37 +185,13 @@ export function AssistanceSettingsCard({ options }: { options?: AssistantOptions
               {t('Restore default prompt')}
             </button>
           </div>
+          {error[kind] && (
+            <p role="alert" className="error">
+              {t(error[kind]!)}
+            </p>
+          )}
         </section>
       ))}
-      <div className="actions">
-        <button
-          type="button"
-          disabled={
-            !dirty ||
-            saving ||
-            assistantKinds.some((k) => !draft[k].prompt.trim()) ||
-            !Number.isInteger(draft.hint.hintCount) ||
-            draft.hint.hintCount < 1 ||
-            draft.hint.hintCount > 10
-          }
-          onClick={() => {
-            const options = assistantOptionsSchema.parse(draft);
-            submitted.current = JSON.stringify(options);
-            setDraft(options);
-            setSaving(true);
-            setError('');
-            send({ type: 'saveAssistanceSettings', options });
-          }}
-        >
-          {t('Save AI assistance settings')}
-        </button>
-        <span role="status">{t(saving ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved')}</span>
-      </div>
-      {error && (
-        <p role="alert" className="error">
-          {t(error)}
-        </p>
-      )}
       <dialog
         ref={confirmation}
         className="prompt-confirmation"

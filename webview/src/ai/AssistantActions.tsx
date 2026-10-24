@@ -9,8 +9,9 @@ import type {
 } from '../../../src/shared/ai-assistance';
 import { send } from '../bridge';
 import { useI18n } from '../i18n';
+import Markdown from 'react-markdown';
 import { AiIcon } from './AiIcon';
-const names = { hint: 'AI Hint', debug: 'AI Debug', coding: 'AI Coding' };
+const names = { hint: 'AI Hint', debug: 'AI Debug', coding: 'AI Solution' };
 export function AssistantActions({
   kinds,
   target,
@@ -75,17 +76,17 @@ export function AssistantActions({
         {kinds
           .filter((kind) => options?.[kind].show)
           .map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              className="secondary ai-action-button"
-              aria-label={names[kind]}
-              title={names[kind]}
-              disabled={disabled || !target}
-              onClick={() => start(kind)}
-            >
-              <AiIcon kind={kind} /> <span>{names[kind]}</span>
-            </button>
+            <span key={kind} className="ai-tooltip" data-tooltip={t(names[kind])}>
+              <button
+                type="button"
+                className="secondary ai-action-button"
+                aria-label={t(names[kind])}
+                disabled={disabled || !target}
+                onClick={() => start(kind)}
+              >
+                <AiIcon kind={kind} />
+              </button>
+            </span>
           ))}
       </span>
       <dialog
@@ -96,7 +97,7 @@ export function AssistantActions({
       >
         <header className="assistant-dialog-header">
           <h2 id="assistant-dialog-title">
-            {open ? names[open] : ''} {target ? `· #${target.contestId} ${target.index}` : ''}
+            {open ? t(names[open]) : ''} {target ? `· #${target.contestId} ${target.index}` : ''}
           </h2>
           <button className="secondary" type="button" onClick={() => setOpen(undefined)}>
             {t('Close')}
@@ -159,7 +160,9 @@ export function AssistantActions({
           </ol>
         )}
         {status === 'ready' && open === 'debug' && (
-          <div className="assistant-prose">{result?.text}</div>
+          <div className="assistant-markdown">
+            <Markdown skipHtml>{result?.text ?? ''}</Markdown>
+          </div>
         )}
         {status === 'ready' && open === 'coding' && (
           <>

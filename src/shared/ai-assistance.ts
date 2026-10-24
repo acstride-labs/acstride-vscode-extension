@@ -17,9 +17,9 @@ export const previousAssistantPrompts: Partial<Record<AssistantKind, string>> = 
 export const defaultAssistantPrompts: Record<AssistantKind, string> = {
   hint: 'You are a competitive programming tutor. Read the problem statement and give exactly {{hintCount}} progressively more specific hints in {{language}}. Start with a gentle observation, then explain the key idea, and finish with an actionable algorithmic direction. Do not give complete source code.',
   debug:
-    "Review the provided problem statement and the user's current {{programmingLanguage}} source code. Respond in {{language}}. Identify concrete bugs, incorrect assumptions, edge cases and complexity issues. Explain why each issue matters and provide small counterexamples when justified. Only identify and explain problems; never provide a complete corrected solution or replacement code. If no definite bug is found, state that clearly and distinguish suspicions from verified facts.",
+    "Review the provided problem statement and the user's current {{programmingLanguage}} source code. Respond in {{language}} using Markdown format. Identify concrete bugs, incorrect assumptions, edge cases and complexity issues. Explain why each issue matters and provide small counterexamples when justified. Only identify and explain problems; never provide a complete corrected solution or replacement code. If no definite bug is found, state that clearly and distinguish suspicions from verified facts.",
   coding:
-    'Solve the problem described by the problem statement. Produce a complete reference solution in {{programmingLanguage}}, respecting all input/output constraints. Use class Main for Java and a top-level main() for Kotlin. Return only source code, without Markdown fences or prose. Any code comments should be in {{language}}.',
+    'Solve the problem described by the problem statement. Produce a complete reference solution in {{programmingLanguage}}, respecting all input/output constraints. Use competitive programming style with fast standard input and buffered output appropriate for the selected language. Use class Main for Java and a top-level main() for Kotlin. Return only source code, without Markdown fences or prose. Any code comments should be in {{language}}.',
 };
 export const assistantToolOptionsSchema = z
   .object({

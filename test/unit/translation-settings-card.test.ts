@@ -71,15 +71,13 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
-it('saves switches immediately and serializes rapid edits without stale host overwrites', () => {
-  let tree = render();
-  elements(tree, 'input')[0].onChange({ target: { checked: true } });
-  expect(harness.send).toHaveBeenCalledTimes(1);
-  tree = render();
-  elements(tree, 'input')[1].onChange({ target: { checked: true } });
-  render({ ...defaultTranslationOptions, enabled: true });
-  expect(harness.send).toHaveBeenCalledTimes(1);
-  ack();
+it('keeps switch changes local until this card is saved', () => {
+  elements(render(), 'input')[0].onChange({ target: { checked: true } });
+  elements(render(), 'input')[1].onChange({ target: { checked: true } });
+  expect(harness.send).not.toHaveBeenCalled();
+  elements(render(), 'button')
+    .find((p) => p.children === 'Save')
+    .onClick();
   expect(harness.send).toHaveBeenLastCalledWith({
     type: 'saveTranslationSettings',
     options: { ...defaultTranslationOptions, enabled: true, autoTranslate: true },
@@ -92,14 +90,15 @@ it('saves switches immediately and serializes rapid edits without stale host ove
     )[1].checked,
   ).toBe(true);
 });
-it('debounces prompt edits, flushes on blur, and never saves empty prompts', () => {
+it('does not autosave prompt edits and refuses empty prompts', () => {
   elements(render(), 'textarea')[0].onChange({ target: { value: 'Translate {{language}}' } });
-  vi.advanceTimersByTime(499);
+  vi.advanceTimersByTime(1000);
   expect(harness.send).not.toHaveBeenCalled();
-  elements(render(), 'textarea')[0].onBlur();
+  elements(render(), 'button')
+    .find((p) => p.children === 'Save')
+    .onClick();
   expect(harness.send).toHaveBeenCalledTimes(1);
   ack();
   elements(render(), 'textarea')[0].onChange({ target: { value: '  ' } });
-  vi.advanceTimersByTime(500);
-  expect(harness.send).toHaveBeenCalledTimes(1);
+  expect(elements(render(), 'button').find((p) => p.children === 'Save').disabled).toBe(true);
 });

@@ -808,8 +808,8 @@ button.ai-action-button:hover {
   color: var(--vscode-editorWarning-foreground, var(--vscode-descriptionForeground));
 }
 .assistant-dialog {
-  width: min(760px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
+  width: min(1040px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
   overflow: auto;
   box-sizing: border-box;
   border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
@@ -823,6 +823,11 @@ button.ai-action-button:hover {
   background: #0007;
 }
 .assistant-dialog-header {
+  position: sticky;
+  top: -20px;
+  z-index: 2;
+  padding: 12px 0;
+  background: var(--vscode-editor-background);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -886,4 +891,67 @@ button.ai-action-button:hover {
   background: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground, var(--vscode-foreground));
   tab-size: 4;
+}
+
+.ai-action-button .codicon {
+  font-size: 20px;
+}
+.ai-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+.ai-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 100;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 9px;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 3px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editor-background));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  font-size: 12px;
+  pointer-events: none;
+  visibility: hidden;
+}
+.ai-tooltip:hover::after,
+.ai-tooltip:focus-within::after {
+  visibility: visible;
+  transition: visibility 0s linear 1s;
+}
+.assistant-markdown {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.assistant-markdown pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: var(--vscode-textCodeBlock-background);
+}
+.assistant-markdown code {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.assistant-markdown a {
+  color: var(--vscode-textLink-foreground);
+}
+.assistant-markdown blockquote {
+  border-left: 3px solid var(--vscode-textBlockQuote-border);
+  margin-left: 0;
+  padding-left: 12px;
+}
+
+.translation-action .translation-hint {
+  display: block;
+  visibility: hidden;
+}
+.translation-action:hover .translation-hint,
+.translation-action:focus-within .translation-hint {
+  visibility: visible;
+  transition: visibility 0s linear 1s;
+}
+.translation-action:has(.translation-hint)::after {
+  display: none;
 }

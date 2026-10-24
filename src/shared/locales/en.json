@@ -445,5 +445,8 @@
   "AI Coding": "AI Coding",
   "Configure the AI connection in AI assistance settings first.": "Configure the AI connection in AI assistance settings first.",
   "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.": "Generate progressive hints from the problem statement. Each hint is hidden until you reveal it.",
-  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged."
+  "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.": "Placeholders: {{language}} is the selected response language; {{hintCount}} is the number of hints. They are replaced before the request, while the saved prompt stays unchanged.",
+  "AI Translation": "AI Translation",
+  "AI Solution": "AI Solution",
+  "Save": "Save"
 }
