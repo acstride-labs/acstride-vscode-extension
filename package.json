@@ -1,9 +1,9 @@
 {
   "name": "cfide",
-  "displayName": "AC-Stride",
-  "description": "Codeforces workbench: automatic problem downloads, C++/Python/Java/Kotlin tests, confirmed submission and official verdict notifications.",
-  "version": "0.17.1",
-  "publisher": "cfide-dev",
+  "displayName": "Codeforces Workbench by AC-Stride",
+  "description": "Import Codeforces contests and problems, write solutions, run tests, and track submissions in VS Code.",
+  "version": "0.1.0",
+  "publisher": "acstride",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -183,9 +183,9 @@
           "enumDescriptions": [
             "%language.auto%",
             "English",
-            "简体中文",
-            "Русский",
-            "日本語"
+            "\u7b80\u4f53\u4e2d\u6587",
+            "\u0420\u0443\u0441\u0441\u043a\u0438\u0439",
+            "\u65e5\u672c\u8a9e"
           ],
           "default": "auto",
           "scope": "application",
@@ -367,9 +367,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run typecheck && npm test && npm run test:release && npm run build",
     "vscode:prepublish": "npm run build",
-    "package": "node scripts/package.mjs"
+    "package": "node scripts/package.mjs",
+    "test:release": "node --test test/release-policy.test.mjs"
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.46-24",
@@ -395,5 +396,17 @@
     "vite": "^8.3.5",
     "vitest": "^5.0.5",
     "yauzl": "^3.4.0"
-  }
+  },
+  "icon": "resources/icons/marketplace.png",
+  "homepage": "https://acstride.com/en",
+  "bugs": {
+    "url": "https://github.com/acstride-labs/acstride-vscode-extension/issues"
+  },
+  "keywords": [
+    "codeforces",
+    "competitive programming",
+    "algorithm",
+    "testing",
+    "contest"
+  ]
 }

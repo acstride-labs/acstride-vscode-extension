@@ -19,3 +19,5 @@ packaging/**
 .build/**
 resources/helpers/**
 assets/**
+
+docs/**

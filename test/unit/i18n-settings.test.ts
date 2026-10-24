@@ -9,9 +9,9 @@ import { contestRequestSchema } from '../../src/shared/contest-protocol';
 describe('configurable localization', () => {
   it('uses AC-Stride branding while preserving existing extension and workspace identities', async () => {
     const manifest = JSON.parse(await fs.readFile('package.json', 'utf8'));
-    expect(manifest.displayName).toBe('AC-Stride');
+    expect(manifest.displayName).toBe('Codeforces Workbench by AC-Stride');
     expect(manifest.name).toBe('cfide');
-    expect(manifest.publisher).toBe('cfide-dev');
+    expect(manifest.publisher).toBe('acstride');
     expect(manifest.repository.url).toBe(
       'https://github.com/acstride-labs/acstride-vscode-extension.git',
     );

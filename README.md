@@ -1,13 +1,11 @@
-# AC-Stride
+# Codeforces Workbench by AC-Stride
 
 Previously named CFIDE. Part of [AC-Stride](https://github.com/acstride-labs):
 [VS Code extension](https://github.com/acstride-labs/acstride-vscode-extension),
 [Codeforces CLI](https://github.com/acstride-labs/acstride-cf-tool), and
 [product website](https://github.com/acstride-labs/acstride-web).
 
-The extension ID, `cfide.*` namespace and `.cfide` workspace data remain compatible
-with existing installations. Build environment variables
-retain their `CFIDE_` prefix.
+The public Marketplace extension identity is `acstride.cfide`. Previous development VSIXs used `cfide-dev.cfide`; uninstall that development extension before installing the public release. The `cfide.*` settings namespace and `.cfide` workspace data remain compatible. Build environment variables retain their `CFIDE_` prefix.
 
 A Codeforces extension for desktop VS Code, with C++, Python, Java and Kotlin support and English, 简体中文, Русский and 日本語 interfaces. The extension uses a pinned, embedded ACStride CF Tool as the sole Codeforces client for metadata, statements, samples, images, submission records and rankings. The anonymous statement downloader, private Python runtime, curl_cffi, CA certificates and CF Tool are bundled in the platform-specific VSIX: no user-side Go/Python/pip setup or extra downloads.
 
@@ -167,3 +165,7 @@ Each feature has a visibility switch, response-language selector, and editable p
 Contest import fetches a lightweight problem list without loading the complete leaderboard. CF Tool downloads the first problem's statement and samples first, then starts two FIFO consumers for the remaining problems. Completion order can differ when requests take different amounts of time. Standalone imports download just the requested problem.
 
 Statements and samples become usable before images finish. Images are cached in a separate background queue and update the open statement automatically. Public reads use one persistent CF Tool process and a two-process anonymous transport pool to reuse network connections. Closing the window cancels pending work and reaps those processes; cached statements, code and tests remain available. Existing request pacing and bounded retry behavior remain in place. Full rankings are fetched for the visible overview after a statement is available, or when explicitly refreshed.
+
+## Release process
+
+The first public preview is **0.1.0**. Publishing a GitHub Release starts the four-platform build, attaches verified VSIX packages and SHA256 checksums, and publishes the same packages to Marketplace when authentication is configured. See [the release runbook](docs/RELEASING.md) for one-time authentication setup, release channels and retries.
